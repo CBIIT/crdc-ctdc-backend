@@ -197,7 +197,7 @@ Indices:
       MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
       WITH DISTINCT sp.specimen_type AS biospecimen_type, COUNT(sp) AS count1
 
-      MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
+      optional MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
       WITH DISTINCT sp.assessment_timepoint AS assessment_timepoint, COUNT(sp) AS count2, biospecimen_type, count1
 
       MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
@@ -327,22 +327,22 @@ Indices:
   
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-        MATCH (sub:subject)<-[*..2]-(df:data_file)
-WITH
+        optional MATCH (sub:subject)<-[*..2]-(df:data_file)
+        WITH
         {
         group: df.data_file_type,
         subjects:count(df.data_file_type)}
          as dataFileByType
-MATCH (df:data_file) with dataFileByType , count(df) as dataFileCount
-MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
-        MATCH (target:targeted_therapy) WITH target,subjectcount,dataFileByType,dataFileCount
-        MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted)) as untargetedTherapyCount ,subjectcount,target,dataFileByType,dataFileCount
+        optional MATCH (df:data_file) with dataFileByType , count(df) as dataFileCount
+        optional MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
+        optional MATCH (target:targeted_therapy) WITH target,subjectcount,dataFileByType,dataFileCount
+        optional MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted)) as untargetedTherapyCount ,subjectcount,target,dataFileByType,dataFileCount
         WITH subjectcount,count(target) as targetTherapyCount,dataFileByType,dataFileCount,untargetedTherapyCount
 
-        MATCH (diag:diagnosis) with
+        optional MATCH (diag:diagnosis) with
         count(distinct(diag.ctep_disease_term)) as countofDiagnoses ,untargetedTherapyCount,targetTherapyCount,subjectcount,untargetedTherapyCount + targetTherapyCount as TotalTherapy,dataFileByType,dataFileCount
 
-        MATCH (sp:specimen)-[:of_subject]->(sb:subject)<-[:of_subject]-(diag:diagnosis) 
+        optional MATCH (sp:specimen)-[:of_subject]->(sb:subject)<-[:of_subject]-(diag:diagnosis) 
         WITH targetTherapyCount,countofDiagnoses,subjectcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
         {
         group: diag.stage_of_disease,
@@ -435,11 +435,11 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
             type: keyword
       subject_id:
         type: keyword
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-      MATCH (sb:subject)<-[*..2]-(data_file:data_file)
-      MATCH (study:study)<-[:belongs_to]-(sb)
-      MATCH (demo:demographic)-[:of_subject]->(sb)
+      
+      MATCH (study:study)<-[:belongs_to]-(sb:subject)
+      optional MATCH (sb)<-[*..2]-(data_file:data_file)
+      optional MATCH (demo:demographic)-[:of_subject]->(sb)
       optional MATCH (diag:diagnosis)-[:of_subject]->(sb)
       optional MATCH (target:targeted_therapy)-[:of_subject]->(sb)
       optional MATCH (expose:exposure)-[:of_subject]->(sb)
@@ -480,8 +480,7 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
         data_file_uuid: data_file.data_file_uuid,
         data_file_format: data_file.data_file_format,
         data_file_type: data_file.data_file_type
-      }) AS file_info
-      "
+      }) AS file_info"
   # Participant Table Data
   - index_name: tab_participants
     type: neo4j
@@ -555,12 +554,11 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
       data_file_format:
         type: keyword
     cypher_query: "
-
-      MATCH (sb:subject)<-[*..2]-(df:data_file)
       MATCH (study:study)<-[:belongs_to]-(sb)
-      MATCH (sb)<-[:of_subject]-(diag:diagnosis)
+      optional MATCH (sb:subject)<-[*..2]-(df:data_file)
+      optional MATCH (sb)<-[:of_subject]-(diag:diagnosis)
       optional MATCH (sb)<-[:of_subject]-(spec:specimen)
-      MATCH (sb)<-[:of_subject]-(demo:demographic)
+      optional MATCH (sb)<-[:of_subject]-(demo:demographic)
       optional MATCH (sb)<-[:of_subject]-(exp:exposure)
       optional MATCH (sb)<-[:of_subject]-(tt:targeted_therapy)
       RETURN DISTINCT
@@ -601,9 +599,7 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
       COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
       COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
       
-      ORDER BY COALESCE(sb.subject_id, '') ASC
-
-    "
+      ORDER BY COALESCE(sb.subject_id, '') ASC"
 
   # Biospecimen Table Data
   - index_name: tab_biospecimens
@@ -700,11 +696,11 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
     cypher_query: "
       MATCH (spec:specimen)-[:of_subject]->(sub:subject)
       MATCH (study:study)<-[:belongs_to]-(sub)
-      MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      MATCH (sub)<-[:of_subject]-(demo:demographic)
+      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
       optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
-      MATCH (sub)<-[*..2]-(df:data_file)
+      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[*..2]-(df:data_file)
       RETURN DISTINCT
         'biospecimens' AS type,
         sub.subject_id AS subject_id,
@@ -751,8 +747,7 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
         COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
         COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
 
-      ORDER BY COALESCE(spec.specimen_id, '') ASC
-    "
+      ORDER BY COALESCE(spec.specimen_id, '') ASC"
   # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
   - index_name: tab_data_files
     type: neo4j
@@ -834,10 +829,10 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
     cypher_query: "
       MATCH (sub:subject)<-[*..2]-(parent)<--(f:data_file)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
-      MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      MATCH (sub)<-[:of_subject]-(demo:demographic)
+      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
       optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
       RETURN DISTINCT
 
         'data file' AS type,
@@ -890,10 +885,10 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
 
       MATCH (sub:subject)<-[:associated_with]-(f:data_file)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
-      MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      MATCH (sub)<-[:of_subject]-(demo:demographic)
+      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
       optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
  
       RETURN DISTINCT
         'data file' AS type,
@@ -939,8 +934,7 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
           data_file_uuid: f.data_file_uuid,
           data_file_format: f.data_file_format,
           data_file_type: f.data_file_type
-        }) AS file_info
-    "
+        }) AS file_info"
   #Handles datafiles only related to Biospecimen
   - index_name: biospecimen_data_file
     type: neo4j
@@ -996,10 +990,10 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
     cypher_query: "
       MATCH (sub:subject)<-[*..2]-(parent)<--(f:data_file)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
-      MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      MATCH (sub)<-[:of_subject]-(demo:demographic)
+      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
       optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
  
       RETURN DISTINCT
         'data file' AS type,
@@ -1028,8 +1022,7 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
         spec.anatomical_collection_site AS anatomical_collection_site,
         spec.specimen_type AS specimen_type,
         spec.tissue_category AS tissue_category,
-        spec.assessment_timepoint AS assessment_timepoint
-    "
+        spec.assessment_timepoint AS assessment_timepoint"
   - index_name: about_page
     type: about_file
     # type mapping for each property of the index
@@ -1090,5 +1083,3 @@ MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
         type: keyword
       value_kw:
         type: keyword
-
- 
