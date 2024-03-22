@@ -26,11 +26,11 @@ queries:
         filter:
           type: sub_aggregation
           selectedField: assessment_timepoint
-          subAggSelectedField: specimen_type
+          subAggSelectedField: specimen_category
           nestedPath: biospecimen_info
           nestedParameters:
             - anatomical_collection_site,
-            - specimen_type,
+            - specimen_category,
             - tissue_category,
             - assessment_timepoint
         result:
@@ -278,7 +278,7 @@ queries:
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -294,7 +294,7 @@ queries:
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -304,12 +304,12 @@ queries:
           - tab_biospecimens
         filter:
           type: nested
-          selectedField: specimen_type
+          selectedField: specimen_category
           nestedPath: biospecimen_info
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -320,12 +320,12 @@ queries:
         filter:
           type: nested
           ignoreSelectedField: true
-          selectedField: specimen_type
+          selectedField: specimen_category
           nestedPath: biospecimen_info
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -340,7 +340,7 @@ queries:
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -356,7 +356,7 @@ queries:
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -371,7 +371,7 @@ queries:
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:
@@ -387,7 +387,7 @@ queries:
           nestedParameters:
             - specimen_id
             - anatomical_collection_site
-            - specimen_type
+            - specimen_category
             - tissue_category
             - assessment_timepoint
         result:

@@ -59,7 +59,7 @@ type GS_Biospecimen {
     specimen_id: String
     subject_id: String
     ctep_disease_term: String
-    specimen_type: String
+    specimen_category: String
     parent_specimen_type: String
     tissue_category: String
     anatomical_collection_site: String
@@ -169,7 +169,7 @@ type Specimen {
   type_of_tissue: String
   anatomical_collection_site: String
   parent_specimen_type: String
-  specimen_type: String
+  specimen_category: String
   tissue_category: String
   assessment_timepoint: String
 }
@@ -248,7 +248,7 @@ type BiospecimenOverview {
   specimen_id: String
   parent_specimen_id: String
   anatomical_collection_site: String
-  specimen_type: String
+  specimen_category: String
   tissue_category: String
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
@@ -284,7 +284,7 @@ type FileOverview {
   carcinogen_exposure: String
   targeted_therapy: String
   anatomical_collection_site: String
-  specimen_type: String
+  specimen_category: String
   tissue_category: String
   assessment_timepoint: String
   primary_disease_site: String
@@ -397,7 +397,7 @@ type QueryType {
     targeted_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
-    specimen_type: [String] = []
+    specimen_category: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
 
@@ -424,7 +424,7 @@ type QueryType {
     targeted_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
-    specimen_type: [String] = []
+    specimen_category: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
 
@@ -450,7 +450,7 @@ type QueryType {
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
     anatomical_collection_site: [String] = []
-    specimen_type: [String] = []
+    specimen_category: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
 
@@ -477,7 +477,7 @@ type QueryType {
     targeted_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
-    specimen_type: [String] = []
+    specimen_category: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
 
@@ -505,7 +505,7 @@ type QueryType {
     targeted_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
-    specimen_type: [String] = []
+    specimen_category: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
 
@@ -531,7 +531,7 @@ type QueryType {
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
     anatomical_collection_site: [String] = []
-    specimen_type: [String] = []
+    specimen_category: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
     association: [String] = []
