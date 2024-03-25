@@ -154,7 +154,7 @@ type specimen {
     anatomical_collection_site : String
     parent_specimen_type : String
     specimen_category : String
-    tissue_category : String
+    tissue_type : String
     assessment_timepoint : String
 }
 

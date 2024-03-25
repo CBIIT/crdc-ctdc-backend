@@ -112,7 +112,7 @@ queries:
             - field: parent_specimen_type
               type: wildcard
               caseInsensitive: true
-            - field: tissue_category
+            - field: tissue_type
               type: wildcard
               caseInsensitive: true
             - field: anatomical_collection_site
@@ -152,7 +152,7 @@ queries:
             - field: parent_specimen_type
               type: wildcard
               caseInsensitive: true
-            - field: tissue_category
+            - field: tissue_type
               type: wildcard
               caseInsensitive: true
             - field: anatomical_collection_site

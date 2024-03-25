@@ -61,7 +61,7 @@ type GS_Biospecimen {
     ctep_disease_term: String
     specimen_category: String
     parent_specimen_type: String
-    tissue_category: String
+    tissue_type: String
     anatomical_collection_site: String
     assessment_timepoint: String  
     
@@ -170,7 +170,7 @@ type Specimen {
   anatomical_collection_site: String
   parent_specimen_type: String
   specimen_category: String
-  tissue_category: String
+  tissue_type: String
   assessment_timepoint: String
 }
 
@@ -249,7 +249,7 @@ type BiospecimenOverview {
   parent_specimen_id: String
   anatomical_collection_site: String
   specimen_category: String
-  tissue_category: String
+  tissue_type: String
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
   data_files: [DataFile]
@@ -285,7 +285,7 @@ type FileOverview {
   targeted_therapy: String
   anatomical_collection_site: String
   specimen_category: String
-  tissue_category: String
+  tissue_type: String
   assessment_timepoint: String
   primary_disease_site: String
 }
@@ -398,7 +398,7 @@ type QueryType {
 
     anatomical_collection_site: [String] = []
     specimen_category: [String] = []
-    tissue_category: [String] = []
+    tissue_type: [String] = []
     assessment_timepoint: [String] = []
 
     data_file_type: [String] = []
@@ -425,7 +425,7 @@ type QueryType {
 
     anatomical_collection_site: [String] = []
     specimen_category: [String] = []
-    tissue_category: [String] = []
+    tissue_type: [String] = []
     assessment_timepoint: [String] = []
 
     data_file_type: [String] = []
@@ -451,7 +451,7 @@ type QueryType {
     targeted_therapy: [String] = []
     anatomical_collection_site: [String] = []
     specimen_category: [String] = []
-    tissue_category: [String] = []
+    tissue_type: [String] = []
     assessment_timepoint: [String] = []
 
     data_file_type: [String] = []
@@ -478,7 +478,7 @@ type QueryType {
 
     anatomical_collection_site: [String] = []
     specimen_category: [String] = []
-    tissue_category: [String] = []
+    tissue_type: [String] = []
     assessment_timepoint: [String] = []
 
     data_file_type: [String] = []
@@ -506,7 +506,7 @@ type QueryType {
 
     anatomical_collection_site: [String] = []
     specimen_category: [String] = []
-    tissue_category: [String] = []
+    tissue_type: [String] = []
     assessment_timepoint: [String] = []
 
     data_file_type: [String] = []
@@ -532,7 +532,7 @@ type QueryType {
     targeted_therapy: [String] = []
     anatomical_collection_site: [String] = []
     specimen_category: [String] = []
-    tissue_category: [String] = []
+    tissue_type: [String] = []
     assessment_timepoint: [String] = []
     association: [String] = []
     data_file_type: [String] = []
