@@ -242,6 +242,7 @@ type ParticipantOverview {
   ethnicity: String
   carcinogen_exposure: String
   targeted_therapy: String
+  targeted_therapy_string: String
 
   data_file_uuid: String
   data_files: [DataFile] # For Adding Files into Cart
@@ -260,6 +261,7 @@ type BiospecimenOverview {
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
   data_files: [DataFile]
+  targeted_therapy_string: String
 }
 
 # Cart
@@ -291,6 +293,7 @@ type FileOverview {
   age_at_enrollment: String
   carcinogen_exposure: String
   targeted_therapy: String
+  targeted_therapy_string: String
   anatomical_collection_site: String
   parent_specimen_type: String
   tissue_category: String
@@ -341,7 +344,6 @@ type SearchResult {
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
-
   
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
   filterParticipantCountBySnomedDiseaseCode: [GroupCount]
@@ -358,7 +360,7 @@ type SearchResult {
   filterSpecimenCountBySpecimenType: [GroupCount]
   filterParticipantCountByAssessmentTimepoint: [GroupCount]
   filterParticipantCountByStageOfDisease: [GroupCount]
-
+  filterParticipantCountByTargetedTherapyString: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
 }
@@ -408,6 +410,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -436,6 +439,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -464,6 +468,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
     tissue_category: [String] = []
@@ -493,6 +498,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -523,6 +529,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -551,6 +558,7 @@ type QueryType {
     primary_diagnosis_disease_group: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
     tissue_category: [String] = []
