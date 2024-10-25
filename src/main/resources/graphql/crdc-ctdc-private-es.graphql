@@ -479,6 +479,7 @@ type QueryType {
     data_file_type: [String] = []
     data_file_format: [String] = []
     data_file_uuid: [String] = []
+    drs_uri: [String] = []
 
     order_by: String = "data_file_name"
     sort_direction: String = "ASC"
