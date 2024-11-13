@@ -94,7 +94,7 @@
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>19.11</version>
+            <version>21.3</version>
         </dependency>
         <!-- GSON -->
         <dependency>
@@ -125,7 +125,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.25</version>
+            <version>10.1.28</version>
         </dependency>
         <!-- JUnit -->
         <dependency>
@@ -157,7 +157,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphql-java</artifactId>
-            <version>1.9.0</version>
+            <version>1.8.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.graphql-java</groupId>
+                    <artifactId>graphql-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.neo4j.driver</groupId>
