@@ -998,7 +998,8 @@ Indices:
 
         COLLECT(DISTINCT(exp.carcinogen_exposure)) AS carcinogen_exposure,
         COLLECT(DISTINCT(tt.targeted_therapy)) AS targeted_therapy,
-        array as targeted_therapy_string,        
+        array as targeted_therapy_string,
+                
         spec.anatomical_collection_site AS anatomical_collection_site,
         spec.parent_specimen_type AS parent_specimen_type,
         spec.tissue_category AS tissue_category,
