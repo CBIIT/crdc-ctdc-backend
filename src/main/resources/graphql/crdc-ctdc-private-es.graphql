@@ -299,6 +299,7 @@ type FileOverview {
   tissue_category: String
   assessment_timepoint: String
   primary_disease_site: String
+  drs_uri: String
 }
 
 type FileParticipant {
