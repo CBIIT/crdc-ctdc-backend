@@ -895,10 +895,6 @@ Indices:
       WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
       with apoc.coll.sort(array) as array,sub,f
       with apoc.text.join(array,'|') as array,sub,f
-      optional MATCH (target:targeted_therapy)-[:of_subject]->(sub)
-      WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
-      with apoc.coll.sort(array) as array,sub,f
-      with apoc.text.join(array,'|') as array,sub,f
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_subject]-(demo:demographic)
@@ -961,10 +957,6 @@ Indices:
       WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
       with apoc.coll.sort(array) as array,sub,f
       with apoc.text.join(array,'|') as array,sub,f
-      optional MATCH (target:targeted_therapy)-[:of_subject]->(sub)
-      WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
-      with apoc.coll.sort(array) as array,sub,f
-      with apoc.text.join(array,'|') as array,sub,f
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_subject]-(demo:demographic)
@@ -1006,9 +998,7 @@ Indices:
 
         COLLECT(DISTINCT(exp.carcinogen_exposure)) AS carcinogen_exposure,
         COLLECT(DISTINCT(tt.targeted_therapy)) AS targeted_therapy,
-        array as targeted_therapy_string,
-        array as targeted_therapy_string,
-        
+        array as targeted_therapy_string,        
         spec.anatomical_collection_site AS anatomical_collection_site,
         spec.parent_specimen_type AS parent_specimen_type,
         spec.tissue_category AS tissue_category,
