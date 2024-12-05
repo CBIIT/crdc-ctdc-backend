@@ -906,7 +906,7 @@ Indices:
       RETURN DISTINCT
 
         'data file' AS type,
-        COLLECT(DISTINCT study.study_short_name) as study_short_name,
+        study.study_short_name as study_short_name,
         f.data_file_name AS data_file_name,
         f.data_file_format AS data_file_format,
         f.data_file_type AS data_file_type,
@@ -969,7 +969,7 @@ Indices:
  
       RETURN DISTINCT
         'data file' AS type,
-        COLLECT(DISTINCT study.study_short_name) as study_short_name,
+        study.study_short_name as study_short_name,
         f.data_file_name AS data_file_name,
         f.data_file_format AS data_file_format,
         f.data_file_type AS data_file_type,
