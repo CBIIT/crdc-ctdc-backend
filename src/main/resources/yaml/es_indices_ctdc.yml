@@ -889,12 +889,15 @@ Indices:
         type: keyword
       primary_disease_site:
         type: keyword
+      study_short_name:
+        type: keyword
     cypher_query: "
-      MATCH (sub:subject)<-[*..2]-(parent)<--(f:data_file)
+       MATCH (sub:subject)<-[*..2]-(parent)<--(f:data_file)
+     optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (target:targeted_therapy)-[:of_subject]->(sub)
-      WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
-      with apoc.coll.sort(array) as array,sub,f
-      with apoc.text.join(array,'|') as array,sub,f
+      WITH COLLECT(distinct target.targeted_therapy) as array,sub,f,study
+      with apoc.coll.sort(array) as array,sub,f,study
+      with apoc.text.join(array,'|') as array,sub,f,study
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_subject]-(demo:demographic)
@@ -903,6 +906,7 @@ Indices:
       RETURN DISTINCT
 
         'data file' AS type,
+        COLLECT(DISTINCT study.study_short_name) as study_short_name,
         f.data_file_name AS data_file_name,
         f.data_file_format AS data_file_format,
         f.data_file_type AS data_file_type,
@@ -919,7 +923,6 @@ Indices:
        
         COALESCE(spec.specimen_id, ' ') as specimen_id,
         sub.subject_id AS subject_id,
-      
         diag.ctep_disease_term AS ctep_disease_term,
         diag.primary_diagnosis_disease_group as primary_diagnosis_disease_group,
         diag.stage_of_disease AS stage_of_disease,
@@ -953,10 +956,11 @@ Indices:
       UNION
 
       MATCH (sub:subject)<-[:associated_with]-(f:data_file)
+      optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (target:targeted_therapy)-[:of_subject]->(sub)
-      WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
-      with apoc.coll.sort(array) as array,sub,f
-      with apoc.text.join(array,'|') as array,sub,f
+      WITH COLLECT(distinct target.targeted_therapy) as array,sub,f,study
+      with apoc.coll.sort(array) as array,sub,f,study
+      with apoc.text.join(array,'|') as array,sub,f,study
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_subject]-(demo:demographic)
@@ -965,6 +969,7 @@ Indices:
  
       RETURN DISTINCT
         'data file' AS type,
+        COLLECT(DISTINCT study.study_short_name) as study_short_name,
         f.data_file_name AS data_file_name,
         f.data_file_format AS data_file_format,
         f.data_file_type AS data_file_type,
@@ -980,7 +985,7 @@ Indices:
         COALESCE(spec.specimen_id, '') as specimen_id,
         sub.subject_id AS subject_id,
       
-      
+
         diag.stage_of_disease AS stage_of_disease,
         diag.tumor_grade AS tumor_grade,
         diag.primary_disease_site as primary_disease_site,
@@ -1011,6 +1016,7 @@ Indices:
           data_file_format: f.data_file_format,
           data_file_type: f.data_file_type
         }) AS file_info
+        
         "
   #Handles datafiles only related to Biospecimen
   - index_name: biospecimen_data_file

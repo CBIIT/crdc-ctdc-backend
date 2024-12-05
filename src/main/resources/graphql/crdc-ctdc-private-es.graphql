@@ -300,6 +300,7 @@ type FileOverview {
   assessment_timepoint: String
   primary_disease_site: String
   drs_uri: String
+  study_short_name: String
 }
 
 type FileParticipant {
