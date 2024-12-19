@@ -5,8 +5,6 @@ queries:
     filter:
       type: default
       caseInsensitive: false
-      ignoreIfEmpty:
-        - study_short_name
     result:
       type: object_array
   - name: studyDiagnosisByStudyShortName
