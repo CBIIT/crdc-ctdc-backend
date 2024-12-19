@@ -132,6 +132,8 @@ type Study {
   dates_of_conduct: String
   subjects: [Subject]
   participant_count: Int
+  image_collection_count: Int
+  study_file_count: Int
   associated_links: [AssociatedLink]
   image_collection: [ImageCollection]
 }
@@ -560,7 +562,7 @@ type QueryType {
     reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
-
+    study_short_name: [String] = []
     primary_diagnosis_disease_group: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []

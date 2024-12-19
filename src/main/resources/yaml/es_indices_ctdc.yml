@@ -33,6 +33,10 @@ Indices:
             type: keyword
       participant_count:
         type: keyword
+      image_collection_count:
+        type: keyword
+      study_file_count:
+        type: keyword
       associated_links:
         type: nested
         properties:
@@ -64,6 +68,7 @@ Indices:
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
       optional MATCH (s)<-[:belongs_to]-(subject)
+      optional match (s)<-[:associated_with]-(df:data_file)
        RETURN DISTINCT
                 s.study_name as study_name,
                 s.study_short_name as study_short_name,
@@ -90,7 +95,9 @@ Indices:
                   radiology_report_available: subject.radiology_report_available,
                   subject_id: subject.subject_id
                   })as subjects,
-                COUNT( DISTINCT subject) as participant_count
+                COUNT( DISTINCT subject) as participant_count,
+                COUNT( DISTINCT ic) as image_collection_count,
+                COUNT( DISTINCT df) as study_file_count
       "
       
   - index_name: study_data_file
