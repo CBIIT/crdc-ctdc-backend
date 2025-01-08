@@ -392,15 +392,8 @@ schema {
 
 type QueryType {
   studyByStudyShortName(study_short_name: [String] = []): [Study]
-  getAllStudies(study_short_name: [String] = []): [Study]
 
-
-  studiesByProgram: [Study]
-
-  getAllStudies(
-    study_short_name: [String] = []
-  ): [Study]
-
+  getAllStudies: [Study]
 
   studyDiagnosisByStudyShortName(
     study_short_name: [String] = []
