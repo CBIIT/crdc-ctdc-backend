@@ -136,7 +136,6 @@ type Study {
   image_collection_count: Int
   study_file_count: Int
   associated_links: [AssociatedLink]
-  AssociatedLinks: [AssociatedLink]
   image_collection: [ImageCollection]
 }
 
