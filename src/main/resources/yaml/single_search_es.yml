@@ -9,6 +9,14 @@ queries:
         - study_short_name
     result:
       type: object_array
+  - name: getAllStudies
+    index:
+      - study
+    filter:
+      type: default
+      caseInsensitive: false
+    result:
+      type: object_array
   - name: studyDiagnosisByStudyShortName
     index:
       - study_diagnosis
