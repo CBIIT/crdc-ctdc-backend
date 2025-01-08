@@ -129,12 +129,14 @@ type Study {
   study_name: String
   study_description: String
   study_type: String
+
   dates_of_conduct: String
   subjects: [Subject]
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
   associated_links: [AssociatedLink]
+  AssociatedLinks: [AssociatedLink]
   image_collection: [ImageCollection]
 }
 
@@ -391,6 +393,14 @@ schema {
 type QueryType {
   studyByStudyShortName(study_short_name: [String] = []): [Study]
   getAllStudies(study_short_name: [String] = []): [Study]
+
+
+  studiesByProgram: [Study]
+
+  getAllStudies(
+    study_short_name: [String] = []
+  ): [Study]
+
 
   studyDiagnosisByStudyShortName(
     study_short_name: [String] = []
