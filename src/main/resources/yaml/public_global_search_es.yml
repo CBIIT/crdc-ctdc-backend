@@ -8,7 +8,7 @@ queries:
           type: global
           defaultSortField: subject_id_num
           searches:
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: diagnosis_gs
