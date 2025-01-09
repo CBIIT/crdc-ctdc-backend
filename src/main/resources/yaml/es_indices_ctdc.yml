@@ -18,7 +18,7 @@ Indices:
         type: keyword
       dates_of_conduct:
         type: keyword
-      subjects:
+      participants:
         type: nested
         properties:
           biomarker_results_available:
@@ -94,7 +94,7 @@ Indices:
                   radiology_images_available: participant.radiology_images_available,
                   radiology_report_available: participant.radiology_report_available,
                   participant_id: participant.participant_id
-                  })as subjects,
+                  })as participants,
                 COUNT( DISTINCT participant) as participant_count,
                 COUNT( DISTINCT ic) as image_collection_count,
                 COUNT( DISTINCT df) as study_file_count
@@ -295,13 +295,13 @@ Indices:
             type: keyword
           stage_of_disease:
             type: keyword
-          subject_age_at_diagnosis:
+          participant_age_at_diagnosis:
             type: keyword
-          subject_age_at_diagnosis_original:
+          participant_age_at_diagnosis_original:
             type: keyword
-          subject_age_at_diagnosis_original_unit:
+          participant_age_at_diagnosis_original_unit:
             type: keyword
-          subject_age_at_diagnosis_unit:
+          participant_age_at_diagnosis_unit:
             type: keyword
           tumor_grade:
             type: keyword
@@ -311,7 +311,7 @@ Indices:
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
         MATCH (s:study)
-        optional MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_participant]-(sd:diagnosis)
+        optional MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
         RETURN DISTINCT
             s.study_short_name AS study_short_name,
             COLLECT(DISTINCT sd.ctep_disease_term) as ctep_disease_terms,
@@ -327,10 +327,10 @@ Indices:
             primary_disease_site: sd.primary_disease_site,
             snomed_disease_code: sd.snomed_disease_code,
             stage_of_disease: sd.stage_of_disease,
-            subject_age_at_diagnosis: sd.subject_age_at_diagnosis,
-            subject_age_at_diagnosis_original: sd.subject_age_at_diagnosis_original,
-            subject_age_at_diagnosis_original_unit: sd.subject_age_at_diagnosis_original_unit,
-            subject_age_at_diagnosis_unit: sd.subject_age_at_diagnosis_unit,
+            participant_age_at_diagnosis: sd.participant_age_at_diagnosis,
+            participant_age_at_diagnosis_original: sd.participant_age_at_diagnosis_original,
+            participant_age_at_diagnosis_original_unit: sd.participant_age_at_diagnosis_original_unit,
+            participant_age_at_diagnosis_unit: sd.participant_age_at_diagnosis_unit,
             tumor_grade: sd.tumor_grade}) as diagnosis
       "
   # Supplies Hero Image information for the front page
@@ -355,14 +355,14 @@ Indices:
         properties:
           group:
             type: keyword
-          subjects:
+          participants:
             type: keyword
       dataFileByType:
         type: nested
         properties:
           group:
             type: keyword
-          subjects:
+          participants:
             type: keyword
   
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
@@ -371,28 +371,28 @@ Indices:
         WITH
         {
         group: df.data_file_type,
-        subjects:count(df.data_file_type)}
+        participants:count(df.data_file_type)}
          as dataFileByType
         MATCH (df:data_file) WHERE df.data_file_format <> 'zip' with dataFileByType , count(df) as dataFileCount
-        MATCH (sb:participant) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
-        MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> '' WITH target,subjectcount,dataFileByType,dataFileCount
-        MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted.targeted_therapy)) as untargetedTherapyCount ,subjectcount,target,dataFileByType,dataFileCount
-        WITH subjectcount,count(distinct(target.targeted_therapy)) as targetTherapyCount,dataFileByType,dataFileCount,untargetedTherapyCount
+        MATCH (sb:participant) WITH count(sb) as participantcount,dataFileByType,dataFileCount
+        MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> '' WITH target,participantcount,dataFileByType,dataFileCount
+        MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted.targeted_therapy)) as untargetedTherapyCount ,participantcount,target,dataFileByType,dataFileCount
+        WITH participantcount,count(distinct(target.targeted_therapy)) as targetTherapyCount,dataFileByType,dataFileCount,untargetedTherapyCount
 
         MATCH (diag:diagnosis) with
-        count(distinct(diag.ctep_disease_term)) as countofDiagnoses ,untargetedTherapyCount,targetTherapyCount,subjectcount,untargetedTherapyCount + targetTherapyCount as TotalTherapy,dataFileByType,dataFileCount
+        count(distinct(diag.ctep_disease_term)) as countofDiagnoses ,untargetedTherapyCount,targetTherapyCount,participantcount,untargetedTherapyCount + targetTherapyCount as TotalTherapy,dataFileByType,dataFileCount
 
         MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis) 
-        WITH targetTherapyCount,countofDiagnoses,subjectcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
+        WITH targetTherapyCount,countofDiagnoses,participantcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
         {
         group: diag.stage_of_disease,
-        subjects:count(diag.stage_of_disease)}
+        participants:count(diag.stage_of_disease)}
          as specimenCountbyStageOfDisease        
         
         RETURN DISTINCT
               
               TotalTherapy as numberOfTherapies,
-              subjectcount as numberOfParticipants,
+              participantcount as numberOfParticipants,
               countofDiagnoses as numberOfDiagnoses,
               untargetedTherapyCount as numberOfNonTargeted,
               targetTherapyCount as numberOfTargeted,
@@ -750,7 +750,7 @@ Indices:
       
     # Cypher query for biospecimen listing
     # TODO: Remove Collection over exposure property once 1:1
-    # TODO: Make sure diagnosis is 1:1 with subject
+    # TODO: Make sure diagnosis is 1:1 with participant
     cypher_query: "
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
@@ -1138,8 +1138,8 @@ Indices:
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as subjectID,COLLECT(Distinct(spec.specimen_id)) as specimenID
-      WITH stage,ctep, stage + ctep + subjectID + specimenID as list
+      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
+      WITH stage,ctep, stage + ctep + participantID + specimenID as list
       UNWIND list as autocomplete_list
       RETURN distinct
       

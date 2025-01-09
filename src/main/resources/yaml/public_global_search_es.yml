@@ -3,7 +3,7 @@ queries:
     returnFields:
       - name: subject_count
         index:
-          - subjects
+          - participants
         filter:
           type: global
           defaultSortField: subject_id_num

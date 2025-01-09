@@ -131,7 +131,7 @@ type Study {
   study_type: String
 
   dates_of_conduct: String
-  subjects: [Subject]
+  participants: [Subject]
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
@@ -203,10 +203,10 @@ type Diagnosis {
   primary_disease_site: String
   snomed_disease_code: String
   stage_of_disease: String
-  subject_age_at_diagnosis: String
-  subject_age_at_diagnosis_original: String
-  subject_age_at_diagnosis_original_unit: String
-  subject_age_at_diagnosis_unit: String
+  participant_age_at_diagnosis: String
+  participant_age_at_diagnosis_original: String
+  participant_age_at_diagnosis_original_unit: String
+  participant_age_at_diagnosis_unit: String
   tumor_grade: String
 }
 
@@ -229,7 +229,7 @@ type HomePage {
 
 type GroupCount {
   group: String
-  subjects: Int
+  participants: Int
 }
 
 type ParticipantOverview {
