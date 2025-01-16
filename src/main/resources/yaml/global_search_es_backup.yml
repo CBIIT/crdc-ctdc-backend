@@ -6,9 +6,9 @@ queries:
           - subjects
         filter:
           type: global
-          defaultSortField: subject_id_num
+          defaultSortField: participant_id_num
           searches:
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: diagnosis_gs
@@ -25,9 +25,9 @@ queries:
           - subjects
         filter:
           type: global
-          defaultSortField: subject_id_num
+          defaultSortField: participant_id_num
           searches:
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: diagnosis_gs
@@ -45,7 +45,7 @@ queries:
           - samples
         filter:
           type: global
-          defaultSortField: subject_id_num
+          defaultSortField: participant_id_num
           searches:
             - field: sample_id_gs
               type: wildcard
@@ -60,7 +60,7 @@ queries:
           - samples
         filter:
           type: global
-          defaultSortField: subject_id_num
+          defaultSortField: participant_id_num
           searches:
             - field: sample_id_gs
               type: wildcard

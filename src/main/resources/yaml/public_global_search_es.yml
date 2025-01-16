@@ -6,7 +6,7 @@ queries:
           - participants
         filter:
           type: global
-          defaultSortField: subject_id_num
+          defaultSortField: participant_id_num
           searches:
             - field: participant_id
               type: wildcard
@@ -25,7 +25,7 @@ queries:
           - samples
         filter:
           type: global
-          defaultSortField: subject_id_num
+          defaultSortField: participant_id_num
           searches:
             - field: sample_id_gs
               type: wildcard
