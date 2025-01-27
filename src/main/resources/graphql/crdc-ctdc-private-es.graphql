@@ -229,7 +229,7 @@ type HomePage {
 
 type GroupCount {
   group: String
-  participants: Int
+  subjects: Int
 }
 
 type ParticipantOverview {
