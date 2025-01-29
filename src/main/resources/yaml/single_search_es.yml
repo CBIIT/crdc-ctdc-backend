@@ -59,9 +59,9 @@ queries:
       - tab_participants
     filter:
       type: pagination
-      defaultSortField: subject_id
+      defaultSortField: participant_id
       alternativeSortField:
-        subject_id: subject_id
+        participant_id: participant_id
     result:
       type: object_array
   - name: biospecimenOverview
@@ -71,7 +71,7 @@ queries:
       type: pagination
       defaultSortField: specimen_id
       alternativeSortField:
-        subject_id: specimen_id
+        participant_id: specimen_id
     result:
       type: object_array
   - name: fileOverview
@@ -82,7 +82,7 @@ queries:
       defaultSortField: data_file_name
       alternativeSortField:
         parent_specimen_id: parent_specimen_id
-        subject_id: subject_id
+        participant_id: participant_id
     result:
       type: object_array
   - name: filesInList # Support Cart Table
@@ -116,7 +116,7 @@ queries:
       defaultSortField: data_file_uuid
       alternativeSortField:
         specimen_id: specimen_id
-        subject_id: subject_id
+        participant_id: participant_id
     result:
       type: object_array
   - name: biospecimen_data_files
@@ -127,6 +127,6 @@ queries:
       defaultSortField: data_file_uuid
       alternativeSortField:
         parent_specimen_id: parent_specimen_id
-        subject_id: subject_id
+        participant_id: participant_id
     result:
       type: object_array

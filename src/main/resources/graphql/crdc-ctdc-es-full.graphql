@@ -83,7 +83,7 @@ type image_collection{
 }
 
 type subject{
-    subject_id: String
+    participant_id: String
     biomarker_results_available: String
     radiology_report_available: String
     radiology_images_available: String
