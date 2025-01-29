@@ -386,7 +386,7 @@ Indices:
         WITH targetTherapyCount,countofDiagnoses,participantcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
         {
         group: diag.stage_of_disease,
-        participants:count(diag.stage_of_disease)}
+        subjects:count(diag.stage_of_disease)}
          as specimenCountbyStageOfDisease        
         
         RETURN DISTINCT
