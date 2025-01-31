@@ -20,6 +20,9 @@ queries:
             - field: sex
               type: wildcard
               caseInsensitive: true
+            - field: reported_gender
+              type: wildcard
+              caseInsensitive: true
             - field: race
               type: wildcard
               caseInsensitive: true
@@ -58,6 +61,9 @@ queries:
               type: wildcard
               caseInsensitive: true
             - field: sex
+              type: wildcard
+              caseInsensitive: true
+            - field: reported_gender
               type: wildcard
               caseInsensitive: true
             - field: race
