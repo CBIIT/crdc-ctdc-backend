@@ -18,7 +18,7 @@ Indices:
         type: keyword
       dates_of_conduct:
         type: keyword
-      subjects:
+      participants:
         type: nested
         properties:
           biomarker_results_available:
@@ -29,7 +29,7 @@ Indices:
             type: keyword
           radiology_report_available:
             type: keyword
-          subject_id:
+          participant_id:
             type: keyword
       participant_count:
         type: keyword
@@ -63,7 +63,7 @@ Indices:
       MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (s)<-[:belongs_to]-(subject)
+      optional MATCH (s)<-[:belongs_to]-(participant)
        RETURN DISTINCT
                 s.study_name as study_name,
                 s.study_short_name as study_short_name,
@@ -84,13 +84,13 @@ Indices:
                     collection_access: ic.collection_access
                 }) AS image_collection,
                 COLLECT(DISTINCT{
-                  biomarker_results_available: subject.biomarker_results_available,
-                  histology_images_available: subject.histology_images_available,
-                  radiology_images_available: subject.radiology_images_available,
-                  radiology_report_available: subject.radiology_report_available,
-                  subject_id: subject.subject_id
-                  })as subjects,
-                COUNT( DISTINCT subject) as participant_count
+                  biomarker_results_available: participant.biomarker_results_available,
+                  histology_images_available: participant.histology_images_available,
+                  radiology_images_available: participant.radiology_images_available,
+                  radiology_report_available: participant.radiology_report_available,
+                  participant_id: participant.participant_id
+                  })as participants,
+                COUNT( DISTINCT participant) as participant_count
       "
       
   - index_name: study_data_file
@@ -150,9 +150,9 @@ Indices:
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-       MATCH (s:study)<-[:belongs_to]-(sb:subject)
+       MATCH (s:study)<-[:belongs_to]-(sb:participant)
        MATCH (s:study)<-[:associated_with]-(study_file:data_file)
-      optional MATCH (sb:subject)<-[*..2]-(df:data_file)
+      optional MATCH (sb:participant)<-[*..2]-(df:data_file)
       RETURN DISTINCT 
         s.study_short_name as study_short_name,
         COLLECT(DISTINCT{
@@ -229,13 +229,13 @@ Indices:
             type: keyword
             
     cypher_query: "
-      MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
+      MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
       WITH COUNT(sp) AS sample_count
-      MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
+      MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
       WITH DISTINCT sp.parent_specimen_type AS parent_biospecimen_type, COUNT(sp) AS count1, sample_count
-      MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
+      MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
       WITH DISTINCT sp.assessment_timepoint AS assessment_timepoint, COUNT(sp) AS count2, parent_biospecimen_type, count1, sample_count
-      MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sp:specimen)
+      MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
       WITH sample_count, parent_biospecimen_type, count1, assessment_timepoint, count2, s, sp
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
@@ -288,13 +288,13 @@ Indices:
             type: keyword
           stage_of_disease:
             type: keyword
-          subject_age_at_diagnosis:
+          participant_age_at_diagnosis:
             type: keyword
-          subject_age_at_diagnosis_original:
+          participant_age_at_diagnosis_original:
             type: keyword
-          subject_age_at_diagnosis_original_unit:
+          participant_age_at_diagnosis_original_unit:
             type: keyword
-          subject_age_at_diagnosis_unit:
+          participant_age_at_diagnosis_unit:
             type: keyword
           tumor_grade:
             type: keyword
@@ -304,7 +304,7 @@ Indices:
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
         MATCH (s:study)
-        optional MATCH (s:study)<-[:belongs_to]-(subject)<-[:of_subject]-(sd:diagnosis)
+        optional MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
         RETURN DISTINCT
             s.study_short_name AS study_short_name,
             COLLECT(DISTINCT sd.ctep_disease_term) as ctep_disease_terms,
@@ -320,10 +320,10 @@ Indices:
             primary_disease_site: sd.primary_disease_site,
             snomed_disease_code: sd.snomed_disease_code,
             stage_of_disease: sd.stage_of_disease,
-            subject_age_at_diagnosis: sd.subject_age_at_diagnosis,
-            subject_age_at_diagnosis_original: sd.subject_age_at_diagnosis_original,
-            subject_age_at_diagnosis_original_unit: sd.subject_age_at_diagnosis_original_unit,
-            subject_age_at_diagnosis_unit: sd.subject_age_at_diagnosis_unit,
+            participant_age_at_diagnosis: sd.participant_age_at_diagnosis,
+            participant_age_at_diagnosis_original: sd.participant_age_at_diagnosis_original,
+            participant_age_at_diagnosis_original_unit: sd.participant_age_at_diagnosis_original_unit,
+            participant_age_at_diagnosis_unit: sd.participant_age_at_diagnosis_unit,
             tumor_grade: sd.tumor_grade}) as diagnosis
       "
   # Supplies Hero Image information for the front page
@@ -348,44 +348,44 @@ Indices:
         properties:
           group:
             type: keyword
-          subjects:
+          participants:
             type: keyword
       dataFileByType:
         type: nested
         properties:
           group:
             type: keyword
-          subjects:
+          participants:
             type: keyword
   
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-        MATCH (sub:subject)<-[*..2]-(df:data_file)
+        MATCH (sub:participant)<-[*..2]-(df:data_file)
         WITH
         {
         group: df.data_file_type,
-        subjects:count(df.data_file_type)}
+        participants:count(df.data_file_type)}
          as dataFileByType
         MATCH (df:data_file) WHERE df.data_file_format <> 'zip' with dataFileByType , count(df) as dataFileCount
-        MATCH (sb:subject) WITH count(sb) as subjectcount,dataFileByType,dataFileCount
-        MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> '' WITH target,subjectcount,dataFileByType,dataFileCount
-        MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted.targeted_therapy)) as untargetedTherapyCount ,subjectcount,target,dataFileByType,dataFileCount
-        WITH subjectcount,count(distinct(target.targeted_therapy)) as targetTherapyCount,dataFileByType,dataFileCount,untargetedTherapyCount
+        MATCH (sb:participant) WITH count(sb) as participantcount,dataFileByType,dataFileCount
+        MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> '' WITH target,participantcount,dataFileByType,dataFileCount
+        MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted.targeted_therapy)) as untargetedTherapyCount ,participantcount,target,dataFileByType,dataFileCount
+        WITH participantcount,count(distinct(target.targeted_therapy)) as targetTherapyCount,dataFileByType,dataFileCount,untargetedTherapyCount
 
         MATCH (diag:diagnosis) with
-        count(distinct(diag.ctep_disease_term)) as countofDiagnoses ,untargetedTherapyCount,targetTherapyCount,subjectcount,untargetedTherapyCount + targetTherapyCount as TotalTherapy,dataFileByType,dataFileCount
+        count(distinct(diag.ctep_disease_term)) as countofDiagnoses ,untargetedTherapyCount,targetTherapyCount,participantcount,untargetedTherapyCount + targetTherapyCount as TotalTherapy,dataFileByType,dataFileCount
 
-        MATCH (sp:specimen)-[:of_subject]->(sb:subject)<-[:of_subject]-(diag:diagnosis) 
-        WITH targetTherapyCount,countofDiagnoses,subjectcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
+        MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis) 
+        WITH targetTherapyCount,countofDiagnoses,participantcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
         {
         group: diag.stage_of_disease,
-        subjects:count(diag.stage_of_disease)}
+        participants:count(diag.stage_of_disease)}
          as specimenCountbyStageOfDisease        
         
         RETURN DISTINCT
               
               TotalTherapy as numberOfTherapies,
-              subjectcount as numberOfParticipants,
+              participantcount as numberOfParticipants,
               countofDiagnoses as numberOfDiagnoses,
               untargetedTherapyCount as numberOfNonTargeted,
               targetTherapyCount as numberOfTargeted,
@@ -460,20 +460,20 @@ Indices:
             type: keyword
           data_file_format:
             type: keyword
-      subject_id:
+      participant_id:
         type: keyword
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-      MATCH (study:study)<-[:belongs_to]-(sb:subject)
-      optional MATCH (spec:specimen)-[:of_subject]->(sb)
+      MATCH (study:study)<-[:belongs_to]-(sb:participant)
+      optional MATCH (spec:specimen)-[:of_participant]->(sb)
       optional MATCH (sb)<-[*..2]-(data_file:data_file)
-      optional MATCH (demo:demographic)-[:of_subject]->(sb)
-      optional MATCH (diag:diagnosis)-[:of_subject]->(sb)
-      optional MATCH (target:targeted_therapy)-[:of_subject]->(sb)
-      optional MATCH (expose:exposure)-[:of_subject]->(sb)
+      optional MATCH (demo:demographic)-[:of_participant]->(sb)
+      optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
+      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+      optional MATCH (expose:exposure)-[:of_participant]->(sb)
       RETURN DISTINCT
       'participants' as type,
-      sb.subject_id as subject_id,
+      sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
@@ -513,7 +513,7 @@ Indices:
     mapping:
       type:
         type: keyword
-      subject_id:
+      participant_id:
         type: keyword
       study_short_name:
         type: keyword
@@ -577,16 +577,16 @@ Indices:
       data_file_format:
         type: keyword
     cypher_query: "
-      MATCH (study:study)<-[:belongs_to]-(sb:subject)
-      optional MATCH (sb:subject)<-[*..2]-(df:data_file)
-      optional MATCH (sb)<-[:of_subject]-(diag:diagnosis)
-      optional MATCH (sb)<-[:of_subject]-(spec:specimen)
-      optional MATCH (sb)<-[:of_subject]-(demo:demographic)
-      optional MATCH (sb)<-[:of_subject]-(exp:exposure)
-      optional MATCH (sb)<-[:of_subject]-(tt:targeted_therapy)
+      MATCH (study:study)<-[:belongs_to]-(sb:participant)
+      optional MATCH (sb:participant)<-[*..2]-(df:data_file)
+      optional MATCH (sb)<-[:of_participant]-(diag:diagnosis)
+      optional MATCH (sb)<-[:of_participant]-(spec:specimen)
+      optional MATCH (sb)<-[:of_participant]-(demo:demographic)
+      optional MATCH (sb)<-[:of_participant]-(exp:exposure)
+      optional MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
       RETURN DISTINCT
       'participants' AS type,
-      sb.subject_id AS subject_id,
+      sb.participant_id AS participant_id,
       study.study_short_name as study_short_name,
       diag.ctep_disease_term AS ctep_disease_term,
       diag.stage_of_disease AS stage_of_disease,
@@ -621,7 +621,7 @@ Indices:
       COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
       COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
       
-      ORDER BY COALESCE(sb.subject_id, '') ASC"
+      ORDER BY COALESCE(sb.participant_id, '') ASC"
 
   # Biospecimen Table Data
   - index_name: tab_biospecimens
@@ -629,7 +629,7 @@ Indices:
     mapping:
       type:
         type: keyword
-      subject_id:
+      participant_id:
         type: keyword
       study_short_name:
         type: keyword
@@ -711,18 +711,18 @@ Indices:
       
     # Cypher query for biospecimen listing
     # TODO: Remove Collection over exposure property once 1:1
-    # TODO: Make sure diagnosis is 1:1 with subject
+    # TODO: Make sure diagnosis is 1:1 with participant
     cypher_query: "
-      MATCH (spec:specimen)-[:of_subject]->(sub:subject)
+      MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (study:study)<-[:belongs_to]-(sub)
-      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
-      optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_participant]-(demo:demographic)
+      optional MATCH (sub)<-[:of_participant]-(exp:exposure)
+      optional MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
       optional MATCH (sub)<-[*..2]-(df:data_file)
       RETURN DISTINCT
         'biospecimens' AS type,
-        sub.subject_id AS subject_id,
+        sub.participant_id AS participant_id,
         diag.ctep_disease_term AS ctep_disease_term,
         diag.stage_of_disease AS stage_of_disease,
         diag.primary_disease_site AS primary_disease_site,
@@ -793,7 +793,7 @@ Indices:
         type: keyword
       association:
         type: keyword
-      subject_id:
+      participant_id:
         type: keyword
       specimen_id:
         type: keyword
@@ -843,12 +843,12 @@ Indices:
       primary_disease_site:
         type: keyword
     cypher_query: "
-      MATCH (sub:subject)<-[*..2]-(parent)<--(f:data_file)
+      MATCH (sub:participant)<-[*..2]-(parent)<--(f:data_file)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
-      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
-      optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_participant]-(demo:demographic)
+      optional MATCH (sub)<-[:of_participant]-(exp:exposure)
+      optional MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
       RETURN DISTINCT
 
         'data file' AS type,
@@ -866,7 +866,7 @@ Indices:
 
        
         COALESCE(spec.specimen_id, ' ') as specimen_id,
-        sub.subject_id AS subject_id,
+        sub.participant_id AS participant_id,
       
         diag.ctep_disease_term AS ctep_disease_term,
         
@@ -898,12 +898,12 @@ Indices:
       
       UNION
 
-      MATCH (sub:subject)<-[:associated_with]-(f:data_file)
+      MATCH (sub:participant)<-[:associated_with]-(f:data_file)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
-      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      optional MATCH (sub)<-[:of_subject]-(demo:demographic)
-      optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      optional MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_participant]-(demo:demographic)
+      optional MATCH (sub)<-[:of_participant]-(exp:exposure)
+      optional MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
  
       RETURN DISTINCT
         'data file' AS type,
@@ -919,7 +919,7 @@ Indices:
         f.data_file_compression_status AS data_file_compression_status,
         'participant' AS association,
         COALESCE(spec.specimen_id, '') as specimen_id,
-        sub.subject_id AS subject_id,
+        sub.participant_id AS participant_id,
       
       
         diag.stage_of_disease AS stage_of_disease,
@@ -969,7 +969,7 @@ Indices:
       data_file_description:
         type: keyword
 
-      subject_id:
+      participant_id:
         type: keyword
       specimen_id:
         type: keyword
@@ -1002,13 +1002,13 @@ Indices:
       assessment_timepoint:
         type: keyword
     cypher_query: "
-      MATCH (sub:subject)<-[*..2]-(parent)<--(f:data_file)
+      MATCH (sub:participant)<-[*..2]-(parent)<--(f:data_file)
       optional MATCH (f:data_file)-[:associated_with]->(study:study)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
-      MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      MATCH (sub)<-[:of_subject]-(demo:demographic)
-      optional MATCH (sub)<-[:of_subject]-(exp:exposure)
-      MATCH (sub)<-[:of_subject]-(tt:targeted_therapy)
+      MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+      MATCH (sub)<-[:of_participant]-(demo:demographic)
+      optional MATCH (sub)<-[:of_participant]-(exp:exposure)
+      MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
  
       RETURN DISTINCT
         'data file' AS type,
@@ -1021,7 +1021,7 @@ Indices:
       
         spec.specimen_id AS specimen_id,
         spec.parent_specimen_id AS parent_specimen_id,
-        sub.subject_id AS subject_id,
+        sub.participant_id AS participant_id,
       
         diag.ctep_disease_term AS ctep_disease_term,
       
@@ -1046,11 +1046,11 @@ Indices:
       autocomplete_list:
         type: keyword
     cypher_query: "
-      MATCH (spec:specimen)-[:of_subject]->(sub:subject)
+      MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (study:study)<-[:belongs_to]-(sub)
-      optional MATCH (sub)<-[:of_subject]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.subject_id)) as subjectID,COLLECT(Distinct(spec.specimen_id)) as specimenID
-      WITH stage,ctep, stage + ctep + subjectID + specimenID as list
+      optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
+      WITH stage,ctep, stage + ctep + participantID + specimenID as list
       UNWIND list as autocomplete_list
       RETURN distinct
       
@@ -1122,23 +1122,23 @@ Indices:
             type: keyword
           data_file_format:
             type: keyword
-      subject_id:
+      participant_id:
         type: keyword
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-      MATCH (study:study)<-[:belongs_to]-(sb:subject)
-      optional MATCH (spec:specimen)-[:of_subject]->(sb)
+      MATCH (study:study)<-[:belongs_to]-(sb:participant)
+      optional MATCH (spec:specimen)-[:of_participant]->(sb)
       optional MATCH (sb)<-[*..2]-(data_file:data_file)
-      optional MATCH (demo:demographic)-[:of_subject]->(sb)
-      optional MATCH (diag:diagnosis)-[:of_subject]->(sb)
-      optional MATCH (target:targeted_therapy)-[:of_subject]->(sb)
-      optional MATCH (expose:exposure)-[:of_subject]->(sb)
+      optional MATCH (demo:demographic)-[:of_participant]->(sb)
+      optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
+      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+      optional MATCH (expose:exposure)-[:of_participant]->(sb)
       WHERE target is not null
       with expose,sb,target,diag,demo,data_file,spec,study
       Where target.targeted_therapy <> ''
       RETURN DISTINCT
       'participants' as type,
-      sb.subject_id as subject_id,
+      sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
