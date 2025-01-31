@@ -93,7 +93,6 @@ type subject{
 type demographic {
      demographic_id: String
      sex: String
-     reported_gender: String
      race: String
      ethnicity: String
      ncbi_taxonomy_id: Int

@@ -81,7 +81,6 @@ type demographic_data {
   race: String
   vital_status: String
   menopause_status: String
-  gender: String
   age_is_obfuscated: Boolean
   breed: String
   cause_of_death_source: String
@@ -283,7 +282,6 @@ type family_medical_history {
   relationship_age_at_diagnosis_unit: String
   relationship_age_at_diagnosis_original: Float
   relationship_age_at_diagnosis_original_unit: String
-  relationship_gender: String
   relationship_primary_diagnosis: String
   relationship_type: String
   relative_with_cancer_history: String

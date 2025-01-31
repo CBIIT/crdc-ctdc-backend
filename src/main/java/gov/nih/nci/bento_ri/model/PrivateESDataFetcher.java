@@ -122,7 +122,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 new String[]{"program_id", "program_id"},
                 new String[]{"study_acronym", "study_acronym"},
                 new String[]{"study_name", "study_name"},
-                new String[]{"gender", "gender"},
                 new String[]{"race", "race"},
                 new String[]{"ethnicity", "ethnicity"},
                 new String[]{"age_at_index", "age_at_index"},
