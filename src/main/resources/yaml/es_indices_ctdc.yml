@@ -364,7 +364,7 @@ Indices:
         WITH
         {
         group: df.data_file_type,
-        participants:count(df.data_file_type)}
+        subjects:count(df.data_file_type)}
          as dataFileByType
         MATCH (df:data_file) WHERE df.data_file_format <> 'zip' with dataFileByType , count(df) as dataFileCount
         MATCH (sb:participant) WITH count(sb) as participantcount,dataFileByType,dataFileCount
@@ -379,7 +379,7 @@ Indices:
         WITH targetTherapyCount,countofDiagnoses,participantcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
         {
         group: diag.stage_of_disease,
-        participants:count(diag.stage_of_disease)}
+        subjects:count(diag.stage_of_disease)}
          as specimenCountbyStageOfDisease        
         
         RETURN DISTINCT
