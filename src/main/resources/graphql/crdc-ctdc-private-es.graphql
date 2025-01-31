@@ -50,7 +50,6 @@ type GS_Subject {
   study_short_name: String
   ctep_disease_term: String
   sex: String
-  reported_gender: String
   race: String
   targeted_therapy: String
   ethnicity: String
@@ -236,7 +235,6 @@ type ParticipantOverview {
   tumor_grade: String
   age_at_enrollment: Float # TODO: Check type Int
   sex: String
-  reported_gender: String
   race: String
   ethnicity: String
   carcinogen_exposure: String
@@ -282,7 +280,6 @@ type FileOverview {
   stage_of_disease: String
   tumor_grade: String
   sex: String
-  reported_gender: String
   race: String
   ethnicity: String
   age_at_enrollment: String
@@ -310,7 +307,6 @@ type FileParticipant {
 
 type SearchResult {
   diagnosesAndStageOfDiseases: [ProgramArms]
-  sexesAndGenders: [ProgramArms]
   racesAndEthnicities: [ProgramArms]
   timepointsAndBiospecimensTypes: [ProgramArms]
   numberOfStudies: Int
@@ -324,7 +320,6 @@ type SearchResult {
   participantCountByDiagnosis: [GroupCount]
   participantCountByTumorGrade: [GroupCount]
   participantCountBySex: [GroupCount]
-  participantCountByReportedGender: [GroupCount]
   participantCountByRace: [GroupCount]
   participantCountByEthnicity: [GroupCount]
   participantCountByCarcinogenExposure: [GroupCount]
@@ -341,7 +336,6 @@ type SearchResult {
   filterParticipantCountBySnomedDiseaseCode: [GroupCount]
   filterParticipantCountByTumorGrade: [GroupCount]
   filterParticipantCountBySex: [GroupCount]
-  filterParticipantCountByReportedGender: [GroupCount]
   filterParticipantCountByRace: [GroupCount]
   filterParticipantCountByEthnicity: [GroupCount]
   filterParticipantCountByCarcinogenExposure: [GroupCount]
@@ -395,7 +389,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -422,7 +415,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -449,7 +441,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -477,7 +468,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -506,7 +496,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -532,7 +521,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
 
