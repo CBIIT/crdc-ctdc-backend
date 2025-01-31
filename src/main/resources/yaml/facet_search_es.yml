@@ -49,7 +49,7 @@ queries:
           - widgets_facets_counts
         filter:
           type: aggregation
-          selectedField: subject_id
+          selectedField: participant_id
         result:
           type: int
           method: count_bucket_keys

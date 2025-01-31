@@ -6,9 +6,9 @@ queries:
           - tab_participants
         filter:
           type: global
-          defaultSortField: subject_id
+          defaultSortField: participant_id
           searches:
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: study_short_name
@@ -46,9 +46,9 @@ queries:
           - tab_participants
         filter:
           type: global
-          defaultSortField: subject_id
+          defaultSortField: participant_id
           searches:
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: study_short_name
@@ -97,7 +97,7 @@ queries:
             - field: study_short_name
               type: wildcard
               caseInsensitive: true
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: ctep_disease_term
@@ -140,7 +140,7 @@ queries:
             - field: study_short_name
               type: wildcard
               caseInsensitive: true
-            - field: subject_id
+            - field: participant_id
               type: wildcard
               caseInsensitive: true
             - field: ctep_disease_term
