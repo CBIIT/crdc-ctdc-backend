@@ -1,7 +1,7 @@
 queries:
   - name: publicGlobalSearch
     returnFields:
-      - name: subject_count
+      - name: participant_count
         index:
           - participants
         filter:
