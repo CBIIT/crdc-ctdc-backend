@@ -35,15 +35,6 @@ queries:
             - assessment_timepoint
         result:
           type: arm_program
-      - name: sexesAndGenders
-        index:
-          - widgets_facets_counts
-        filter:
-          type: sub_aggregation
-          selectedField: sex
-          subAggSelectedField: reported_gender
-        result:
-          type: arm_program
       - name: numberOfStudies
         index:
           - widgets_facets_counts
@@ -58,7 +49,7 @@ queries:
           - widgets_facets_counts
         filter:
           type: aggregation
-          selectedField: subject_id
+          selectedField: participant_id
         result:
           type: int
           method: count_bucket_keys
@@ -180,23 +171,6 @@ queries:
         filter:
           type: aggregation
           selectedField: sex
-          ignoreSelectedField: true
-        result:
-          type: group_count
-      - name: participantCountByReportedGender
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: reported_gender
-        result:
-          type: group_count
-      - name: filterParticipantCountByReportedGender
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: reported_gender
           ignoreSelectedField: true
         result:
           type: group_count

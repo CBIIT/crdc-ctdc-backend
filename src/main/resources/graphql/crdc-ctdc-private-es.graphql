@@ -1,5 +1,5 @@
 type GlobalSearchResult {
-  participants: [GS_Subject]
+  participants: [GS_participant]
   participant_count: Int
 
   biospecimens: [GS_Biospecimen]
@@ -45,16 +45,15 @@ type GS_Study {
   study_code: String
 }
 
-type GS_Subject {
+type GS_participant {
   type: String
   study_short_name: String
   ctep_disease_term: String
   sex: String
-  reported_gender: String
   race: String
   targeted_therapy: String
   ethnicity: String
-  subject_id: String
+  participant_id: String
   stage_of_disease: String
   age_at_enrollment: Int
 }
@@ -64,7 +63,7 @@ type GS_Biospecimen {
   study_short_name: String
   parent_specimen_id: String
   specimen_id: String
-  subject_id: String
+  participant_id: String
   ctep_disease_term: String
   parent_specimen_type: String
   tissue_category: String
@@ -78,7 +77,7 @@ type GS_File {
   file_name: String
   file_format: String
   program_id: String
-  subject_id: String
+  participant_id: String
   sample_id: String
 }
 
@@ -100,12 +99,12 @@ type GS_About {
   text: [String]
 }
 
-type Subject {
+type Participant {
   biomarker_results_available: String
   histology_images_available: String
   radiology_images_available: String
   radiology_report_available: String
-  subject_id: String
+  participant_id: String
   study_short_name: String
 }
 
@@ -130,7 +129,7 @@ type Study {
   study_description: String
   study_type: String
   dates_of_conduct: String
-  subjects: [Subject]
+  participants: [Participant]
   participant_count: Int
   associated_links: [AssociatedLink]
   image_collection: [ImageCollection]
@@ -200,10 +199,10 @@ type Diagnosis {
   primary_disease_site: String
   snomed_disease_code: String
   stage_of_disease: String
-  subject_age_at_diagnosis: String
-  subject_age_at_diagnosis_original: String
-  subject_age_at_diagnosis_original_unit: String
-  subject_age_at_diagnosis_unit: String
+  participant_age_at_diagnosis: String
+  participant_age_at_diagnosis_original: String
+  participant_age_at_diagnosis_original_unit: String
+  participant_age_at_diagnosis_unit: String
   tumor_grade: String
 }
 
@@ -230,13 +229,12 @@ type GroupCount {
 }
 
 type ParticipantOverview {
-  subject_id: String
+  participant_id: String
   ctep_disease_term: String
   stage_of_disease: String
   tumor_grade: String
   age_at_enrollment: Float # TODO: Check type Int
   sex: String
-  reported_gender: String
   race: String
   ethnicity: String
   carcinogen_exposure: String
@@ -246,7 +244,7 @@ type ParticipantOverview {
   data_files: [DataFile] # For Adding Files into Cart
 }
 type BiospecimenOverview {
-  subject_id: String
+  participant_id: String
   ctep_disease_term: String
   stage_of_disease: String
   primary_disease_site: String
@@ -276,13 +274,12 @@ type FileOverview {
   ctep_disease_term: String
   meddra_disease_code: String
   histology: String
-  subject_id: String
+  participant_id: String
   specimen_id: String
   data_file_uuid: String
   stage_of_disease: String
   tumor_grade: String
   sex: String
-  reported_gender: String
   race: String
   ethnicity: String
   age_at_enrollment: String
@@ -296,7 +293,7 @@ type FileOverview {
 }
 
 type FileParticipant {
-  subject_id: String
+  participant_id: String
   data_file_name: String
   data_file_format: String
   data_file_type: String
@@ -310,7 +307,6 @@ type FileParticipant {
 
 type SearchResult {
   diagnosesAndStageOfDiseases: [ProgramArms]
-  sexesAndGenders: [ProgramArms]
   racesAndEthnicities: [ProgramArms]
   timepointsAndBiospecimensTypes: [ProgramArms]
   numberOfStudies: Int
@@ -324,7 +320,6 @@ type SearchResult {
   participantCountByDiagnosis: [GroupCount]
   participantCountByTumorGrade: [GroupCount]
   participantCountBySex: [GroupCount]
-  participantCountByReportedGender: [GroupCount]
   participantCountByRace: [GroupCount]
   participantCountByEthnicity: [GroupCount]
   participantCountByCarcinogenExposure: [GroupCount]
@@ -341,7 +336,6 @@ type SearchResult {
   filterParticipantCountBySnomedDiseaseCode: [GroupCount]
   filterParticipantCountByTumorGrade: [GroupCount]
   filterParticipantCountBySex: [GroupCount]
-  filterParticipantCountByReportedGender: [GroupCount]
   filterParticipantCountByRace: [GroupCount]
   filterParticipantCountByEthnicity: [GroupCount]
   filterParticipantCountByCarcinogenExposure: [GroupCount]
@@ -390,12 +384,11 @@ type QueryType {
   getHomePage: [HomePage]
 
   participantOverview(
-    subject_id: [String] = []
+    participant_id: [String] = []
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -409,20 +402,19 @@ type QueryType {
     data_file_type: [String] = []
     data_file_format: [String] = []
 
-    order_by: String = "subject_id"
+    order_by: String = "participant_id"
     sort_direction: String = "ASC"
     first: Int = 10
     offset: Int = 0
   ): [ParticipantOverview]
 
   biospecimenOverview(
-    subject_id: [String] = []
+    participant_id: [String] = []
     specimen_id: [String] = []
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -444,12 +436,11 @@ type QueryType {
   ): [BiospecimenOverview]
 
   fileOverview(
-    subject_id: [String] = []
+    participant_id: [String] = []
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -472,12 +463,11 @@ type QueryType {
   ): [FileOverview]
 
   participant_data_files(
-    subject_id: [String] = []
+    participant_id: [String] = []
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -499,14 +489,13 @@ type QueryType {
   ): [FileParticipant]
 
   biospecimen_data_files(
-    subject_id: [String] = []
+    participant_id: [String] = []
     specimen_id: [String] = []
     parent_specimen_id: [String] = []
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -532,7 +521,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
 
@@ -545,11 +533,11 @@ type QueryType {
     association: [String] = []
     data_file_type: [String] = []
     data_file_format: [String] = []
-    subject_id: [String] = []
+    participant_id: [String] = []
   ): SearchResult
 
   fileIDsFromList(
-    subject_id: [String] = []
+    participant_id: [String] = []
     specimen_id: [String] = []
     data_file_uuid: [String] = []
     data_file_name: [String] = []

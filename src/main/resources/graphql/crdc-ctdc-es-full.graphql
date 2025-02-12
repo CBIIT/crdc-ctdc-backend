@@ -32,7 +32,7 @@ type diagnosis {
     icd_o_primary_site: String
     primary_disease_site: String
     tumor_grade :String
-    subject_age_at_diagnosis: [String]
+    participant_age_at_diagnosis: [String]
 }   
 
 
@@ -64,7 +64,7 @@ type diagnosis {
     icd_o_primary_site: String
     primary_disease_site: String
     tumor_grade :String
-    subject_age_at_diagnosis: [String]
+    participant_age_at_diagnosis: [String]
 }   
 
 
@@ -82,8 +82,8 @@ type image_collection{
     collection_access: String
 }
 
-type subject{
-    subject_id: String
+type participant{
+    participant_id: String
     biomarker_results_available: String
     radiology_report_available: String
     radiology_images_available: String
@@ -93,7 +93,6 @@ type subject{
 type demographic {
      demographic_id: String
      sex: String
-     reported_gender: String
      race: String
      ethnicity: String
      ncbi_taxonomy_id: Int
@@ -135,8 +134,8 @@ type radiological_procedure{
 }
 
 
-type subject_status{
-    subject_status_id: String
+type participant_status{
+    participant_status_id: String
     survival_status : String
     primary_cause_of_death : String
     off_study: String
