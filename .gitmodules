@@ -1,3 +1,4 @@
 [submodule "src/main/java/gov/nih/nci/bento"]
 	path = src/main/java/gov/nih/nci/bento
 	url = https://github.com/CBIIT/bento-backend-core.git
+	branch = CTDC-1.1.0

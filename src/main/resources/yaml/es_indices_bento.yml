@@ -553,7 +553,7 @@ Indices:
       s.study_acronym AS study_acronym,
       ss.study_subject_id AS subject_id,
       ss.study_subject_id AS subject_ids,
-      toInteger(split(ss.study_subject_id,'-')[2]) AS subject_id_num,
+      toInteger(split(ss.study_subject_id,'-')[2]) AS participant_id_num,
       f.file_id AS file_id,
       f.file_id AS file_ids,
       f.file_id AS file_id_gs,

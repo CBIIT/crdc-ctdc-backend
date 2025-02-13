@@ -1,6 +1,6 @@
 Subject Index
-    subject_id: keyword
-    subject_id_gs: search_as_you_type
+    participant_id: keyword
+    participant_id_gs: search_as_you_type
     race: keyword
     disease_term: keyword
     stageAtEntry: keyword
@@ -16,7 +16,7 @@ File Index
     file_name: keyword
     file_name_gs: search_as_you_type
     file_id: keyword
-    subject_id: keyword
+    participant_id: keyword
     description: keyword
     fileFormat: keyword
     size: keyword
