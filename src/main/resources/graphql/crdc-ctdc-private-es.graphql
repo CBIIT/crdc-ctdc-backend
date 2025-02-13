@@ -1,5 +1,5 @@
 type GlobalSearchResult {
-  participants: [GS_Subject]
+  participants: [GS_participant]
   participant_count: Int
 
   biospecimens: [GS_Biospecimen]
@@ -45,12 +45,11 @@ type GS_Study {
   study_code: String
 }
 
-type GS_Subject {
+type GS_participant {
   type: String
   study_short_name: String
   ctep_disease_term: String
   sex: String
-  reported_gender: String
   race: String
   targeted_therapy: String
   ethnicity: String
@@ -100,7 +99,7 @@ type GS_About {
   text: [String]
 }
 
-type Subject {
+type Participant {
   biomarker_results_available: String
   histology_images_available: String
   radiology_images_available: String
@@ -131,7 +130,7 @@ type Study {
   study_type: String
 
   dates_of_conduct: String
-  participants: [Subject]
+  participants: [Participant]
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
@@ -240,7 +239,6 @@ type ParticipantOverview {
   tumor_grade: String
   age_at_enrollment: Float # TODO: Check type Int
   sex: String
-  reported_gender: String
   race: String
   ethnicity: String
   carcinogen_exposure: String
@@ -290,7 +288,6 @@ type FileOverview {
   stage_of_disease: String
   tumor_grade: String
   sex: String
-  reported_gender: String
   race: String
   ethnicity: String
   age_at_enrollment: String
@@ -322,7 +319,6 @@ type FileParticipant {
 
 type SearchResult {
   diagnosesAndStageOfDiseases: [ProgramArms]
-  sexesAndGenders: [ProgramArms]
   racesAndEthnicities: [ProgramArms]
   timepointsAndBiospecimensTypes: [ProgramArms]
   numberOfStudies: Int
@@ -336,7 +332,6 @@ type SearchResult {
   participantCountByDiagnosis: [GroupCount]
   participantCountByTumorGrade: [GroupCount]
   participantCountBySex: [GroupCount]
-  participantCountByReportedGender: [GroupCount]
   participantCountByRace: [GroupCount]
   participantCountByEthnicity: [GroupCount]
   participantCountByCarcinogenExposure: [GroupCount]
@@ -356,7 +351,6 @@ type SearchResult {
   filterParticipantCountBySnomedDiseaseCode: [GroupCount]
   filterParticipantCountByTumorGrade: [GroupCount]
   filterParticipantCountBySex: [GroupCount]
-  filterParticipantCountByReportedGender: [GroupCount]
   filterParticipantCountByRace: [GroupCount]
   filterParticipantCountByEthnicity: [GroupCount]
   filterParticipantCountByCarcinogenExposure: [GroupCount]
@@ -415,7 +409,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -444,7 +437,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -473,7 +465,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -504,7 +495,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -535,7 +525,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
@@ -562,7 +551,6 @@ type QueryType {
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
-    reported_gender: [String] = []
     race: [String] = []
     ethnicity: [String] = []
     study_short_name: [String] = []
