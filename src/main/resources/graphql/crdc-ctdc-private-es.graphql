@@ -233,6 +233,12 @@ type GroupCount {
 
 type ParticipantOverview {
   participant_id: String
+  study_id: String
+  study_short_name: String
+  study_name: String
+  study_type: String
+  study_description: String
+  dates_of_conduct: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
   stage_of_disease: String
@@ -244,6 +250,11 @@ type ParticipantOverview {
   carcinogen_exposure: String
   targeted_therapy: String
   targeted_therapy_string: String
+  specimen_id: String
+  anatomical_collection_site: String
+  parent_specimen_type: String
+  tissue_category: String
+  assessment_timepoint: String
 
   data_file_uuid: String
   data_files: [DataFile] # For Adding Files into Cart
@@ -587,5 +598,8 @@ type QueryType {
     input: String
     first: Int = 100
     offset: Int = 0
+    order_by: String = "participant_id"
+    sort_direction: String = "ASC"
+    participant_id: String
   ): GlobalSearchResult
 }
