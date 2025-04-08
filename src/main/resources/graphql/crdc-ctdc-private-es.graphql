@@ -252,6 +252,7 @@ type ParticipantOverview {
   targeted_therapy_string: String
   specimen_id: String
   anatomical_collection_site: String
+  parent_specimen_id: String
   parent_specimen_type: String
   tissue_category: String
   assessment_timepoint: String
