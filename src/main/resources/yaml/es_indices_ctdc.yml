@@ -619,6 +619,7 @@ Indices:
       optional MATCH (sb)<-[:of_participant]-(demo:demographic)
       optional MATCH (sb)<-[:of_participant]-(exp:exposure)
       optional MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+      optional MATCH (sb)<-[:of_participant]-(surgery:surgery)
       RETURN DISTINCT
       'participants' AS type,
       sb.participant_id AS participant_id,
@@ -651,6 +652,9 @@ Indices:
         data_file_compression_status: df.data_file_compression_status,
         data_file_location: df.data_file_location
       }) AS data_files,
+
+      COLLECT(DISTINCT(surgery.surgical_procedure)) AS surgical_procedure,
+      COLLECT(DISTINCT(surgery.surgical_procedure_anatomical_location)) AS surgical_procedure_anatomical_location,
 
       COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
 

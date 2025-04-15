@@ -238,6 +238,8 @@ type ParticipantOverview {
   study_name: String
   study_type: String
   study_description: String
+  surgical_procedure: String
+  surgical_procedure_anatomical_location: String
   dates_of_conduct: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
