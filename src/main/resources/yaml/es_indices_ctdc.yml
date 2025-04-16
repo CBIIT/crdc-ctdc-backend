@@ -591,6 +591,21 @@ Indices:
             type: keyword
       data_file_uuid:
         type: keyword
+      surgical_procedure:
+        type: keyword
+      surgical_procedure_anatomical_location:
+        type: keyword
+      surgical_procedure_date:
+        type: keyword
+      surgical_procedure_findings:
+        type: keyword
+      surgical_procedure_id:
+        type: keyword
+      surgical_procedure_therapeutic:
+        type: keyword
+      extent_of_residual_disease:
+        type: keyword
+
       specimen_id:
         type: keyword
       anatomical_collection_site:
@@ -655,6 +670,11 @@ Indices:
 
       COLLECT(DISTINCT(surgery.surgical_procedure)) AS surgical_procedure,
       COLLECT(DISTINCT(surgery.surgical_procedure_anatomical_location)) AS surgical_procedure_anatomical_location,
+      COLLECT(DISTINCT(surgery.surgical_procedure_date)) AS surgical_procedure_date,
+      COLLECT(DISTINCT(surgery.surgical_procedure_findings)) AS surgical_procedure_findings,
+      COLLECT(DISTINCT(surgery.surgical_procedure_id)) AS surgical_procedure_id,
+      COLLECT(DISTINCT(surgery.surgical_procedure_therapeutic)) AS surgical_procedure_therapeutic,
+      COLLECT(DISTINCT(surgery.extent_of_residual_disease)) AS extent_of_residual_disease,
 
       COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
 

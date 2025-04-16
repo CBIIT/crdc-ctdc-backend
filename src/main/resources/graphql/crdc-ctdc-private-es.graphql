@@ -240,6 +240,11 @@ type ParticipantOverview {
   study_description: String
   surgical_procedure: String
   surgical_procedure_anatomical_location: String
+  surgical_procedure_date: String
+  surgical_procedure_findings: String
+  surgical_procedure_id: String
+  surgical_procedure_therapeutic: String
+  extent_of_residual_disease: String
   dates_of_conduct: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
