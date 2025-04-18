@@ -37,7 +37,7 @@ Indices:
         type: keyword
       study_file_count:
         type: keyword
-      file_count:
+      participant_file_count:
         type: keyword
       associated_links:
         type: nested
@@ -100,7 +100,7 @@ Indices:
                 COUNT( DISTINCT participant) as participant_count,
                 COUNT( DISTINCT ic) as image_collection_count,
                 COUNT( DISTINCT df) as study_file_count,
-                COUNT( DISTINCT f) as file_count
+                COUNT( DISTINCT f) as participant_file_count
       "
       
   - index_name: study_data_file
