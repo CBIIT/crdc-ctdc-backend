@@ -7,6 +7,7 @@ queries:
         filter:
           type: global
           defaultSortField: participant_id
+          sortDirection: ASC
           searches:
             - field: participant_id
               type: wildcard
@@ -87,6 +88,7 @@ queries:
         filter:
           type: global
           defaultSortField: parent_specimen_id
+          sortDirection: ASC
           searches:
             - field: parent_specimen_id
               type: wildcard
@@ -130,6 +132,7 @@ queries:
         filter:
           type: global
           defaultSortField: parent_specimen_id
+          sortDirection: ASC
           searches:
             - field: parent_specimen_id
               type: wildcard
@@ -174,6 +177,8 @@ queries:
           - about_page
         filter:
           type: global
+          defaultSortField: title
+          sortDirection: ASC
           selectedField: content.paragraph
           searches:
             - field: content.paragraph
@@ -211,6 +216,8 @@ queries:
           - model_values
           - model_nodes
         filter:
+          defaultSortField: node
+          sortDirection: ASC
           type: global
           searches:
             - field: value_kw

@@ -37,6 +37,8 @@ Indices:
         type: keyword
       study_file_count:
         type: keyword
+      participant_file_count:
+        type: keyword
       associated_links:
         type: nested
         properties:
@@ -64,10 +66,10 @@ Indices:
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-      MATCH (s:study)
+       MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (s)<-[:belongs_to]-(participant)
+      optional MATCH (s)<-[:belongs_to]-(participant)<-[*..2]-(parent)<--(f:data_file)
       optional match (s)<-[:associated_with]-(df:data_file)
        RETURN DISTINCT
                 s.study_name as study_name,
@@ -97,7 +99,8 @@ Indices:
                   })as participants,
                 COUNT( DISTINCT participant) as participant_count,
                 COUNT( DISTINCT ic) as image_collection_count,
-                COUNT( DISTINCT df) as study_file_count
+                COUNT( DISTINCT df) as study_file_count,
+                COUNT( DISTINCT f) as participant_file_count
       "
       
   - index_name: study_data_file
