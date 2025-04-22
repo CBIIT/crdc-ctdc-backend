@@ -249,6 +249,7 @@ type ParticipantOverview {
   dates_of_conduct: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
+  primary_disease_site: String
   stage_of_disease: String
   tumor_grade: String
   age_at_enrollment: Float # TODO: Check type Int
@@ -278,6 +279,12 @@ type BiospecimenOverview {
   parent_specimen_id: String
   anatomical_collection_site: String
   specimen_type: String
+  sex: String
+  race: String
+  tumor_grade: String
+  targeted_therapy: String
+  surgical_procedure: String
+  age_at_enrollment: String
   tissue_category: String
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
@@ -427,6 +434,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
