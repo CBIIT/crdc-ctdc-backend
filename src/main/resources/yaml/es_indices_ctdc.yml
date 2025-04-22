@@ -37,6 +37,8 @@ Indices:
         type: keyword
       study_file_count:
         type: keyword
+      participant_file_count:
+        type: keyword
       associated_links:
         type: nested
         properties:
@@ -64,10 +66,10 @@ Indices:
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-      MATCH (s:study)
+       MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (s)<-[:belongs_to]-(participant)
+      optional MATCH (s)<-[:belongs_to]-(participant)<-[*..2]-(parent)<--(f:data_file)
       optional match (s)<-[:associated_with]-(df:data_file)
        RETURN DISTINCT
                 s.study_name as study_name,
@@ -97,7 +99,8 @@ Indices:
                   })as participants,
                 COUNT( DISTINCT participant) as participant_count,
                 COUNT( DISTINCT ic) as image_collection_count,
-                COUNT( DISTINCT df) as study_file_count
+                COUNT( DISTINCT df) as study_file_count,
+                COUNT( DISTINCT f) as participant_file_count
       "
       
   - index_name: study_data_file
@@ -534,6 +537,16 @@ Indices:
         type: keyword
       study_short_name:
         type: keyword
+      study_id:
+        type: keyword
+      study_type:
+        type: keyword
+      study_name:
+        type: keyword
+      study_description:
+        type: keyword
+      dates_of_conduct:
+        type: keyword
       ctep_disease_term:
         type: keyword
       primary_diagnosis_disease_group:
@@ -581,6 +594,21 @@ Indices:
             type: keyword
       data_file_uuid:
         type: keyword
+      surgical_procedure:
+        type: keyword
+      surgical_procedure_anatomical_location:
+        type: keyword
+      surgical_procedure_date:
+        type: keyword
+      surgical_procedure_findings:
+        type: keyword
+      surgical_procedure_id:
+        type: keyword
+      surgical_procedure_therapeutic:
+        type: keyword
+      extent_of_residual_disease:
+        type: keyword
+
       specimen_id:
         type: keyword
       anatomical_collection_site:
@@ -609,10 +637,17 @@ Indices:
       optional MATCH (sb)<-[:of_participant]-(demo:demographic)
       optional MATCH (sb)<-[:of_participant]-(exp:exposure)
       optional MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+      optional MATCH (sb)<-[:of_participant]-(surgery:surgery)
       RETURN DISTINCT
       'participants' AS type,
       sb.participant_id AS participant_id,
+
       study.study_short_name as study_short_name,
+      study.study_id as study_id,
+      study.study_name as study_name,
+      study.study_type as study_type,
+      study.study_description as study_description,
+      study.dates_of_conduct as dates_of_conduct,
       diag.ctep_disease_term AS ctep_disease_term,
       diag.primary_diagnosis_disease_group as primary_diagnosis_disease_group,
       diag.stage_of_disease AS stage_of_disease,
@@ -635,6 +670,14 @@ Indices:
         data_file_compression_status: df.data_file_compression_status,
         data_file_location: df.data_file_location
       }) AS data_files,
+
+      COLLECT(DISTINCT(surgery.surgical_procedure)) AS surgical_procedure,
+      COLLECT(DISTINCT(surgery.surgical_procedure_anatomical_location)) AS surgical_procedure_anatomical_location,
+      COLLECT(DISTINCT(surgery.surgical_procedure_date)) AS surgical_procedure_date,
+      COLLECT(DISTINCT(surgery.surgical_procedure_findings)) AS surgical_procedure_findings,
+      COLLECT(DISTINCT(surgery.surgical_procedure_id)) AS surgical_procedure_id,
+      COLLECT(DISTINCT(surgery.surgical_procedure_therapeutic)) AS surgical_procedure_therapeutic,
+      COLLECT(DISTINCT(surgery.extent_of_residual_disease)) AS extent_of_residual_disease,
 
       COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
 

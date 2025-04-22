@@ -134,6 +134,7 @@ type Study {
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
+  participant_file_count: Int
   associated_links: [AssociatedLink]
   image_collection: [ImageCollection]
 }
@@ -233,8 +234,22 @@ type GroupCount {
 
 type ParticipantOverview {
   participant_id: String
+  study_id: String
+  study_short_name: String
+  study_name: String
+  study_type: String
+  study_description: String
+  surgical_procedure: String
+  surgical_procedure_anatomical_location: String
+  surgical_procedure_date: String
+  surgical_procedure_findings: String
+  surgical_procedure_id: String
+  surgical_procedure_therapeutic: String
+  extent_of_residual_disease: String
+  dates_of_conduct: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
+  primary_disease_site: String
   stage_of_disease: String
   tumor_grade: String
   age_at_enrollment: Float # TODO: Check type Int
@@ -244,6 +259,12 @@ type ParticipantOverview {
   carcinogen_exposure: String
   targeted_therapy: String
   targeted_therapy_string: String
+  specimen_id: String
+  anatomical_collection_site: String
+  parent_specimen_id: String
+  parent_specimen_type: String
+  tissue_category: String
+  assessment_timepoint: String
 
   data_file_uuid: String
   data_files: [DataFile] # For Adding Files into Cart
@@ -258,6 +279,12 @@ type BiospecimenOverview {
   parent_specimen_id: String
   anatomical_collection_site: String
   specimen_type: String
+  sex: String
+  race: String
+  tumor_grade: String
+  targeted_therapy: String
+  surgical_procedure: String
+  age_at_enrollment: String
   tissue_category: String
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
@@ -407,6 +434,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -587,5 +615,8 @@ type QueryType {
     input: String
     first: Int = 100
     offset: Int = 0
+    order_by: String = "participant_id"
+    sort_direction: String = "ASC"
+    participant_id: String
   ): GlobalSearchResult
 }
