@@ -130,3 +130,11 @@ queries:
         participant_id: participant_id
     result:
       type: object_array
+  - name: getInteropData
+    index:
+      - interop_data
+    filter:
+      type: default
+      caseInsensitive: false
+    result:
+      type: object_array

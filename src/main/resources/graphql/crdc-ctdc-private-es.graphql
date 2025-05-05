@@ -134,8 +134,6 @@ type Study {
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
-  associated_links: [AssociatedLink]
-  image_collection: [ImageCollection]
 }
 
 type DataFile {
@@ -372,7 +370,46 @@ type ArmInfo {
   size: Int
   caseSize: Int
 }
+type Interop{
+  data:InteropData
 
+}
+
+type InteropData {
+
+  getAllStudies: AllStudies
+  
+}
+type AllStudies{
+  study_id: String
+  study_short_name: String
+  image_collection_count: Int
+  associated_links: [InteropLink]
+}
+type InteropLink{
+  associated_link_name: String
+  associated_link_url: String
+  metadataIDC: MetadataIDC
+  metadataTCIA: MetadataTCIA
+}
+type MetadataIDC{
+  collection_id: String
+  cancer_type: String
+  date_updated: String
+  description: String
+  doi: String
+  image_types: String
+  location: String
+  species: String
+  subject_count: Int
+  supporting_data: String
+}
+type MetadataTCIA{
+  collection: String
+  aggregate_PatientID: String
+  aggregate_Modality: String
+  aggregate_BodyPartExamined: String
+}
 type ProgramArms {
   program: String
   caseSize: Int
@@ -401,6 +438,8 @@ type QueryType {
   ): [StudyDataFile]
 
   getHomePage: [HomePage]
+
+  getInteropData: [Interop]
 
   participantOverview(
     participant_id: [String] = []
@@ -516,6 +555,8 @@ type QueryType {
     offset: Int = 0
   ): [FileParticipant]
 
+
+ 
   biospecimen_data_files(
     participant_id: [String] = []
     specimen_id: [String] = []
