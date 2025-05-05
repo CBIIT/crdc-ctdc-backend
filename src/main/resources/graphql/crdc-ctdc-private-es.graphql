@@ -134,6 +134,8 @@ type Study {
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
+  associated_links: [AssociatedLink]
+  image_collection: [ImageCollection]
 }
 
 type DataFile {
