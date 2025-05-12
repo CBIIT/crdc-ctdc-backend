@@ -410,7 +410,10 @@ type MetadataTCIA{
   collection: String
   aggregate_PatientID: String
   aggregate_Modality: String
-  aggregate_BodyPartExamined: String
+  aggregate_ImageBool: String
+  aggregate_ImageCount: String
+  aggregate_BodyPartExamined: [String]
+  
 }
 type ProgramArms {
   program: String
