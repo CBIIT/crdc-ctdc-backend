@@ -386,6 +386,7 @@ type AllStudies{
   study_id: String
   study_short_name: String
   image_collection_count: Int
+  unique_repository: [String]
   associated_links: [InteropLink]
 }
 type InteropLink{
