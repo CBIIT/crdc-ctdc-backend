@@ -106,6 +106,23 @@ queries:
           ignoreSelectedField: true
         result:
           type: group_count
+      - name: participantCountByPrimaryDiagnosisDiseaseGroup
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: primary_diagnosis_disease_group
+        result:
+          type: group_count
+      - name: filterParticipantCountByPrimaryDiagnosisDiseaseGroup
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: primary_diagnosis_disease_group
+          ignoreSelectedField: true
+        result:
+          type: group_count
       - name: participantCountBySnomedDiseaseCode
         index:
           - widgets_facets_counts
@@ -239,6 +256,40 @@ queries:
         filter:
           type: aggregation
           selectedField: targeted_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountBySingleTargetedTherapyCombination
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: targeted_therapy_string
+        result:
+          type: group_count
+      - name: filterParticipantCountBySingleTargetedTherapyCombination
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: targeted_therapy_string
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountBySingleTargetedTherapyCombinationForFacet
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: targeted_therapy_string
+        result:
+          type: group_count
+      - name: filterParticipantCountBySingleTargetedTherapyCombinationForFacet
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: targeted_therapy_string
           ignoreSelectedField: true
         result:
           type: group_count

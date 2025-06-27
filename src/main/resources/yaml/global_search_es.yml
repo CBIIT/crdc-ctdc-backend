@@ -181,6 +181,7 @@ queries:
         highlight:
           fields:
             - content.paragraph
+          fragmentSize: 25
           preTag: $
           postTag: $
         result:

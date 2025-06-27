@@ -128,9 +128,12 @@ type Study {
   study_name: String
   study_description: String
   study_type: String
+
   dates_of_conduct: String
   participants: [Participant]
   participant_count: Int
+  image_collection_count: Int
+  study_file_count: Int
   associated_links: [AssociatedLink]
   image_collection: [ImageCollection]
 }
@@ -231,6 +234,7 @@ type GroupCount {
 type ParticipantOverview {
   participant_id: String
   ctep_disease_term: String
+  primary_diagnosis_disease_group: String
   stage_of_disease: String
   tumor_grade: String
   age_at_enrollment: Float # TODO: Check type Int
@@ -239,6 +243,7 @@ type ParticipantOverview {
   ethnicity: String
   carcinogen_exposure: String
   targeted_therapy: String
+  targeted_therapy_string: String
 
   data_file_uuid: String
   data_files: [DataFile] # For Adding Files into Cart
@@ -246,6 +251,7 @@ type ParticipantOverview {
 type BiospecimenOverview {
   participant_id: String
   ctep_disease_term: String
+  primary_diagnosis_disease_group: String
   stage_of_disease: String
   primary_disease_site: String
   specimen_id: String
@@ -256,6 +262,7 @@ type BiospecimenOverview {
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
   data_files: [DataFile]
+  targeted_therapy_string: String
 }
 
 # Cart
@@ -272,6 +279,7 @@ type FileOverview {
   data_file_location: String
   data_file_compression_status: String
   ctep_disease_term: String
+  primary_diagnosis_disease_group: String
   meddra_disease_code: String
   histology: String
   participant_id: String
@@ -285,11 +293,14 @@ type FileOverview {
   age_at_enrollment: String
   carcinogen_exposure: String
   targeted_therapy: String
+  targeted_therapy_string: String
   anatomical_collection_site: String
   parent_specimen_type: String
   tissue_category: String
   assessment_timepoint: String
   primary_disease_site: String
+  drs_uri: String
+  study_short_name: String
 }
 
 type FileParticipant {
@@ -302,6 +313,7 @@ type FileParticipant {
   data_file_description: String
   specimen_id: String
   ctep_disease_term: String
+  primary_diagnosis_disease_group: String
   data_file_uuid: String # For Adding Files into Cart
 }
 
@@ -324,6 +336,9 @@ type SearchResult {
   participantCountByEthnicity: [GroupCount]
   participantCountByCarcinogenExposure: [GroupCount]
   participantCountByTargetedTherapy: [GroupCount]
+  participantCountBySingleTargetedTherapyCombination: [GroupCount]
+  participantCountBySingleTargetedTherapyCombinationForFacet: [GroupCount]
+  participantCountByPrimaryDiagnosisDiseaseGroup: [GroupCount]
   specimenCountByAnatomicalCollectionSite: [GroupCount]
   specimenCountByTissueCategory: [GroupCount]
   specimenCountBySpecimenType: [GroupCount]
@@ -331,7 +346,7 @@ type SearchResult {
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
-
+  
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
   filterParticipantCountBySnomedDiseaseCode: [GroupCount]
   filterParticipantCountByTumorGrade: [GroupCount]
@@ -340,12 +355,14 @@ type SearchResult {
   filterParticipantCountByEthnicity: [GroupCount]
   filterParticipantCountByCarcinogenExposure: [GroupCount]
   filterParticipantCountByTargetedTherapy: [GroupCount]
+  filterParticipantCountBySingleTargetedTherapyCombination: [GroupCount]
+  filterParticipantCountBySingleTargetedTherapyCombinationForFacet: [GroupCount]
+  filterParticipantCountByPrimaryDiagnosisDiseaseGroup: [GroupCount]
   filterSpecimenCountByAnatomicalCollectionSite: [GroupCount]
   filterSpecimenCountByTissueCategory: [GroupCount]
   filterSpecimenCountBySpecimenType: [GroupCount]
   filterParticipantCountByAssessmentTimepoint: [GroupCount]
   filterParticipantCountByStageOfDisease: [GroupCount]
-
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
 }
@@ -369,6 +386,8 @@ schema {
 type QueryType {
   studyByStudyShortName(study_short_name: [String] = []): [Study]
 
+  getAllStudies: [Study]
+
   studyDiagnosisByStudyShortName(
     study_short_name: [String] = []
   ): [StudyDiagnosis]
@@ -386,6 +405,7 @@ type QueryType {
   participantOverview(
     participant_id: [String] = []
     ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
@@ -393,6 +413,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -412,6 +433,7 @@ type QueryType {
     participant_id: [String] = []
     specimen_id: [String] = []
     ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
@@ -419,6 +441,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -438,6 +461,7 @@ type QueryType {
   fileOverview(
     participant_id: [String] = []
     ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
@@ -445,6 +469,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
     tissue_category: [String] = []
@@ -455,6 +480,7 @@ type QueryType {
     data_file_type: [String] = []
     data_file_format: [String] = []
     data_file_uuid: [String] = []
+    drs_uri: [String] = []
 
     order_by: String = "data_file_name"
     sort_direction: String = "ASC"
@@ -465,6 +491,7 @@ type QueryType {
   participant_data_files(
     participant_id: [String] = []
     ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
@@ -472,6 +499,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -493,6 +521,7 @@ type QueryType {
     specimen_id: [String] = []
     parent_specimen_id: [String] = []
     ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
@@ -500,6 +529,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -523,9 +553,11 @@ type QueryType {
     sex: [String] = []
     race: [String] = []
     ethnicity: [String] = []
-
+    study_short_name: [String] = []
+    primary_diagnosis_disease_group: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
+    targeted_therapy_string: [String] = []
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
     tissue_category: [String] = []
