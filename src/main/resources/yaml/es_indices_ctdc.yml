@@ -37,8 +37,6 @@ Indices:
         type: keyword
       study_file_count:
         type: keyword
-      participant_file_count:
-        type: keyword
       associated_links:
         type: nested
         properties:
@@ -66,10 +64,10 @@ Indices:
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-       MATCH (s:study)
+      MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (s)<-[:belongs_to]-(participant)<-[*..2]-(parent)<--(f:data_file)
+      optional MATCH (s)<-[:belongs_to]-(participant)
       optional match (s)<-[:associated_with]-(df:data_file)
        RETURN DISTINCT
                 s.study_name as study_name,
@@ -99,8 +97,7 @@ Indices:
                   })as participants,
                 COUNT( DISTINCT participant) as participant_count,
                 COUNT( DISTINCT ic) as image_collection_count,
-                COUNT( DISTINCT df) as study_file_count,
-                COUNT( DISTINCT f) as participant_file_count
+                COUNT( DISTINCT df) as study_file_count
       "
       
   - index_name: study_data_file
@@ -400,8 +397,8 @@ Indices:
               untargetedTherapyCount as numberOfNonTargeted,
               targetTherapyCount as numberOfTargeted,
                 dataFileCount as dataFileCount,
-            apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) as specimenCountbyStageOfDisease,
-            apoc.coll.toSet(COLLECT(dataFileByType)) as dataFileByType
+            nci_crdc_functions.remove_collection_braces(COLLECT(specimenCountbyStageOfDisease)) as specimenCountbyStageOfDisease,
+            nci_crdc_functions.remove_collection_braces(COLLECT(dataFileByType)) as dataFileByType
       "
       
   - index_name: widgets_facets_counts
@@ -481,8 +478,8 @@ Indices:
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
       WITH COLLECT(distinct target.targeted_therapy) as array,sb,study
-      with apoc.coll.sort(array) as array,sb,study
-      with apoc.text.join(array,'|') as array,sb,study
+      with nci_crdc_functions.sort(array) as array,sb,study
+      with nci_crdc_functions.join_collection(array,'|') as array,sb,study
       optional MATCH (spec:specimen)-[:of_participant]->(sb)
       optional MATCH (sb)<-[*..2]-(data_file:data_file)
       optional MATCH (demo:demographic)-[:of_participant]->(sb)
@@ -629,8 +626,8 @@ Indices:
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
       WITH COLLECT(distinct target.targeted_therapy) as array,sb,study
-      with apoc.coll.sort(array) as array,sb,study
-      with apoc.text.join(array,'|') as array,sb,study
+      with nci_crdc_functions.sort(array) as array,sb,study
+      with nci_crdc_functions.join_collection(array,'|') as array,sb,study
       optional MATCH (sb:participant)<-[*..2]-(df:data_file)
       optional MATCH (sb)<-[:of_participant]-(diag:diagnosis)
       optional MATCH (sb)<-[:of_participant]-(spec:specimen)
@@ -788,8 +785,8 @@ Indices:
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
       WITH COLLECT(distinct target.targeted_therapy) as array,sub,spec
-      with apoc.coll.sort(array) as array,sub,spec
-      with apoc.text.join(array,'|') as array,sub,spec
+      with nci_crdc_functions.sort(array) as array,sub,spec
+      with nci_crdc_functions.join_collection(array,'|') as array,sub,spec
       optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_participant]-(demo:demographic)
@@ -933,8 +930,8 @@ Indices:
       optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
       WITH COLLECT(distinct target.targeted_therapy) as array,sub,f,study
-      with apoc.coll.sort(array) as array,sub,f,study
-      with apoc.text.join(array,'|') as array,sub,f,study
+      with nci_crdc_functions.sort(array) as array,sub,f,study
+      with nci_crdc_functions.join_collection(array,'|') as array,sub,f,study
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_participant]-(demo:demographic)
@@ -995,8 +992,8 @@ Indices:
       optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
       WITH COLLECT(distinct target.targeted_therapy) as array,sub,f,study
-      with apoc.coll.sort(array) as array,sub,f,study
-      with apoc.text.join(array,'|') as array,sub,f,study
+      with nci_crdc_functions.sort(array) as array,sub,f,study
+      with nci_crdc_functions.join_collection(array,'|') as array,sub,f,study
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
       optional MATCH (sub)<-[:of_participant]-(demo:demographic)
@@ -1111,8 +1108,8 @@ Indices:
       MATCH (sub:participant)<-[*..2]-(parent)<--(f:data_file)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
       WITH COLLECT(distinct target.targeted_therapy) as array,sub,f
-      with apoc.coll.sort(array) as array,sub,f
-      with apoc.text.join(array,'|') as array,sub,f
+      with nci_crdc_functions.sort(array) as array,sub,f
+      with nci_crdc_functions.join_collection (array,'|') as array,sub,f
       optional MATCH (f:data_file)-[:associated_with]->(study:study)
       optional MATCH (f:data_file)-[:associated_with]->(spec:specimen)
       MATCH (sub)<-[:of_participant]-(diag:diagnosis)
@@ -1245,8 +1242,8 @@ Indices:
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
       WITH COLLECT(distinct target.targeted_therapy) as array,sb,study
-      with apoc.coll.sort(array) as array,sb,study
-      with apoc.text.join(array,'|') as array,sb,study
+      with nci_crdc_functions.sort(array) as array,sb,study
+      with nci_crdc_functions.join_collection(array,'|') as array,sb,study
       optional MATCH (spec:specimen)-[:of_participant]->(sb)
       optional MATCH (sb)<-[*..2]-(data_file:data_file)
       optional MATCH (demo:demographic)-[:of_participant]->(sb)
