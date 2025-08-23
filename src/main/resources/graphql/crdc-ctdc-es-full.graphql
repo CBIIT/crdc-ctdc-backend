@@ -144,14 +144,14 @@ type participant_status{
 
 type specimen {
     specimen_id: String
-    parent_specimen_id: String
+    specimen_record_id: String
     collection_date: [String]
     icd_o_3_tissue_morphology: String
     obi_specimen_type : Int
     specimen_category : String
     type_of_tissue : String
     anatomical_collection_site : String
-    parent_specimen_type : String
+    specimen_type : String
     specimen_type : String
     tissue_category : String
     assessment_timepoint : String
