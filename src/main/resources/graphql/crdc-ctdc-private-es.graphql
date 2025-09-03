@@ -242,6 +242,7 @@ type Study {
   participant_count: Int
   image_collection_count: Int
   study_file_count: Int
+  participant_file_count: Int
   associated_links: [AssociatedLink]
   image_collection: [ImageCollection]
   principal_investigators: [PrincipalInvestigator]
@@ -335,8 +336,22 @@ type GroupCount {
 
 type ParticipantOverview {
   participant_id: String
+  study_id: String
+  study_short_name: String
+  study_name: String
+  study_type: String
+  study_description: String
+  surgical_procedure: String
+  surgical_procedure_anatomical_location: String
+  surgical_procedure_date: String
+  surgical_procedure_findings: String
+  surgical_procedure_id: String
+  surgical_procedure_therapeutic: String
+  extent_of_residual_disease: String
+  dates_of_conduct: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
+  primary_disease_site: String
   stage_of_disease: String
   tumor_grade: String
   age_at_enrollment: Float
@@ -346,6 +361,12 @@ type ParticipantOverview {
   carcinogen_exposure: String
   targeted_therapy: String
   targeted_therapy_string: String
+  specimen_id: String
+  anatomical_collection_site: String
+  parent_specimen_id: String
+  parent_specimen_type: String
+  tissue_category: String
+  assessment_timepoint: String
 
   data_file_uuid: String
   data_files: [DataFile] # For Adding Files into Cart
@@ -360,6 +381,12 @@ type BiospecimenOverview {
   specimen_record_id: String
   anatomical_collection_site: String
   specimen_type: String
+  sex: String
+  race: String
+  tumor_grade: String
+  targeted_therapy: String
+  surgical_procedure: String
+  age_at_enrollment: String
   tissue_category: String
   assessment_timepoint: String
   data_file_uuid: [String] # For Adding Files into Cart
@@ -474,7 +501,50 @@ type ArmInfo {
   size: Int
   caseSize: Int
 }
+type Interop{
+  data:InteropData
 
+}
+
+type InteropData {
+
+  getAllStudies: AllStudies
+  
+}
+type AllStudies{
+  study_id: String
+  study_short_name: String
+  image_collection_count: Int
+  unique_repository: [String]
+  associated_links: [InteropLink]
+}
+type InteropLink{
+  associated_link_name: String
+  associated_link_url: String
+  metadataIDC: MetadataIDC
+  metadataTCIA: MetadataTCIA
+}
+type MetadataIDC{
+  collection_id: String
+  cancer_type: String
+  date_updated: String
+  description: String
+  doi: String
+  image_types: String
+  location: String
+  species: String
+  subject_count: Int
+  supporting_data: String
+}
+type MetadataTCIA{
+  collection: String
+  aggregate_PatientID: String
+  aggregate_Modality: String
+  aggregate_ImageBool: String
+  aggregate_ImageCount: String
+  aggregate_BodyPartExamined: [String]
+  
+}
 type ProgramArms {
   program: String
   caseSize: Int
@@ -504,11 +574,14 @@ type QueryType {
 
   getHomePage: [HomePage]
 
+  getInteropData: [Interop]
+
   participantOverview(
     participant_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -618,6 +691,8 @@ type QueryType {
     offset: Int = 0
   ): [FileParticipant]
 
+
+ 
   biospecimen_data_files(
     participant_id: [String] = []
     specimen_id: [String] = []
@@ -689,5 +764,8 @@ type QueryType {
     input: String
     first: Int = 100
     offset: Int = 0
+    order_by: String = "participant_id"
+    sort_direction: String = "ASC"
+    participant_id: String
   ): GlobalSearchResult
 }
