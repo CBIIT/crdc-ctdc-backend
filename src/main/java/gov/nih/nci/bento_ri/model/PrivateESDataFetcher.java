@@ -115,7 +115,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private Map<String, Object> subjectDetail(Map<String, Object> params) throws IOException {
-        final String SUBJECT_ID = (String) params.get("subject_id");
+        final String PARTICIPANT_ID = (String) params.get("participant_id");
         final String[][] SUBJECT_PROPERTIES = new String[][]{
                 new String[]{"subject_id", "subject_ids"},
                 new String[]{"program_acronym", "programs"},
@@ -171,7 +171,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 new String[]{"tissue_type", "tissue_type"},
                 new String[]{"sample_type", "sample_type"}
         };
-        Map<String, Object> filterParam = Map.of("subject_ids", SUBJECT_ID);
+        Map<String, Object> filterParam = Map.of("participant_ids", PARTICIPANT_ID);
         // Get subject details and initialize result
         List<Map<String, Object>> subjectsResultList = esService.collectPage(filterParam, SUBJECTS_END_POINT,
                 SUBJECT_PROPERTIES);

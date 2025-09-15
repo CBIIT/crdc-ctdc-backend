@@ -87,10 +87,9 @@ queries:
           - tab_biospecimens
         filter:
           type: global
-          defaultSortField: parent_specimen_id
-          sortDirection: ASC
+          defaultSortField: specimen_record_id
           searches:
-            - field: parent_specimen_id
+            - field: specimen_record_id
               type: wildcard
               caseInsensitive: true
             - field: specimen_id
@@ -105,10 +104,10 @@ queries:
             - field: ctep_disease_term
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
             - field: tissue_category
@@ -131,10 +130,9 @@ queries:
           - tab_biospecimens
         filter:
           type: global
-          defaultSortField: parent_specimen_id
-          sortDirection: ASC
+          defaultSortField: specimen_record_id
           searches:
-            - field: parent_specimen_id
+            - field: specimen_record_id
               type: wildcard
               caseInsensitive: true
             - field: specimen_id
@@ -149,10 +147,10 @@ queries:
             - field: ctep_disease_term
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
             - field: tissue_category

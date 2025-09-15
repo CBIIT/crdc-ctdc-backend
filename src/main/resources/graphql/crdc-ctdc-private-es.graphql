@@ -55,17 +55,17 @@ type GS_participant {
   ethnicity: String
   participant_id: String
   stage_of_disease: String
-  age_at_enrollment: Int
+  age_at_enrollment: Float
 }
 
 type GS_Biospecimen {
   type: String
   study_short_name: String
-  parent_specimen_id: String
+  specimen_record_id: String
   specimen_id: String
   participant_id: String
   ctep_disease_term: String
-  parent_specimen_type: String
+  specimen_type: String
   tissue_category: String
   anatomical_collection_site: String
   assessment_timepoint: String
@@ -73,12 +73,12 @@ type GS_Biospecimen {
 
 type GS_File {
   type: String
-  file_id: String
-  file_name: String
-  file_format: String
+  data_file_uuid: String
+  data_file_name: String
+  data_file_format: String
   program_id: String
   participant_id: String
-  sample_id: String
+  specimen_id: String
 }
 
 type GS_Model {
@@ -106,15 +106,123 @@ type Participant {
   radiology_report_available: String
   participant_id: String
   study_short_name: String
+  demographic: Demographic
+  exposure: [Exposure]
+  diagnosis: [Diagnosis]
+  targeted_therapy: [TargetedTherapy]
+  non_targeted_therapy: [NonTargetedTherapy]
+  surgery: [Surgery]
+  radiotherapy: [Radiotherapy]
+  participant_status: ParticipantStatus
+  specimens: [Specimen]
+}
+
+type Demographic {
+  demographic_record_id: String
+  age_at_enrollment: Float
+  race: String
+  ethnicity: String
+  sex: String
+  height: Float
+  weight: Float
+  body_surface_area: Float
+  occupation: String
+  income: String
+  highest_level_of_education: String
+  ncbi_taxonomy_id: Int
+  ncbi_taxonomy_name: String
+}
+
+type Exposure {
+  exposure_record_id: String
+  environmental_exposure_type: String
+  carcinogen_exposure: String
+}
+
+type TargetedTherapy {
+  targeted_therapy_record_id: String
+  targeted_therapy: String
+  targeted_therapy_dose: String
+  targeted_therapy_dose_units: String
+  targeted_therapy_frequency: String
+  targeted_therapy_start_date: Int
+  targeted_therapy_end_date: Int
+  best_response_to_targeted_therapy: String
+}
+
+type NonTargetedTherapy {
+  non_targeted_therapy_record_id: String
+  non_targeted_therapy: String
+  non_targeted_therapy_dose: String
+  non_targeted_therapy_dose_units: String
+  non_targeted_therapy_frequency: String
+  non_targeted_therapy_start_date: Int
+  non_targeted_therapy_end_date: Int
+  best_response_to_non_targeted_therapy: String
+}
+
+type Surgery {
+  surgical_procedure_record_id: String
+  surgical_procedure: String
+  surgical_procedure_date: Int
+  surgical_procedure_anatomical_location: String
+  surgical_procedure_therapeutic: String
+  surgical_procedure_findings: String
+  extent_of_residual_disease: String
+}
+
+type Radiotherapy {
+  radiological_procedure_record_id: String
+  radiological_procedure: String
+  radiological_procedure_anatomical_location: String
+  radiation_dose: String
+  radiation_dose_units: String
+  radiation_frequency: String
+  radiation_extent: String
+  radiotherapy_start_date: Int
+  radiotherapy_end_date: Int
+  best_response_to_radiotherapy: String
+}
+
+type ParticipantStatus {
+  participant_status_record_id: String
+  survival_status: String
+  primary_cause_of_death: String
+  off_study: String
+  off_study_reason: String
+}
+
+type PrincipalInvestigator {
+  person_record_id: String
+  person_first_name: String
+  person_last_name: String
+  person_middle_name: String
+  person_orcid: String
+}
+
+type Publication {
+  digital_object_id: String
+  pubmed_id: Int
+  publication_title: String
+  authorship: String
+  year_of_publication: String
+  journal_citation: String
+}
+
+type ConsentGroup {
+  consent_group_id: String
+  consent_group_name: String
+  consent_group_number: Int
 }
 
 type AssociatedLink {
+  associated_link_record_id: String
   associated_link_name: String
   associated_link_url: String
-  associated_link_id: String
 }
 
 type ImageCollection {
+  image_collection_record_id: String
   image_collection_name: String
   image_type_included: String
   image_collection_url: String
@@ -124,11 +232,11 @@ type ImageCollection {
 
 type Study {
   study_short_name: String
+  study_accession: String
   study_id: String
   study_name: String
   study_description: String
   study_type: String
-
   dates_of_conduct: String
   participants: [Participant]
   participant_count: Int
@@ -137,6 +245,9 @@ type Study {
   participant_file_count: Int
   associated_links: [AssociatedLink]
   image_collection: [ImageCollection]
+  principal_investigators: [PrincipalInvestigator]
+  publications: [Publication]
+  consent_groups: [ConsentGroup]
 }
 
 type DataFile {
@@ -159,7 +270,7 @@ type StudyDataFile {
   data_files: [DataFile]
 }
 
-type ParentSpecimenType {
+type SpecimenType {
   group: String
   count: Int
 }
@@ -170,43 +281,34 @@ type SpecimenTimepoint {
 }
 
 type Specimen {
-  specimen_id: String
-  parent_specimen_id: String
-  collection_date: String
-  icd_o_3_tissue_morphology: String
-  obi_specimen_type: String
-  type_of_tissue: String
+  specimen_record_id: String
+  specimen_type: String
+  specimen_category: String
   anatomical_collection_site: String
-  parent_specimen_type: String
   tissue_category: String
   assessment_timepoint: String
+  collection_date: Float
 }
 
 type StudySpecimen {
   study_short_name: String
-  parent_specimen_types: [ParentSpecimenType]
+  specimen_types: [SpecimenType]
   specimen_timepoints: [SpecimenTimepoint]
-  sample_count: String
+  specimen_count: String
   specimen: [Specimen]
 }
 
 type Diagnosis {
+  diagnosis_record_id: String
+  primary_diagnosis_disease_group: String
   ctep_disease_term: String
-  diagnosis_date: String
-  diagnosis_date_original: String
-  diagnosis_date_original_unit: String
-  diagnosis_date_unit: String
-  diagnosis_id: String
-  icd_10_disease_code: String
-  icd_o_primary_site: String
   meddra_disease_code: String
-  primary_disease_site: String
+  snomed_disease_term: String
   snomed_disease_code: String
+  primary_disease_site: String
+  histology: String
+  histological_subtype: String
   stage_of_disease: String
-  participant_age_at_diagnosis: String
-  participant_age_at_diagnosis_original: String
-  participant_age_at_diagnosis_original_unit: String
-  participant_age_at_diagnosis_unit: String
   tumor_grade: String
 }
 
@@ -252,7 +354,7 @@ type ParticipantOverview {
   primary_disease_site: String
   stage_of_disease: String
   tumor_grade: String
-  age_at_enrollment: Float # TODO: Check type Int
+  age_at_enrollment: Float
   sex: String
   race: String
   ethnicity: String
@@ -276,7 +378,7 @@ type BiospecimenOverview {
   stage_of_disease: String
   primary_disease_site: String
   specimen_id: String
-  parent_specimen_id: String
+  specimen_record_id: String
   anatomical_collection_site: String
   specimen_type: String
   sex: String
@@ -295,7 +397,7 @@ type BiospecimenOverview {
 # Cart
 type FileOverview {
   association: String
-  parent_specimen_id: String
+  specimen_record_id: String
   data_file_name: String
   data_file_format: String
   data_file_type: String
@@ -322,7 +424,7 @@ type FileOverview {
   targeted_therapy: String
   targeted_therapy_string: String
   anatomical_collection_site: String
-  parent_specimen_type: String
+  specimen_type: String
   tissue_category: String
   assessment_timepoint: String
   primary_disease_site: String
@@ -547,7 +649,7 @@ type QueryType {
     specimen_type: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
-    parent_specimen_id: [String] = []
+    specimen_record_id: [String] = []
     specimen_id: [String] = []
 
     data_file_type: [String] = []
@@ -594,7 +696,7 @@ type QueryType {
   biospecimen_data_files(
     participant_id: [String] = []
     specimen_id: [String] = []
-    parent_specimen_id: [String] = []
+    specimen_record_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -615,7 +717,7 @@ type QueryType {
     data_file_format: [String] = []
     data_file_uuid: [String] = []
 
-    order_by: String = "parent_specimen_id"
+    order_by: String = "specimen_record_id"
     sort_direction: String = "ASC"
     first: Int = 10
     offset: Int = 0
