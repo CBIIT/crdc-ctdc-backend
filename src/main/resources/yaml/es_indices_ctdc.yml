@@ -1318,7 +1318,7 @@ Indices:
 
   - index_name: model_values
     type: model
-    subtype: value_kw
+    subtype: value
     # type mapping for each property of the index
     mapping:
       node:
