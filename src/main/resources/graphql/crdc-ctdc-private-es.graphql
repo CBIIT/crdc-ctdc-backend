@@ -396,7 +396,7 @@ type BiospecimenOverview {
 
 # Cart
 type FileOverview {
-  association: String
+  association: [String]
   specimen_record_id: String
   data_file_name: String
   data_file_format: String
@@ -438,7 +438,7 @@ type FileParticipant {
   data_file_format: String
   data_file_type: String
   data_file_size: Float
-  association: String
+  association: [String]
   data_file_description: String
   specimen_id: String
   ctep_disease_term: String
