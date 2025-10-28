@@ -70,11 +70,14 @@ Indices:
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-       MATCH (s:study)
+      MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (s)<-[:belongs_to]-(participant)<-[*..2]-(parent)<--(f:file)
-      optional match (s)<-[:associated_with]-(df:file)
+      optional MATCH (s)<-[:belongs_to]-(participant)
+      optional MATCH (participant)<-[*..2]-(parent)<--(f:file)
+      optional MATCH (s)<-[:associated_with]-(df:file)
+      WHERE NOT (df)--(:participant)
+      AND NOT (df)-[:associated_with]->(:specimen)
        RETURN DISTINCT
                 s.study_name as study_name,
                 s.study_short_name as study_short_name,
@@ -349,38 +352,45 @@ Indices:
   
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
-        MATCH (sub:participant)<-[*..2]-(df:file)
-        WITH
-        {
-        group: df.data_file_type,
-        subjects:count(df.data_file_type)}
-         as dataFileByType
-        MATCH (df:file) WHERE df.data_file_format <> 'zip' with dataFileByType , count(df) as dataFileCount
-        MATCH (sb:participant) WITH count(sb) as participantcount,dataFileByType,dataFileCount
-        MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> '' WITH target,participantcount,dataFileByType,dataFileCount
-        MATCH (untargeted:non_targeted_therapy) WITH count(DISTINCT(untargeted.targeted_therapy)) as untargetedTherapyCount ,participantcount,target,dataFileByType,dataFileCount
-        WITH participantcount,count(distinct(target.targeted_therapy)) as targetTherapyCount,dataFileByType,dataFileCount,untargetedTherapyCount
+      MATCH (sub:participant)<-[*..2]-(df:file)
+      WITH DISTINCT df
+      WHERE df.data_file_format <> 'zip'
 
-        MATCH (diag:diagnosis) with
-        count(distinct(diag.ctep_disease_term)) as countofDiagnoses ,untargetedTherapyCount,targetTherapyCount,participantcount,untargetedTherapyCount + targetTherapyCount as TotalTherapy,dataFileByType,dataFileCount
+      WITH df.data_file_type AS t, COUNT(*) AS c
+      WITH COLLECT({group: t, subjects: c}) AS dataFileByType
 
-        MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis) 
-        WITH targetTherapyCount,countofDiagnoses,participantcount,untargetedTherapyCount,TotalTherapy,dataFileByType,dataFileCount,
-        {
-        group: diag.stage_of_disease,
-        subjects:count(diag.stage_of_disease)}
-         as specimenCountbyStageOfDisease        
-        
-        RETURN DISTINCT
-              
-              TotalTherapy as numberOfTherapies,
-              participantcount as numberOfParticipants,
-              countofDiagnoses as numberOfDiagnoses,
-              untargetedTherapyCount as numberOfNonTargeted,
-              targetTherapyCount as numberOfTargeted,
-                dataFileCount as dataFileCount,
-            apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) as specimenCountbyStageOfDisease,
-            apoc.coll.toSet(COLLECT(dataFileByType)) as dataFileByType
+      WITH dataFileByType,
+          REDUCE(total=0, x IN dataFileByType | total + x.subjects) AS dataFileCount
+
+      MATCH (sb:participant)
+      WITH COUNT(sb) AS participantcount, dataFileByType, dataFileCount
+
+      MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> ''
+      WITH participantcount, dataFileByType, dataFileCount,
+          COUNT(DISTINCT target.targeted_therapy) AS targetTherapyCount
+
+      MATCH (untargeted:non_targeted_therapy)
+      WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount,
+          COUNT(DISTINCT untargeted.targeted_therapy) AS untargetedTherapyCount
+
+      MATCH (diag:diagnosis)
+      WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount,
+          COUNT(DISTINCT diag.ctep_disease_term) AS countofDiagnoses,
+          (untargetedTherapyCount + targetTherapyCount) AS TotalTherapy
+
+      MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
+      WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
+          { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
+
+      RETURN DISTINCT
+        TotalTherapy AS numberOfTherapies,
+        participantcount AS numberOfParticipants,
+        countofDiagnoses AS numberOfDiagnoses,
+        untargetedTherapyCount AS numberOfNonTargeted,
+        targetTherapyCount AS numberOfTargeted,
+        dataFileCount AS dataFileCount,
+        apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) AS specimenCountbyStageOfDisease,
+        dataFileByType AS dataFileByType
       "
       
   - index_name: widgets_facets_counts
