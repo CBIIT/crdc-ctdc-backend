@@ -904,156 +904,67 @@ Indices:
     # Cypher query for biospecimen listing
     # TODO: Remove Collection over exposure property once 1:1
     # TODO: Make sure diagnosis is 1:1 with participant
-    # cypher_query: "
-    #   MATCH (spec:specimen)-[:of_participant]->(sub:participant)
-    #   optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
-    #   WITH COLLECT(distinct target.targeted_therapy) as array,sub,spec
-    #   with apoc.coll.sort(array) as array,sub,spec
-    #   with apoc.text.join(array,'|') as array,sub,spec
-    #   optional MATCH (study:study)<-[:belongs_to]-(sub)
-    #   optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-    #   optional MATCH (sub)<-[:of_participant]-(demo:demographic)
-    #   optional MATCH (sub)<-[:of_participant]-(exp:exposure)
-    #   optional MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-    #   optional MATCH (sub)<-[*..2]-(df:file)
-    #   RETURN DISTINCT
-    #     'biospecimens' AS type,
-    #     sub.participant_id AS participant_id,
-    #     diag.ctep_disease_term AS ctep_disease_term,
-    #     diag.stage_of_disease AS stage_of_disease,
-    #     diag.primary_disease_site AS primary_disease_site,
-    #     diag.primary_diagnosis_disease_group as primary_diagnosis_disease_group,
-    #     spec.specimen_id AS specimen_id,
-    #     spec.specimen_record_id AS specimen_record_id,
-    #     spec.specimen_type AS specimen_type,
-    #     spec.anatomical_collection_site AS anatomical_collection_site,
-    #     spec.tissue_category AS tissue_category,
-    #     spec.assessment_timepoint AS assessment_timepoint,
-    #     study.study_short_name as study_short_name,
-    #     COLLECT(DISTINCT{
-    #       data_file_uuid: df.data_file_uuid,
-    #       data_file_name: df.data_file_name,
-    #       data_file_type: df.data_file_type,
-    #       data_file_description: df.data_file_description,
-    #       data_file_format: df.data_file_format,
-    #       data_file_size: df.data_file_size,
-    #       data_file_checksum_value: df.data_file_checksum_value,
-    #       data_file_checksum_type: df.data_file_checksum_type,
-    #       data_file_compression_status: df.data_file_compression_status,
-    #       data_file_location: df.data_file_location
-    #     }) AS data_files,
-    #     COLLECT(DISTINCT{
-    #       specimen_record_id: spec.specimen_record_id,
-    #       specimen_id: spec.specimen_id,
-    #       anatomical_collection_site: spec.anatomical_collection_site,
-    #       specimen_type: spec.specimen_type,
-    #       tissue_category: spec.tissue_category,
-    #       assessment_timepoint: spec.assessment_timepoint
-    #   }) AS biospecimen_info,
-    #     COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
-  
-    #     COLLECT(DISTINCT(diag.tumor_grade )) AS tumor_grade,
-    #     demo.sex AS sex,
-    #     demo.race AS race,
-    #     demo.ethnicity AS ethnicity,
-    #     COLLECT(DISTINCT(exp.carcinogen_exposure)) AS carcinogen_exposure,
-    #     COLLECT(DISTINCT(tt.targeted_therapy)) AS targeted_therapy,
-    #     array as targeted_therapy_string,
-    #     COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
-    #     COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
-
-    #   ORDER BY COALESCE(spec.specimen_id, '') ASC
-    #   "
     cypher_query: "
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
-      OPTIONAL MATCH (study:study)<-[:belongs_to]-(sub)
-      OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
-      OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
-      OPTIONAL MATCH (sub)<-[*..2]-(df:file)
-      WITH sub, spec, study, demo, exp, df
-
-      CALL {
-      WITH sub
-      OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-      WITH COLLECT(tt.targeted_therapy) AS ts
-      RETURN apoc.coll.toSet([t IN ts WHERE t IS NOT NULL AND t <> '' | toLower(t)]) AS targeted_therapy
-      }
-
-      CALL {
-      WITH sub
-      OPTIONAL MATCH (sub)<-[:of_participant]-(d:diagnosis)
-      WITH [w IN apoc.text.split(trim(apoc.text.replace(toLower(coalesce(d.primary_disease_site,'')), '[^a-z0-9]+', ' ')), '\\s+') WHERE w <> ''] AS toks, d
-      WITH apoc.text.join(apoc.coll.sort(toks), ' ') AS key, d
-      ORDER BY key, id(d) DESC
-      WITH key, collect(d)[0] AS best
-      RETURN best.primary_disease_site AS primary_disease_site,
-          best.ctep_disease_term AS ctep_disease_term,
-          best.stage_of_disease AS stage_of_disease,
-          best.primary_diagnosis_disease_group AS primary_diagnosis_disease_group
-      }
-
-      CALL {
-      WITH sub
-      OPTIONAL MATCH (sub)<-[:of_participant]-(d:diagnosis)
-      WITH COLLECT(d.tumor_grade) AS gs
-      RETURN apoc.coll.toSet([g IN gs WHERE g IS NOT NULL AND g <> '' | g]) AS tumor_grade
-      }
-
-      CALL {
-      WITH sub
-      OPTIONAL MATCH (t:targeted_therapy)-[:of_participant]->(sub)
-      WITH [x IN COLLECT(t.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-      WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
-      WITH apoc.coll.sort(dedup) AS arr
-      RETURN apoc.text.join(arr, '|') AS targeted_therapy_string
-      }
-
+      optional MATCH (target:targeted_therapy)-[:of_participant]->(sub)
+      WITH COLLECT(distinct target.targeted_therapy) as array,sub,spec
+      with apoc.coll.sort(array) as array,sub,spec
+      with apoc.text.join(array,'|') as array,sub,spec
+      optional MATCH (study:study)<-[:belongs_to]-(sub)
+      optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+      optional MATCH (sub)<-[:of_participant]-(demo:demographic)
+      optional MATCH (sub)<-[:of_participant]-(exp:exposure)
+      optional MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
+      optional MATCH (sub)<-[*..2]-(df:file)
       RETURN DISTINCT
-      'biospecimens' AS type,
-      sub.participant_id AS participant_id,
-      ctep_disease_term,
-      stage_of_disease,
-      primary_disease_site,
-      primary_diagnosis_disease_group,
-      spec.specimen_id AS specimen_id,
-      spec.specimen_record_id AS specimen_record_id,
-      spec.specimen_type AS specimen_type,
-      spec.anatomical_collection_site AS anatomical_collection_site,
-      spec.tissue_category AS tissue_category,
-      spec.assessment_timepoint AS assessment_timepoint,
-      study.study_short_name AS study_short_name,
-      COLLECT(DISTINCT {
-      data_file_uuid: df.data_file_uuid,
-      data_file_name: df.data_file_name,
-      data_file_type: df.data_file_type,
-      data_file_description: df.data_file_description,
-      data_file_format: df.data_file_format,
-      data_file_size: df.data_file_size,
-      data_file_checksum_value: df.data_file_checksum_value,
-      data_file_checksum_type: df.data_file_checksum_type,
-      data_file_compression_status: df.data_file_compression_status,
-      data_file_location: df.data_file_location
-      }) AS data_files,
-      COLLECT(DISTINCT {
-      specimen_record_id: spec.specimen_record_id,
-      specimen_id: spec.specimen_id,
-      anatomical_collection_site: spec.anatomical_collection_site,
-      specimen_type: spec.specimen_type,
-      tissue_category: spec.tissue_category,
-      assessment_timepoint: spec.assessment_timepoint
+        'biospecimens' AS type,
+        sub.participant_id AS participant_id,
+        diag.ctep_disease_term AS ctep_disease_term,
+        diag.stage_of_disease AS stage_of_disease,
+        diag.primary_disease_site AS primary_disease_site,
+        diag.primary_diagnosis_disease_group as primary_diagnosis_disease_group,
+        spec.specimen_id AS specimen_id,
+        spec.specimen_record_id AS specimen_record_id,
+        spec.specimen_type AS specimen_type,
+        spec.anatomical_collection_site AS anatomical_collection_site,
+        spec.tissue_category AS tissue_category,
+        spec.assessment_timepoint AS assessment_timepoint,
+        study.study_short_name as study_short_name,
+        COLLECT(DISTINCT{
+          data_file_uuid: df.data_file_uuid,
+          data_file_name: df.data_file_name,
+          data_file_type: df.data_file_type,
+          data_file_description: df.data_file_description,
+          data_file_format: df.data_file_format,
+          data_file_size: df.data_file_size,
+          data_file_checksum_value: df.data_file_checksum_value,
+          data_file_checksum_type: df.data_file_checksum_type,
+          data_file_compression_status: df.data_file_compression_status,
+          data_file_location: df.data_file_location
+        }) AS data_files,
+        COLLECT(DISTINCT{
+          specimen_record_id: spec.specimen_record_id,
+          specimen_id: spec.specimen_id,
+          anatomical_collection_site: spec.anatomical_collection_site,
+          specimen_type: spec.specimen_type,
+          tissue_category: spec.tissue_category,
+          assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
-      COLLECT(DISTINCT df.data_file_uuid) AS data_file_uuid,
-      tumor_grade,
-      demo.sex AS sex,
-      demo.race AS race,
-      demo.ethnicity AS ethnicity,
-      COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
-      targeted_therapy,
-      targeted_therapy_string,
-      COLLECT(DISTINCT df.data_file_type) AS data_file_type,
-      COLLECT(DISTINCT df.data_file_format) AS data_file_format
+        COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
+  
+        COLLECT(DISTINCT(diag.tumor_grade )) AS tumor_grade,
+        demo.sex AS sex,
+        demo.race AS race,
+        demo.ethnicity AS ethnicity,
+        COLLECT(DISTINCT(exp.carcinogen_exposure)) AS carcinogen_exposure,
+        COLLECT(DISTINCT(tt.targeted_therapy)) AS targeted_therapy,
+        array as targeted_therapy_string,
+        COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
+        COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
+
       ORDER BY COALESCE(spec.specimen_id, '') ASC
       "
+  
   
   # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
   - index_name: tab_data_files
