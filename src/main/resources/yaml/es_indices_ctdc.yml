@@ -517,17 +517,23 @@ Indices:
     #   "
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
-      WITH sb, study
+      WITH DISTINCT sb, study
 
       CALL {
           WITH sb
           OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-          WITH COLLECT(DISTINCT tt.targeted_therapy_id) as targeted_therapy_id, tt
-          WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts, targeted_therapy_id
-          WITH apoc.coll.toSet([t IN ts | toLower(t)]) AS dedup, targeted_therapy_id
-          RETURN dedup AS targeted_therapy,
-              apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string,
-              targeted_therapy_id
+          WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
+                WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items
+          WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items
+          WITH apoc.map.groupBy(normalized_items, 'name') AS byName
+          WITH [k IN keys(byName) |
+                {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped
+          WITH grouped,
+                [e IN grouped | e.name] AS names
+          RETURN
+            names AS targeted_therapy,
+            [e IN grouped | e.id] AS targeted_therapy_id,
+            apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string
       }
 
       CALL {
@@ -537,9 +543,21 @@ Indices:
           RETURN apoc.coll.toSet([s IN acs | toLower(s)]) AS anatomical_collection_site
       }
 
+      CALL {
+        WITH sb
+        OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
+        WITH 
+          [r IN COLLECT(demo.race) WHERE r IS NOT NULL AND r <> ''] AS races,
+          [s IN COLLECT(demo.sex) WHERE s IS NOT NULL AND s <> ''] AS sexes,
+          [e IN COLLECT(demo.ethnicity) WHERE e IS NOT NULL AND e <> ''] AS ethnicities
+        RETURN 
+            apoc.coll.toSet(races) AS race, 
+            apoc.coll.toSet(sexes) AS sex,
+            apoc.coll.toSet(ethnicities) AS ethnicity
+      }
+
       OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
       OPTIONAL MATCH (sb)<-[*..2]-(file:file)
-      OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
       OPTIONAL MATCH (diag:diagnosis)-[:of_participant]->(sb)
       OPTIONAL MATCH (expose:exposure)-[:of_participant]->(sb)
 
@@ -553,9 +571,9 @@ Indices:
       COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
       COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
       COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
-      COLLECT(DISTINCT demo.sex) as sex,
-      COLLECT(DISTINCT demo.race) as race,
-      COLLECT(DISTINCT demo.ethnicity) as ethnicity,
+      sex,
+      race,
+      ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
       targeted_therapy,
       targeted_therapy_id,
@@ -569,17 +587,17 @@ Indices:
       COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
       COLLECT(DISTINCT file.data_file_format) AS data_file_format,
       COLLECT(DISTINCT{
-          specimen_id: spec.specimen_id,
-          anatomical_collection_site: spec.anatomical_collection_site,
-          tissue_category: spec.tissue_category,
-          assessment_timepoint: spec.assessment_timepoint
+        specimen_id: spec.specimen_id,
+        anatomical_collection_site: spec.anatomical_collection_site,
+        tissue_category: spec.tissue_category,
+        assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
       COLLECT(DISTINCT{
-          data_file_uuid: file.data_file_uuid,
-          data_file_format: file.data_file_format,
-          data_file_type: file.data_file_type
+        data_file_uuid: file.data_file_uuid,
+        data_file_format: file.data_file_format,
+        data_file_type: file.data_file_type
       }) AS file_info
-      "
+      " 
 
   # Participant Table Data
   - index_name: tab_participants
