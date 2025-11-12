@@ -76,7 +76,7 @@ Indices:
       optional MATCH (s)<-[:belongs_to]-(participant)
       optional MATCH (participant)<-[*..2]-(parent)<--(f:file)
       optional MATCH (s)<-[:associated_with]-(df:file)
-      WHERE NOT (df)--(:participant)
+      WHERE NOT (df)-[:associated_with]->(:participant)
       AND NOT (df)-[:associated_with]->(:specimen)
        RETURN DISTINCT
                 s.study_name as study_name,
