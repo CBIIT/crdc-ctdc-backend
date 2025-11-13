@@ -7,6 +7,7 @@ queries:
         filter:
           type: global
           defaultSortField: participant_id
+          sortDirection: ASC
           searches:
             - field: participant_id
               type: wildcard
@@ -86,9 +87,9 @@ queries:
           - tab_biospecimens
         filter:
           type: global
-          defaultSortField: parent_specimen_id
+          defaultSortField: specimen_record_id
           searches:
-            - field: parent_specimen_id
+            - field: specimen_record_id
               type: wildcard
               caseInsensitive: true
             - field: specimen_id
@@ -103,10 +104,10 @@ queries:
             - field: ctep_disease_term
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
             - field: tissue_category
@@ -129,9 +130,9 @@ queries:
           - tab_biospecimens
         filter:
           type: global
-          defaultSortField: parent_specimen_id
+          defaultSortField: specimen_record_id
           searches:
-            - field: parent_specimen_id
+            - field: specimen_record_id
               type: wildcard
               caseInsensitive: true
             - field: specimen_id
@@ -146,10 +147,10 @@ queries:
             - field: ctep_disease_term
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
-            - field: parent_specimen_type
+            - field: specimen_type
               type: wildcard
               caseInsensitive: true
             - field: tissue_category
@@ -174,6 +175,8 @@ queries:
           - about_page
         filter:
           type: global
+          defaultSortField: title
+          sortDirection: ASC
           selectedField: content.paragraph
           searches:
             - field: content.paragraph
@@ -211,6 +214,8 @@ queries:
           - model_values
           - model_nodes
         filter:
+          defaultSortField: node
+          sortDirection: ASC
           type: global
           searches:
             - field: value_kw

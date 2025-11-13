@@ -714,7 +714,7 @@ type FileInfo {
     subject_id: String
     file_name: String
     file_type: String
-    association: String
+    association: [String]
     file_description: String
     file_format: String
     file_size: Float
@@ -737,7 +737,7 @@ type ProgramArms {
 type FileOverview {
     file_id: String
     file_name: String
-    association: String
+    association: [String]
     file_description: String
     file_format: String
     file_size: Float
