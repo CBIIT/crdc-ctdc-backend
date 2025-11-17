@@ -39,6 +39,37 @@
                 <scope>import</scope>
             </dependency>
             
+            <!-- Fix CVE-2025-24970: Force Netty 4.1.118.Final or later -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>4.1.118.Final</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <!-- Fix Tomcat CVEs: Force Tomcat 10.1.45 across all components -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>10.1.45</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-catalina</artifactId>
+                <version>10.1.45</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-coyote</artifactId>
+                <version>10.1.45</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-util</artifactId>
+                <version>10.1.45</version>
+            </dependency>
+            
             <!-- Force Spring Framework 6.2.11 across all Spring dependencies -->
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -167,7 +198,7 @@
             <artifactId>jedis</artifactId>
             <version>3.10.0</version>
         </dependency>
-        <!-- Apache Tomcat -->
+        <!-- Apache Tomcat - Fix CVE-2024-52316, CVE-2025-24813, CVE-2024-50379, CVE-2024-56337, CVE-2025-48988, CVE-2025-55752, CVE-2024-34750, CVE-2025-48989, CVE-2024-38286 -->
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
