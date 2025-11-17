@@ -30,6 +30,15 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Fix CVE-2025-52999: Force Jackson 2.18.2 or later -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.18.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
             <!-- Force Spring Framework 6.2.11 across all Spring dependencies -->
             <dependency>
                 <groupId>org.springframework</groupId>
