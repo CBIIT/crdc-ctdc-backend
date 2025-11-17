@@ -48,7 +48,7 @@
                 <scope>import</scope>
             </dependency>
             
-            <!-- Fix Tomcat CVEs: Force Tomcat 10.1.45 across all components -->
+            <!-- Fix Tomcat CVEs: Override embedded Tomcat core & annotations to 10.1.45 -->
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
@@ -56,17 +56,7 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.tomcat</groupId>
-                <artifactId>tomcat-catalina</artifactId>
-                <version>10.1.45</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat</groupId>
-                <artifactId>tomcat-coyote</artifactId>
-                <version>10.1.45</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat</groupId>
-                <artifactId>tomcat-util</artifactId>
+                <artifactId>tomcat-annotations-api</artifactId>
                 <version>10.1.45</version>
             </dependency>
             
