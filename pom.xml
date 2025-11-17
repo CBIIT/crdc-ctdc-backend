@@ -352,6 +352,45 @@
                   </execution>
                 </executions>
             </plugin>
+            <!-- OWASP Dependency-Check plugin: run with -Pcve-scan profile -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.3.0</version>
+                <configuration>
+                    <!-- Fail build if a vulnerability CVSS >= 7 is found -->
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
+                    <format>HTML,JSON</format>
+                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+                    <suppressionFile>.dependency-check-suppressions.xml</suppressionFile>
+                    <!-- Use environment variable NVD_API_KEY if provided -->
+                    <nvd>
+                        <apiKey>${env.NVD_API_KEY}</apiKey>
+                    </nvd>
+                    <skipTests>true</skipTests>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>dependency-check-aggregate</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>cve-scan</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!-- Allow overriding CVSS threshold when invoking: mvn -Pcve-scan -Dcvss.threshold=5 -->
+                <cvss.threshold>7</cvss.threshold>
+            </properties>
+        </profile>
+    </profiles>
 </project>
