@@ -624,10 +624,10 @@ Indices:
         type: keyword
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
-      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
-      WITH COLLECT(distinct target.targeted_therapy) as array,sb,study
-      with nci_crdc_functions.sort(array) as array,sb,study
-      with nci_crdc_functions.join_collection(array,'|') as array,sb,study
+      optional MATCH (target:targeted_therapy)-[:of_participant]-(sb:participant)
+      WITH COLLECT(distinct target.targeted_therapy) as array1,sb,study
+      with nci_crdc_functions.sort(array1) as array1,study
+      with nci_crdc_functions.join_collection(array1,'|') as array,study
       optional MATCH (sb:participant)<-[*..2]-(df:data_file)
       optional MATCH (sb)<-[:of_participant]-(diag:diagnosis)
       optional MATCH (sb)<-[:of_participant]-(spec:specimen)
