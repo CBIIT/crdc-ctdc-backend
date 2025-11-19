@@ -833,7 +833,7 @@ Indices:
       ORDER BY id(d) DESC
       WITH head(collect(d)) AS best
       RETURN
-        best.primary_disease_site              AS primary_disease_site,
+        apoc.text.capitalizeAll(toLower(best.primary_disease_site)) AS primary_disease_site,
         best.ctep_disease_term                 AS ctep_disease_term,
         best.stage_of_disease                  AS stage_of_disease,
         best.primary_diagnosis_disease_group   AS primary_diagnosis_disease_group,
