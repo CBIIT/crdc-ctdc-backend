@@ -201,7 +201,7 @@ Indices:
          COLLECT(DISTINCT df.data_file_type) as list_type
       "
   # Name of the index to be created, existing index with same name will be deleted
-   - index_name: study_specimen
+  - index_name: study_specimen
     type: neo4j
     # type mapping for each property of the index
     mapping:
