@@ -664,8 +664,12 @@ Indices:
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
         WITH apoc.coll.toSet([t IN ts | apoc.text.capitalizeAll(t)]) AS dedup
-        RETURN dedup AS targeted_therapy,
-          apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
+        WITH CASE
+          WHEN size(dedup) > 1 THEN [t IN dedup WHERE t <> 'Not Reported']
+          ELSE dedup
+        END AS cleaned_tt
+        RETURN cleaned_tt AS targeted_therapy,
+          apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
       RETURN DISTINCT
@@ -925,8 +929,6 @@ Indices:
         type: keyword
       participant_id:
         type: keyword
-      specimen_id:
-        type: keyword
       ctep_disease_term:
         type: keyword
       primary_diagnosis_disease_group:
@@ -992,12 +994,27 @@ Indices:
 
       MATCH (f:file {data_file_uuid: uuid})
 
-      OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
-      OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+      OPTIONAL MATCH (f)-[:associated_with]-(sub:participant)
+      WITH f, associations, apoc.coll.toSet(COLLECT(DISTINCT sub)) AS subs
+
+      OPTIONAL MATCH (spec1:specimen)-[:of_participant]->(sub2:participant)
+      WHERE sub2 IN subs
+      WITH f, associations, subs, apoc.coll.toSet(COLLECT(DISTINCT spec1)) AS all_specs
+
+      WITH f, associations, subs, all_specs,
+           [s IN all_specs
+            WHERE s.specimen_record_id IS NOT NULL
+              AND f.data_file_name CONTAINS s.specimen_record_id] AS matching_specs
+
       WITH
-        f, associations,
-        apoc.coll.toSet(COLLECT(sub1) + COLLECT(sub2))        AS subs,
-        apoc.coll.toSet(COLLECT(spec1))                       AS specs
+        f,
+        associations,
+        subs,
+        CASE
+          WHEN size(matching_specs) > 0
+            THEN matching_specs   
+          ELSE all_specs          
+        END AS specs
 
       OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
       WHERE sPart IN subs
@@ -1072,7 +1089,6 @@ Indices:
         associations                                          AS association,
 
         head([x IN subs  WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
-        head([x IN specs WHERE x.specimen_id    IS NOT NULL | x.specimen_id])    AS specimen_id,
 
         head([x IN ctep_terms   WHERE x IS NOT NULL])          AS ctep_disease_term,
         head([x IN pdg_list     WHERE x IS NOT NULL])          AS primary_diagnosis_disease_group,
