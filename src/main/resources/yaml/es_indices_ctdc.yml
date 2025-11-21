@@ -740,8 +740,6 @@ Indices:
         type: keyword
       primary_disease_site:
         type: keyword
-      specimen_id:
-        type: keyword
       specimen_record_id:
         type: keyword
       specimen_type:
@@ -779,8 +777,6 @@ Indices:
         type: nested
         properties:
           specimen_record_id:
-            type: keyword
-          specimen_id:
             type: keyword
           anatomical_collection_site:
             type: keyword
@@ -854,7 +850,6 @@ Indices:
       stage_of_disease,
       primary_disease_site,
       primary_diagnosis_disease_group,
-      spec.specimen_id AS specimen_id,
       spec.specimen_record_id AS specimen_record_id,
       spec.specimen_type AS specimen_type,
       acs_norm AS anatomical_collection_site,
@@ -875,7 +870,6 @@ Indices:
       }) AS data_files,
       COLLECT(DISTINCT {
       specimen_record_id: spec.specimen_record_id,
-      specimen_id: spec.specimen_id,
       anatomical_collection_site: acs_norm,
       specimen_type: spec.specimen_type,
       tissue_category: spec.tissue_category,
