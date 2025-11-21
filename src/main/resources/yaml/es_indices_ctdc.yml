@@ -994,27 +994,13 @@ Indices:
 
       MATCH (f:file {data_file_uuid: uuid})
 
-      OPTIONAL MATCH (f)-[:associated_with]-(sub:participant)
-      WITH f, associations, apoc.coll.toSet(COLLECT(DISTINCT sub)) AS subs
-
-      OPTIONAL MATCH (spec1:specimen)-[:of_participant]->(sub2:participant)
-      WHERE sub2 IN subs
-      WITH f, associations, subs, apoc.coll.toSet(COLLECT(DISTINCT spec1)) AS all_specs
-
-      WITH f, associations, subs, all_specs,
-           [s IN all_specs
-            WHERE s.specimen_record_id IS NOT NULL
-              AND f.data_file_name CONTAINS s.specimen_record_id] AS matching_specs
-
+      OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
+      OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
       WITH
         f,
         associations,
-        subs,
-        CASE
-          WHEN size(matching_specs) > 0
-            THEN matching_specs   
-          ELSE all_specs          
-        END AS specs
+        apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS subs,
+        apoc.coll.toSet([x IN COLLECT(spec1) WHERE x IS NOT NULL])                  AS specs
 
       OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
       WHERE sPart IN subs
