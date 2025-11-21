@@ -825,13 +825,6 @@ Indices:
 
       CALL {
       WITH sub
-      OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-      WITH COLLECT(tt.targeted_therapy) AS ts
-      RETURN apoc.coll.toSet([t IN ts WHERE t IS NOT NULL AND t <> '' | toLower(t)]) AS targeted_therapy
-      }
-
-      CALL {
-      WITH sub
       OPTIONAL MATCH (sub)<-[:of_participant]-(d:diagnosis)
       WITH d
       ORDER BY id(d) DESC
@@ -845,16 +838,17 @@ Indices:
       }
 
       CALL {
-      WITH sub
-      OPTIONAL MATCH (t:targeted_therapy)-[:of_participant]->(sub)
-      WITH [x IN COLLECT(t.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-      WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
-      WITH apoc.coll.sort(dedup) AS arr
-      RETURN apoc.text.join(arr, '|') AS targeted_therapy_string
+        WITH sub
+        OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
+        WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
+        WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
+        RETURN
+          dedup                                                      AS targeted_therapy,
+          apoc.text.join(apoc.coll.sort(dedup), '|')                 AS targeted_therapy_string
       }
 
       RETURN DISTINCT
-      'biospecimens' AS type,
+      'biospecimen' AS type,
       sub.participant_id AS participant_id,
       ctep_disease_term,
       stage_of_disease,
@@ -897,7 +891,7 @@ Indices:
       targeted_therapy_string,
       COLLECT(DISTINCT df.data_file_type) AS data_file_type,
       COLLECT(DISTINCT df.data_file_format) AS data_file_format
-      ORDER BY COALESCE(spec.specimen_id, '') ASC
+      ORDER BY COALESCE(spec.specimen_record_id, '') ASC
       "
   
   # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
