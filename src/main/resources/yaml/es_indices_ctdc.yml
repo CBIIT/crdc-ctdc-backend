@@ -837,7 +837,7 @@ Indices:
         WITH sub
         OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
         WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-        WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
+        WITH apoc.coll.toSet([x IN ts | apoc.text.capitalizeAll(toLower(x))]) AS dedup
         RETURN
           dedup                                                      AS targeted_therapy,
           apoc.text.join(apoc.coll.sort(dedup), '|')                 AS targeted_therapy_string
