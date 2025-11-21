@@ -663,9 +663,14 @@ Indices:
         WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
-        WITH apoc.coll.toSet([t IN ts | toLower(t)]) AS dedup
-        RETURN dedup AS targeted_therapy,
-          apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
+        WITH apoc.coll.toSet([t IN ts | apoc.text.capitalizeAll(t)]) AS dedup
+        WITH CASE
+          WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0 
+          THEN [t IN dedup WHERE t <> 'Not Reported']
+          ELSE dedup
+        END AS cleaned_tt
+        RETURN cleaned_tt AS targeted_therapy,
+          apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
       RETURN DISTINCT
@@ -736,8 +741,6 @@ Indices:
         type: keyword
       primary_disease_site:
         type: keyword
-      specimen_id:
-        type: keyword
       specimen_record_id:
         type: keyword
       specimen_type:
@@ -775,8 +778,6 @@ Indices:
         type: nested
         properties:
           specimen_record_id:
-            type: keyword
-          specimen_id:
             type: keyword
           anatomical_collection_site:
             type: keyword
@@ -821,19 +822,12 @@ Indices:
 
       CALL {
       WITH sub
-      OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-      WITH COLLECT(tt.targeted_therapy) AS ts
-      RETURN apoc.coll.toSet([t IN ts WHERE t IS NOT NULL AND t <> '' | toLower(t)]) AS targeted_therapy
-      }
-
-      CALL {
-      WITH sub
       OPTIONAL MATCH (sub)<-[:of_participant]-(d:diagnosis)
       WITH d
       ORDER BY id(d) DESC
       WITH head(collect(d)) AS best
       RETURN
-        best.primary_disease_site              AS primary_disease_site,
+        apoc.text.capitalizeAll(toLower(best.primary_disease_site)) AS primary_disease_site,
         best.ctep_disease_term                 AS ctep_disease_term,
         best.stage_of_disease                  AS stage_of_disease,
         best.primary_diagnosis_disease_group   AS primary_diagnosis_disease_group,
@@ -841,22 +835,22 @@ Indices:
       }
 
       CALL {
-      WITH sub
-      OPTIONAL MATCH (t:targeted_therapy)-[:of_participant]->(sub)
-      WITH [x IN COLLECT(t.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-      WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
-      WITH apoc.coll.sort(dedup) AS arr
-      RETURN apoc.text.join(arr, '|') AS targeted_therapy_string
+        WITH sub
+        OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
+        WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
+        WITH apoc.coll.toSet([x IN ts | apoc.text.capitalizeAll(toLower(x))]) AS dedup
+        RETURN
+          dedup                                                      AS targeted_therapy,
+          apoc.text.join(apoc.coll.sort(dedup), '|')                 AS targeted_therapy_string
       }
 
       RETURN DISTINCT
-      'biospecimens' AS type,
+      'biospecimen' AS type,
       sub.participant_id AS participant_id,
       ctep_disease_term,
       stage_of_disease,
       primary_disease_site,
       primary_diagnosis_disease_group,
-      spec.specimen_id AS specimen_id,
       spec.specimen_record_id AS specimen_record_id,
       spec.specimen_type AS specimen_type,
       acs_norm AS anatomical_collection_site,
@@ -877,7 +871,6 @@ Indices:
       }) AS data_files,
       COLLECT(DISTINCT {
       specimen_record_id: spec.specimen_record_id,
-      specimen_id: spec.specimen_id,
       anatomical_collection_site: acs_norm,
       specimen_type: spec.specimen_type,
       tissue_category: spec.tissue_category,
@@ -893,7 +886,7 @@ Indices:
       targeted_therapy_string,
       COLLECT(DISTINCT df.data_file_type) AS data_file_type,
       COLLECT(DISTINCT df.data_file_format) AS data_file_format
-      ORDER BY COALESCE(spec.specimen_id, '') ASC
+      ORDER BY COALESCE(spec.specimen_record_id, '') ASC
       "
   
   # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
@@ -924,8 +917,6 @@ Indices:
       association:
         type: keyword
       participant_id:
-        type: keyword
-      specimen_id:
         type: keyword
       ctep_disease_term:
         type: keyword
@@ -995,9 +986,10 @@ Indices:
       OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
       WITH
-        f, associations,
-        apoc.coll.toSet(COLLECT(sub1) + COLLECT(sub2))        AS subs,
-        apoc.coll.toSet(COLLECT(spec1))                       AS specs
+        f,
+        associations,
+        apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS subs,
+        apoc.coll.toSet([x IN COLLECT(spec1) WHERE x IS NOT NULL])                  AS specs
 
       OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
       WHERE sPart IN subs
@@ -1072,7 +1064,6 @@ Indices:
         associations                                          AS association,
 
         head([x IN subs  WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
-        head([x IN specs WHERE x.specimen_id    IS NOT NULL | x.specimen_id])    AS specimen_id,
 
         head([x IN ctep_terms   WHERE x IS NOT NULL])          AS ctep_disease_term,
         head([x IN pdg_list     WHERE x IS NOT NULL])          AS primary_diagnosis_disease_group,
