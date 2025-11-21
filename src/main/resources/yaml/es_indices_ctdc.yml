@@ -665,7 +665,8 @@ Indices:
         WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
         WITH apoc.coll.toSet([t IN ts | apoc.text.capitalizeAll(t)]) AS dedup
         WITH CASE
-          WHEN size(dedup) > 1 THEN [t IN dedup WHERE t <> 'Not Reported']
+          WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0 
+          THEN [t IN dedup WHERE t <> 'Not Reported']
           ELSE dedup
         END AS cleaned_tt
         RETURN cleaned_tt AS targeted_therapy,
