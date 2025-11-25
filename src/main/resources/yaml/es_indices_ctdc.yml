@@ -491,7 +491,7 @@ Indices:
           WITH sb
           OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
           WITH [s IN COLLECT(spec.anatomical_collection_site) WHERE s IS NOT NULL AND s <> ''] AS acs
-          RETURN apoc.coll.toSet([s IN acs | toLower(s)]) AS anatomical_collection_site
+          RETURN apoc.coll.toSet([s IN acs | apoc.text.capitalizeAll(toLower(s))]) AS anatomical_collection_site
       }
 
       CALL {
@@ -513,7 +513,7 @@ Indices:
       OPTIONAL MATCH (expose:exposure)-[:of_participant]->(sb)
 
       RETURN DISTINCT
-      'participants' as type,
+      'participant' as type,
       sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
