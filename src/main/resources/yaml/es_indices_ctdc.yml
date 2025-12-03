@@ -1043,7 +1043,7 @@ Indices:
         'data file' AS type,
         head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
 
-        COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | x.anatomical_collection_site]), '') AS anatomical_collection_site,
+        COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]), '') AS anatomical_collection_site,
         COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,
         COALESCE(head([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]), '') AS tissue_category,
         COALESCE(head([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]), '') AS assessment_timepoint,
@@ -1085,7 +1085,7 @@ Indices:
         [x IN specs | {
           specimen_record_id:          x.specimen_record_id,
           specimen_id:                 x.specimen_id,
-          anatomical_collection_site:  x.anatomical_collection_site,
+          anatomical_collection_site:  apoc.text.capitalizeAll(toLower(x.anatomical_collection_site)),
           specimen_type:               x.specimen_type,
           tissue_category:             x.tissue_category,
           assessment_timepoint:        x.assessment_timepoint
