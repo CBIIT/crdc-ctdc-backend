@@ -138,3 +138,24 @@ queries:
       caseInsensitive: false
     result:
       type: object_array
+  - name: clinicalDataPart1
+    index:
+      - clinical_data_tab
+    filter:
+      type: default
+      caseInsensitive: false
+      ignoreIfEmpty:
+        - study_short_name
+    result:
+      type: string
+
+  - name: clinicalDataPart2
+    index:
+      - clinical_data_tab_2
+    filter:
+      type: default
+      caseInsensitive: false
+      ignoreIfEmpty:
+        - study_short_name
+    result:
+      type: string
