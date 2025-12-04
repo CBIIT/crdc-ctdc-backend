@@ -673,6 +673,15 @@ Indices:
           apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
+      CALL {
+        WITH sb
+        OPTIONAL MATCH (sb)<-[:of_participant]-(spec:specimen)
+        WITH [s IN COLLECT(spec.anatomical_collection_site)
+              WHERE s IS NOT NULL AND s <> ''] AS acs
+        RETURN apoc.coll.toSet([s IN acs |
+                apoc.text.capitalizeAll(toLower(toString(s)))]) AS anatomical_collection_site
+      }
+
       RETURN DISTINCT
       'participants' AS type,
       sb.participant_id AS participant_id,
@@ -714,7 +723,7 @@ Indices:
       COLLECT(DISTINCT(surgery.extent_of_residual_disease)) AS extent_of_residual_disease,
       COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
       COLLECT(DISTINCT(spec.specimen_id)) AS specimen_id,
-      COLLECT(DISTINCT(spec.anatomical_collection_site)) AS anatomical_collection_site,
+      anatomical_collection_site,
       COLLECT(DISTINCT(spec.specimen_type)) AS specimen_type,
       COLLECT(DISTINCT(spec.tissue_category)) AS tissue_category,
       COLLECT(DISTINCT(spec.assessment_timepoint)) AS assessment_timepoint,
