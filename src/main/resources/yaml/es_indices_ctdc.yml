@@ -491,7 +491,7 @@ Indices:
           WITH sb
           OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
           WITH [s IN COLLECT(spec.anatomical_collection_site) WHERE s IS NOT NULL AND s <> ''] AS acs
-          RETURN apoc.coll.toSet([s IN acs | toLower(s)]) AS anatomical_collection_site
+          RETURN apoc.coll.toSet([s IN acs | apoc.text.capitalizeAll(toLower(s))]) AS anatomical_collection_site
       }
 
       CALL {
@@ -513,7 +513,7 @@ Indices:
       OPTIONAL MATCH (expose:exposure)-[:of_participant]->(sb)
 
       RETURN DISTINCT
-      'participants' as type,
+      'participant' as type,
       sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
@@ -673,6 +673,15 @@ Indices:
           apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
+      CALL {
+        WITH sb
+        OPTIONAL MATCH (sb)<-[:of_participant]-(spec:specimen)
+        WITH [s IN COLLECT(spec.anatomical_collection_site)
+              WHERE s IS NOT NULL AND s <> ''] AS acs
+        RETURN apoc.coll.toSet([s IN acs |
+                apoc.text.capitalizeAll(toLower(toString(s)))]) AS anatomical_collection_site
+      }
+
       RETURN DISTINCT
       'participants' AS type,
       sb.participant_id AS participant_id,
@@ -714,7 +723,7 @@ Indices:
       COLLECT(DISTINCT(surgery.extent_of_residual_disease)) AS extent_of_residual_disease,
       COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
       COLLECT(DISTINCT(spec.specimen_id)) AS specimen_id,
-      COLLECT(DISTINCT(spec.anatomical_collection_site)) AS anatomical_collection_site,
+      anatomical_collection_site,
       COLLECT(DISTINCT(spec.specimen_type)) AS specimen_type,
       COLLECT(DISTINCT(spec.tissue_category)) AS tissue_category,
       COLLECT(DISTINCT(spec.assessment_timepoint)) AS assessment_timepoint,
@@ -1043,7 +1052,7 @@ Indices:
         'data file' AS type,
         head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
 
-        COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | x.anatomical_collection_site]), '') AS anatomical_collection_site,
+        COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]), '') AS anatomical_collection_site,
         COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,
         COALESCE(head([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]), '') AS tissue_category,
         COALESCE(head([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]), '') AS assessment_timepoint,
@@ -1085,7 +1094,7 @@ Indices:
         [x IN specs | {
           specimen_record_id:          x.specimen_record_id,
           specimen_id:                 x.specimen_id,
-          anatomical_collection_site:  x.anatomical_collection_site,
+          anatomical_collection_site:  apoc.text.capitalizeAll(toLower(x.anatomical_collection_site)),
           specimen_type:               x.specimen_type,
           tissue_category:             x.tissue_category,
           assessment_timepoint:        x.assessment_timepoint
