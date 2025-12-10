@@ -143,12 +143,10 @@ queries:
       - clinical_data_tab
     filter:
       type: default
-      caseInsensitive: false
       ignoreIfEmpty:
         - study_short_name
     result:
-      type: string
-
+      type: object_array
   - name: clinicalDataPart2
     index:
       - clinical_data_tab_2
@@ -158,4 +156,4 @@ queries:
       ignoreIfEmpty:
         - study_short_name
     result:
-      type: string
+      type: object_array
