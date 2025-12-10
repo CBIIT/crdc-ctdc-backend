@@ -468,47 +468,28 @@ type ClinicalSurgery {
 
 type ClinicalDataPart1 {
   study_short_name: String
-  diagnosis: [ClinicalDiagnosis]
-  diagnosis_participant_count: Int
-  demographic: [ClinicalDemographic]
-  demographic_participant_count: Int
-  radiotherapy: [ClinicalRadiotherapy]
-  radiotherapy_participant_count: Int
-  exposure: [ClinicalExposure]
-  exposure_participant_count: Int
-  specimen: [ClinicalSpecimen]
-  specimen_participant_count: Int
-  targeted_therapy: [ClinicalTargetedTherapy]
-  targeted_therapy_participant_count: Int
+  diagnosisNodeData: [ClinicalDiagnosis]
+  diagnosisParticipantCount: Int
+  demographicNodeData: [ClinicalDemographic]
+  demographicParticipantCount: Int
+  radiotherapyNodeData: [ClinicalRadiotherapy]
+  radiotherapyParticipantCount: Int
+  exposureNodeData: [ClinicalExposure]
+  exposureParticipantCount: Int
+  specimenNodeData: [ClinicalSpecimen]
+  specimenParticipantCount: Int
+  targetedTherapyNodeData: [ClinicalTargetedTherapy]
+  targetedTherapyParticipantCount: Int
 }
 
 type ClinicalDataPart2 {
   study_short_name: String
-  non_targeted_therapy: [ClinicalNonTargetedTherapy]
-  non_targeted_therapy_participant_count: Int
-  surgery: [ClinicalSurgery]
-  surgery_participant_count: Int
+  nonTargetedTherapyNodeData: [ClinicalNonTargetedTherapy]
+  nonTargetedTherapyParticipantCount: Int
+  surgeryNodeData: [ClinicalSurgery]
+  surgeryParticipantCount: Int
 }
 
-type ClinicalData {
-  study_short_name: String
-  diagnosis: [ClinicalDiagnosis]
-  diagnosis_participant_count: Int
-  demographic: [ClinicalDemographic]
-  demographic_participant_count: Int
-  radiotherapy: [ClinicalRadiotherapy]
-  radiotherapy_participant_count: Int
-  exposure: [ClinicalExposure]
-  exposure_participant_count: Int
-  specimen: [ClinicalSpecimen]
-  specimen_participant_count: Int
-  targeted_therapy: [ClinicalTargetedTherapy]
-  targeted_therapy_participant_count: Int
-  non_targeted_therapy: [ClinicalNonTargetedTherapy]
-  non_targeted_therapy_participant_count: Int
-  surgery: [ClinicalSurgery]
-  surgery_participant_count: Int
-}
 type BiospecimenOverview {
   participant_id: String
   ctep_disease_term: String
