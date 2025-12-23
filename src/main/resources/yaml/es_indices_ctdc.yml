@@ -980,6 +980,8 @@ Indices:
         type: keyword
       study_short_name:
         type: keyword
+      study_accession_id:
+        type: keyword
     cypher_query: "
       CALL {
         MATCH (sub:participant)<-[*..2]-(parent)<--(f:file)
@@ -993,7 +995,7 @@ Indices:
       MATCH (f:file {data_file_uuid: uuid})
 
       OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
-      OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
       WITH
         f, associations,
         apoc.coll.toSet(COLLECT(sub1) + COLLECT(sub2))        AS subs,
@@ -1003,12 +1005,13 @@ Indices:
       WHERE sPart IN subs
       WITH
         f, associations, subs, specs,
-        COLLECT(DISTINCT study.study_short_name)              AS study_short_names
+        COLLECT(DISTINCT study.study_short_name)              AS study_short_names,
+        COllect(distinct study.study_accession)           AS study_accession_ids
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
       WHERE dPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names, study_accession_ids,
         COLLECT(DISTINCT diag.ctep_disease_term)              AS ctep_terms,
         COLLECT(DISTINCT diag.primary_diagnosis_disease_group) AS pdg_list,
         COLLECT(DISTINCT diag.stage_of_disease)               AS stage_list,
@@ -1020,7 +1023,7 @@ Indices:
       OPTIONAL MATCH (dmPart:participant)<-[:of_participant]-(demo:demographic)
       WHERE dmPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names, study_accession_ids,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         COLLECT(DISTINCT demo.sex)                            AS sex_list,
         COLLECT(DISTINCT demo.race)                           AS race_list,
@@ -1030,15 +1033,15 @@ Indices:
       OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
       WHERE exPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names, study_accession_ids,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
 
-      OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
+       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
       WHERE ttPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names,study_accession_ids,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
@@ -1050,6 +1053,8 @@ Indices:
       RETURN
         'data file' AS type,
         head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
+        
+        head([s IN study_accession_ids WHERE s IS NOT NULL]) AS study_accession_id,
 
         COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | x.anatomical_collection_site]), '') AS anatomical_collection_site,
         COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,

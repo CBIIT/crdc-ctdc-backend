@@ -549,6 +549,7 @@ type FileOverview {
   primary_disease_site: String
   drs_uri: String
   study_short_name: String
+  study_accession_id: String
 }
 
 type FileParticipant {
