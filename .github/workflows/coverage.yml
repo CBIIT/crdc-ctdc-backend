@@ -48,8 +48,10 @@ jobs:
           name: jacoco-report
           path: target/site/jacoco/
  
-      - name: Upload to Coveralls
+      - name: Coveralls GitHub Action
+        # Only works if public and enabled in Coveralls, no token required
+        uses: coverallsapp/github-action@v2
         if: always()
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: mvn -B coveralls:report -DskipTests
+        with:
+          # This will detect and push `target/site/jacoco/jacoco.xml` if present
+          github-token: ${{ secrets.GITHUB_TOKEN }}
