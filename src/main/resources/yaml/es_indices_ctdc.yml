@@ -389,7 +389,7 @@ Indices:
         untargetedTherapyCount AS numberOfNonTargeted,
         targetTherapyCount AS numberOfTargeted,
         dataFileCount AS dataFileCount,
-        apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) AS specimenCountbyStageOfDisease,
+        nci_crdc_functions.to_set(COLLECT(specimenCountbyStageOfDisease)) AS specimenCountbyStageOfDisease,
         dataFileByType AS dataFileByType
       "
       
@@ -473,38 +473,44 @@ Indices:
       CALL {
           WITH sb
           OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-          WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
-                WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items
-          WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items
-          WITH apoc.map.groupBy(normalized_items, 'name') AS byName
+          WITH COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) AS tt_items
+          WITH [x IN tt_items WHERE x.name IS NOT NULL AND x.name <> ''] AS filtered_items
+          WITH [x IN filtered_items | {name: toLower(x.name), id: x.id}] AS normalized_items
+          WITH REDUCE(acc = {}, item IN normalized_items | 
+                CASE WHEN acc[item.name] IS NULL THEN acc + {(item.name): [item]} 
+                     ELSE acc + {(item.name): acc[item.name] + [item]} END) AS byName
           WITH [k IN keys(byName) |
                 {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped
           WITH grouped,
-                [e IN grouped | apoc.text.capitalizeAll(e.name)] AS names
+                [e IN grouped | 
+                  REDUCE(s = '', word IN split(e.name, ' ') | 
+                    s + (CASE WHEN s = '' THEN '' ELSE ' ' END) + 
+                    upper(substring(word, 0, 1)) + substring(word, 1))] AS names
           RETURN
             names AS targeted_therapy,
             [e IN grouped | e.id] AS targeted_therapy_id,
-            apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string
+            REDUCE(str = '', n IN names | str + (CASE WHEN str = '' THEN '' ELSE '|' END) + n) AS targeted_therapy_string
       }
 
       CALL {
           WITH sb
           OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
-          WITH [s IN COLLECT(spec.anatomical_collection_site) WHERE s IS NOT NULL AND s <> ''] AS acs
-          RETURN apoc.coll.toSet([s IN acs | toLower(s)]) AS anatomical_collection_site
+          WITH COLLECT(DISTINCT spec.anatomical_collection_site) AS acs_list
+          WITH [s IN acs_list WHERE s IS NOT NULL AND s <> ''] AS filtered_acs
+          RETURN [s IN filtered_acs | toLower(s)] AS anatomical_collection_site
       }
 
       CALL {
         WITH sb
         OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
         WITH 
-          [r IN COLLECT(demo.race) WHERE r IS NOT NULL AND r <> ''] AS races,
-          [s IN COLLECT(demo.sex) WHERE s IS NOT NULL AND s <> ''] AS sexes,
-          [e IN COLLECT(demo.ethnicity) WHERE e IS NOT NULL AND e <> ''] AS ethnicities
+          COLLECT(DISTINCT demo.race) AS race_list,
+          COLLECT(DISTINCT demo.sex) AS sex_list,
+          COLLECT(DISTINCT demo.ethnicity) AS ethnicity_list
         RETURN 
-            apoc.coll.toSet(races) AS race, 
-            apoc.coll.toSet(sexes) AS sex,
-            apoc.coll.toSet(ethnicities) AS ethnicity
+             [r IN race_list WHERE r IS NOT NULL AND r <> ''] AS race, 
+             [s IN sex_list WHERE s IS NOT NULL AND s <> ''] AS sex,
+             [e IN ethnicity_list WHERE e IS NOT NULL AND e <> ''] AS ethnicity
       }
 
       OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
@@ -663,9 +669,9 @@ Indices:
         WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
-        WITH apoc.coll.toSet([t IN ts | toLower(t)]) AS dedup
+        WITH  nci_crdc_functions.to_set([t IN ts | toLower(t)]) AS dedup
         RETURN dedup AS targeted_therapy,
-          apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
+           nci_crdc_functions.join_collection(nci_crdc_functions.to_set(dedup), '|') AS targeted_therapy_string
       }
 
       RETURN DISTINCT
@@ -817,13 +823,15 @@ Indices:
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       OPTIONAL MATCH (sub)<-[*..2]-(df:file)
       WITH sub, spec, study, demo, exp, df,
-          apoc.text.capitalizeAll(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
+          REDUCE(s = '', word IN split(toLower(COALESCE(spec.anatomical_collection_site, '')), ' ') | 
+            s + (CASE WHEN s = '' THEN '' ELSE ' ' END) + 
+            upper(substring(word, 0, 1)) + substring(word, 1)) AS acs_norm
 
       CALL {
       WITH sub
       OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-      WITH COLLECT(tt.targeted_therapy) AS ts
-      RETURN apoc.coll.toSet([t IN ts WHERE t IS NOT NULL AND t <> '' | toLower(t)]) AS targeted_therapy
+      WITH COLLECT(DISTINCT tt.targeted_therapy) AS ts
+      RETURN [t IN ts WHERE t IS NOT NULL AND t <> '' | toLower(t)] AS targeted_therapy
       }
 
       CALL {
@@ -843,10 +851,9 @@ Indices:
       CALL {
       WITH sub
       OPTIONAL MATCH (t:targeted_therapy)-[:of_participant]->(sub)
-      WITH [x IN COLLECT(t.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-      WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
-      WITH apoc.coll.sort(dedup) AS arr
-      RETURN apoc.text.join(arr, '|') AS targeted_therapy_string
+      WITH COLLECT(DISTINCT t.targeted_therapy) AS ts
+      WITH [x IN ts WHERE x IS NOT NULL AND x <> '' | toLower(x)] AS dedup
+      RETURN REDUCE(str = '', n IN dedup | str + (CASE WHEN str = '' THEN '' ELSE '|' END) + n) AS targeted_therapy_string
       }
 
       RETURN DISTINCT
@@ -996,8 +1003,8 @@ Indices:
       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
       WITH
         f, associations,
-        apoc.coll.toSet(COLLECT(sub1) + COLLECT(sub2))        AS subs,
-        apoc.coll.toSet(COLLECT(spec1))                       AS specs
+         nci_crdc_functions.to_set(COLLECT(sub1) + COLLECT(sub2))        AS subs,
+         nci_crdc_functions.to_set(COLLECT(spec1))                       AS specs
 
       OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
       WHERE sPart IN subs
@@ -1033,7 +1040,7 @@ Indices:
         f, associations, subs, specs, study_short_names,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
-        apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
+         nci_crdc_functions.to_set(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
 
       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
       WHERE ttPart IN subs
@@ -1041,9 +1048,9 @@ Indices:
         f, associations, subs, specs, study_short_names,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
-        apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
-        apoc.text.join(
-          apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
+         nci_crdc_functions.to_set(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
+         nci_crdc_functions.join_collection(
+          nci_crdc_functions.to_set([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
           '|'
         )                                                     AS targeted_therapy_string
 
@@ -1173,10 +1180,10 @@ Indices:
       OPTIONAL MATCH (tt:targeted_therapy)-[:of_participant]->(sub)
       WITH
         f, sub, spec,
-        apoc.coll.toSet([t IN collect(DISTINCT tt.targeted_therapy)
+         nci_crdc_functions.to_set([t IN collect(DISTINCT tt.targeted_therapy)
                           WHERE t IS NOT NULL AND t <> '' | t])                AS targeted_therapy,
-        apoc.text.join(
-          apoc.coll.sort([t IN collect(DISTINCT toLower(tt.targeted_therapy))
+         nci_crdc_functions.join_collection(
+          nci_crdc_functions.to_set([t IN collect(DISTINCT toLower(tt.targeted_therapy))
                           WHERE t IS NOT NULL AND t <> '' | t]),
           '|'
         )                                                                      AS targeted_therapy_string
@@ -1316,8 +1323,8 @@ Indices:
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
       WITH COLLECT(distinct target.targeted_therapy) as array,sb,study
-      with apoc.coll.sort(array) as array,sb,study
-      with apoc.text.join(array,'|') as array,sb,study
+      with nci_crdc_functions.to_set(array) as array,sb,study
+      with  nci_crdc_functions.join_collection(array,'|') as array,sb,study
       optional MATCH (spec:specimen)-[:of_participant]->(sb)
       optional MATCH (sb)<-[*..2]-(file:file)
       optional MATCH (demo:demographic)-[:of_participant]->(sb)
