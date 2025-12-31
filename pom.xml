@@ -29,6 +29,13 @@
     </properties>
 
     <dependencies>
+        <dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version> <!-- or the version you need -->
+    <scope>provided</scope>
+</dependency>
+
         <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -152,12 +159,14 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <version>3.8.0</version>
             <scope>test</scope>
         </dependency>
         <!-- Mockito JUnit -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
+            <version>3.8.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -236,11 +245,11 @@
 			<version>4.4.16</version>
 		</dependency>
 
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>4.4.16</version>
-        </dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.4.16</version>
+		</dependency>
 		<dependency>
 			<groupId>org.opensearch.client</groupId>
 			<artifactId>opensearch-rest-high-level-client</artifactId>
@@ -263,12 +272,14 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.22</version>
             <scope>provided</scope>
         </dependency>
         <!-- Jakarta -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
         <!-- JSON -->
@@ -290,11 +301,6 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>4.8.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>1.18.30</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
