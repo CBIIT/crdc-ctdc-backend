@@ -468,25 +468,34 @@ type ClinicalSurgery {
 
 type ClinicalDataPart1 {
   study_short_name: String
+  unique_node_types: [String]
   diagnosisNodeData: [ClinicalDiagnosis]
+  diagnosisNodeCount: Int
   diagnosisParticipantCount: Int
   demographicNodeData: [ClinicalDemographic]
+  demographicNodeCount: Int
   demographicParticipantCount: Int
   radiotherapyNodeData: [ClinicalRadiotherapy]
+  radiotherapyNodeCount: Int
   radiotherapyParticipantCount: Int
   exposureNodeData: [ClinicalExposure]
+  exposureNodeCount: Int
   exposureParticipantCount: Int
   specimenNodeData: [ClinicalSpecimen]
+  specimenNodeCount: Int
   specimenParticipantCount: Int
   targetedTherapyNodeData: [ClinicalTargetedTherapy]
+  targetedTherapyNodeCount: Int
   targetedTherapyParticipantCount: Int
 }
 
 type ClinicalDataPart2 {
   study_short_name: String
   nonTargetedTherapyNodeData: [ClinicalNonTargetedTherapy]
+  nonTargetedTherapyNodeCount: Int
   nonTargetedTherapyParticipantCount: Int
   surgeryNodeData: [ClinicalSurgery]
+  surgeryNodeCount: Int
   surgeryParticipantCount: Int
 }
 
