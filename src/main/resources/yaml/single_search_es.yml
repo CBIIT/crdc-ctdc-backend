@@ -138,7 +138,7 @@ queries:
       caseInsensitive: false
     result:
       type: object_array
-  - name: clinicalDataPart1
+  - name: clinicalData
     index:
       - clinical_data_tab
     filter:
@@ -147,9 +147,9 @@ queries:
         - study_short_name
     result:
       type: object_array
-  - name: clinicalDataPart2
+  - name: clinicalDataTrial
     index:
-      - clinical_data_tab_2
+      - clinical_trial_data_tab
     filter:
       type: default
       caseInsensitive: false

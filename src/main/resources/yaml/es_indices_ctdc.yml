@@ -1428,6 +1428,8 @@ Indices:
     mapping:
       study_short_name:
         type: keyword
+      unique_node_types:
+        type: keyword
       diagnosisNodeData:
         type: nested
         properties:
@@ -1459,6 +1461,8 @@ Indices:
             type: keyword
           UUID:
             type: keyword
+      diagnosisNodeCount:
+        type: integer
       diagnosisParticipantCount:
         type: integer
       demographicNodeData:
@@ -1518,40 +1522,9 @@ Indices:
             type: keyword
           highest_level_of_education:
             type: keyword
-      demographicParticipantCount:
-        type: integer
-      diagnosisNodeCount:
-        type: integer
       demographicNodeCount:
         type: integer
-      radiotherapyNodeCount:
-        type: integer
-      exposureNodeCount:
-        type: integer
-      specimenNodeCount:
-        type: integer
-      targetedTherapyNodeCount:
-        type: integer
-      radiotherapyNodeData:
-        type: nested
-        properties:
-          participant_ids:
-            type: keyword
-          radiation_dose:
-            type: keyword
-          radiation_extent:
-            type: keyword
-          radiation_frequency:
-            type: keyword
-          radiological_procedure:
-            type: keyword
-          radiological_procedure_anatomical_location:
-            type: keyword
-          radiological_procedure_record_id:
-            type: keyword
-          uuid:
-            type: keyword
-      radiotherapyParticipantCount:
+      demographicParticipantCount:
         type: integer
       exposureNodeData:
         type: nested
@@ -1562,6 +1535,8 @@ Indices:
             type: keyword
           exposure_record_id:
             type: keyword
+      exposureNodeCount:
+        type: integer
       exposureParticipantCount:
         type: integer
       specimenNodeData:
@@ -1593,22 +1568,9 @@ Indices:
             type: keyword
           tissue_category:
             type: keyword
-      specimenParticipantCount:
+      specimenNodeCount:
         type: integer
-      targetedTherapyNodeData:
-        type: nested
-        properties:
-          participant_ids:
-            type: keyword
-          targeted_therapy:
-            type: keyword
-          targeted_therapy_dose:
-            type: keyword
-          targeted_therapy_frequency:
-            type: keyword
-          targeted_therapy_record_id:
-            type: keyword
-      targetedTherapyParticipantCount:
+      specimenParticipantCount:
         type: integer
 
     cypher_query: "
@@ -1622,35 +1584,23 @@ Indices:
       OPTIONAL MATCH (p_demo)<-[:of_participant]-(demo:demographic)
       WITH study, all_participant_ids, diag_data,
         COLLECT({node: demo, participant_id: p_demo.participant_id}) AS demo_data
-      OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
-      OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
-      WITH study, all_participant_ids, diag_data, demo_data,
-        COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)
       OPTIONAL MATCH (p_exp)<-[:of_participant]-(exp:exposure)
-      WITH study, all_participant_ids, diag_data, demo_data, rt_data,
+      WITH study, all_participant_ids, diag_data, demo_data,
         COLLECT({node: exp, participant_id: p_exp.participant_id}) AS exp_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)
       OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
-      WITH study, all_participant_ids, diag_data, demo_data, rt_data, exp_data,
+      WITH study, all_participant_ids, diag_data, demo_data, exp_data,
         COLLECT({node: spec, participant_id: p_spec.participant_id}) AS spec_data
-      OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
-      OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
-      WITH study, all_participant_ids, diag_data, demo_data, rt_data, exp_data, spec_data,
-        COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
       WITH study, all_participant_ids,
         apoc.coll.toSet([x IN diag_data WHERE x.node IS NOT NULL | x.node]) AS unique_diag,
         diag_data,
         apoc.coll.toSet([x IN demo_data WHERE x.node IS NOT NULL | x.node]) AS unique_demo,
         demo_data,
-        apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL | x.node]) AS unique_rt,
-        rt_data,
         apoc.coll.toSet([x IN exp_data WHERE x.node IS NOT NULL | x.node]) AS unique_exp,
         exp_data,
         apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL | x.node]) AS unique_spec,
-        spec_data,
-        apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL | x.node]) AS unique_tt,
-        tt_data
+        spec_data
       WITH study,
         [d IN unique_diag | {
           participant_ids: apoc.text.join([x IN diag_data WHERE x.node = d AND x.participant_id IS NOT NULL | x.participant_id], '|'),
@@ -1699,17 +1649,6 @@ Indices:
           highest_level_of_education: dm.highest_level_of_education
         }] AS demographicNodeData,
         size(apoc.coll.toSet([x IN demo_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS demographicParticipantCount,
-        [r IN unique_rt | {
-          participant_ids: apoc.text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-          radiation_dose: r.radiation_dose,
-          radiation_extent: r.radiation_extent,
-          radiation_frequency: r.radiation_frequency,
-          radiological_procedure: r.radiological_procedure,
-          radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
-          radiological_procedure_record_id: r.radiological_procedure_record_id,
-          uuid: r.uuid
-        }] AS radiotherapyNodeData,
-        size(apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS radiotherapyParticipantCount,
         [e IN unique_exp | {
           participant_ids: apoc.text.join([x IN exp_data WHERE x.node = e AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           carcinogen_exposure: e.carcinogen_exposure,
@@ -1732,15 +1671,7 @@ Indices:
           tissue_category: s.tissue_category
         }] AS specimenNodeData,
         size(apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
-        [t IN unique_tt | {
-          participant_ids: apoc.text.join([x IN tt_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-          targeted_therapy: t.targeted_therapy,
-          targeted_therapy_dose: t.targeted_therapy_dose,
-          targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
-          targeted_therapy_record_id: t.targeted_therapy_record_id
-        }] AS targetedTherapyNodeData,
-        size(apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
-        ['diagnosis','demographic','radiotherapy','exposure','specimen','targeted_therapy','non_targeted_therapy'] AS unique_node_types
+        ['diagnosis','demographic','exposure','specimen'] AS unique_node_types
       RETURN
         study.study_short_name AS study_short_name,
         unique_node_types,
@@ -1750,24 +1681,35 @@ Indices:
         demographicNodeData,
         size(apoc.coll.toSet([d IN demographicNodeData | d.demographic_record_id])) AS demographicNodeCount,
         demographicParticipantCount,
-        radiotherapyNodeData,
-        size(apoc.coll.toSet([r IN radiotherapyNodeData | r.radiological_procedure_record_id])) AS radiotherapyNodeCount,
-        radiotherapyParticipantCount,
         exposureNodeData,
         size(apoc.coll.toSet([e IN exposureNodeData | e.exposure_record_id])) AS exposureNodeCount,
         exposureParticipantCount,
         specimenNodeData,
         size(apoc.coll.toSet([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
-        specimenParticipantCount,
-        targetedTherapyNodeData,
-        size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
-        targetedTherapyParticipantCount;
+        specimenParticipantCount;
         "
-  - index_name: clinical_data_tab_2
+  - index_name: clinical_trial_data_tab
     type: neo4j
     mapping:
       study_short_name:
         type: keyword
+      targetedTherapyNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          targeted_therapy:
+            type: keyword
+          targeted_therapy_dose:
+            type: keyword
+          targeted_therapy_frequency:
+            type: keyword
+          targeted_therapy_record_id:
+            type: keyword
+      targetedTherapyNodeCount:
+        type: integer
+      targetedTherapyParticipantCount:
+        type: integer
       nonTargetedTherapyNodeData:
         type: nested
         properties:
@@ -1783,9 +1725,32 @@ Indices:
             type: keyword
           non_targeted_therapy_frequency:
             type: keyword
+      nonTargetedTherapyNodeCount:
+        type: integer
       nonTargetedTherapyParticipantCount:
         type: integer
-      nonTargetedTherapyNodeCount:
+      radiotherapyNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          radiation_dose:
+            type: keyword
+          radiation_extent:
+            type: keyword
+          radiation_frequency:
+            type: keyword
+          radiological_procedure:
+            type: keyword
+          radiological_procedure_anatomical_location:
+            type: keyword
+          radiological_procedure_record_id:
+            type: keyword
+          uuid:
+            type: keyword
+      radiotherapyNodeCount:
+        type: integer
+      radiotherapyParticipantCount:
         type: integer
       surgeryNodeData:
         type: nested
@@ -1806,27 +1771,47 @@ Indices:
             type: keyword
           surgical_procedure_therapeutic:
             type: keyword
-      surgeryParticipantCount:
-        type: integer
       surgeryNodeCount:
+        type: integer
+      surgeryParticipantCount:
         type: integer
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(p:participant)
       WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
+      OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
+      WITH study, all_participant_ids,
+        COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
       OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
-      WITH study, all_participant_ids,
+      WITH study, all_participant_ids, tt_data,
         COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
+      OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
+      WITH study, all_participant_ids, tt_data, nt_data,
+        COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
       OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
-      WITH study, all_participant_ids, nt_data,
+      WITH study, all_participant_ids, tt_data, nt_data, rt_data,
         COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
       WITH study, all_participant_ids,
+        apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL | x.node]) AS unique_tt,
+        tt_data,
         apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL | x.node]) AS unique_nt,
         nt_data,
+        apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL | x.node]) AS unique_rt,
+        rt_data,
         apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL | x.node]) AS unique_surg,
         surg_data
       WITH study,
+        [t IN unique_tt | {
+          participant_ids: apoc.text.join([x IN tt_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          targeted_therapy: t.targeted_therapy,
+          targeted_therapy_dose: t.targeted_therapy_dose,
+          targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
+          targeted_therapy_record_id: t.targeted_therapy_record_id
+        }] AS targetedTherapyNodeData,
+        size(apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
         [n IN unique_nt | {
           participant_ids: apoc.text.join([x IN nt_data WHERE x.node = n AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
@@ -1836,6 +1821,17 @@ Indices:
           non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
         }] AS nonTargetedTherapyNodeData,
         size(apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
+        [r IN unique_rt | {
+          participant_ids: apoc.text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          radiation_dose: r.radiation_dose,
+          radiation_extent: r.radiation_extent,
+          radiation_frequency: r.radiation_frequency,
+          radiological_procedure: r.radiological_procedure,
+          radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
+          radiological_procedure_record_id: r.radiological_procedure_record_id,
+          uuid: r.uuid
+        }] AS radiotherapyNodeData,
+        size(apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS radiotherapyParticipantCount,
         [sg IN unique_surg | {
           participant_ids: apoc.text.join([x IN surg_data WHERE x.node = sg AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           extent_of_residual_disease: sg.extent_of_residual_disease,
@@ -1848,11 +1844,16 @@ Indices:
         }] AS surgeryNodeData,
         size(apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS surgeryParticipantCount
       RETURN
-        
         study.study_short_name AS study_short_name,
+        targetedTherapyNodeData,
+        size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
+        targetedTherapyParticipantCount,
         nonTargetedTherapyNodeData,
         size(apoc.coll.toSet([n IN nonTargetedTherapyNodeData | n.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
         nonTargetedTherapyParticipantCount,
+        radiotherapyNodeData,
+        size(apoc.coll.toSet([r IN radiotherapyNodeData | r.radiological_procedure_record_id])) AS radiotherapyNodeCount,
+        radiotherapyParticipantCount,
         surgeryNodeData,
         size(apoc.coll.toSet([s IN surgeryNodeData | s.surgical_procedure_record_id])) AS surgeryNodeCount,
         surgeryParticipantCount;
