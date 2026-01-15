@@ -484,7 +484,7 @@ type ClinicalData {
   
 }
 
-type ClinicalDataTrial {
+type ClinicalTrialData {
   study_short_name: String
   targetedTherapyNodeData: [ClinicalTargetedTherapy]
   targetedTherapyNodeCount: Int
@@ -903,7 +903,7 @@ type QueryType {
     study_short_name: [String] = []
   ): [ClinicalData]
 
-  clinicalDataTrial(
+  clinicalTrialData(
     study_short_name: [String] = []
-  ): [ClinicalDataTrial]
+  ): [ClinicalTrialData]
 }
