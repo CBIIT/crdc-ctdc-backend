@@ -10,32 +10,26 @@ indices:
         - study_description
         - study_type
         - dates_of_conduct
+        - associated_links.associated_link_record_id
+        - associated_links.associated_link_name
+        - associated_links.associated_link_url
+        - image_collection.image_collection_record_id
+        - image_collection.image_collection_name
+        - image_collection.image_type_included
+        - image_collection.image_collection_url
+        - image_collection.repository_name
+        - image_collection.collection_access
+        - participants.biomarker_results_available
+        - participants.histology_images_available
+        - participants.radiology_images_available
+        - participants.radiology_report_available
+        - participants.participant_id
       long:
         - participant_count
         - image_collection_count
         - study_file_count
         - participant_file_count
-      nested:
-        - field: associated_links
-          properties:
-            - associated_link_record_id
-            - associated_link_name
-            - associated_link_url
-        - field: image_collection
-          properties:
-            - image_collection_record_id
-            - image_collection_name
-            - image_type_included
-            - image_collection_url
-            - repository_name
-            - collection_access
-        - field: participants
-          properties:
-            - biomarker_results_available
-            - histology_images_available
-            - radiology_images_available
-            - radiology_report_available
-            - participant_id
+           
     initial_query:
       # study_participant_id
       # participant_id
