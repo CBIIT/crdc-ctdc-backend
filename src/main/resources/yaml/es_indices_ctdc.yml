@@ -244,6 +244,10 @@ indices:
         - dataFileByType.subjects
     initial_query:
       query: |
+        MATCH (n)
+        WITH n LIMIT 1
+        SKIP $skip LIMIT $limit
+        
         CALL {
             MATCH (sub:participant)<-[*..2]-(df:file)
             WITH DISTINCT df
