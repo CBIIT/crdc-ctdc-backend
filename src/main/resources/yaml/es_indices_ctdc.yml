@@ -254,32 +254,42 @@ indices:
         WITH dataFileByType,
             REDUCE(total=0, x IN dataFileByType | total + x.subjects) AS dataFileCount
 
-        MATCH (sb:participant)
-        WITH COUNT(sb) AS participantcount, dataFileByType, dataFileCount
+        // Get all counts in parallel using CALL subqueries
+        CALL {
+            MATCH (sb:participant)
+            RETURN COUNT(sb) AS participantcount
+        }
 
-        MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> ''
-        WITH participantcount, dataFileByType, dataFileCount,
-            COUNT(DISTINCT target.targeted_therapy) AS targetTherapyCount
+        CALL {
+            MATCH (target:targeted_therapy) 
+            WHERE target.targeted_therapy <> ''
+            RETURN COUNT(DISTINCT target.targeted_therapy) AS targetTherapyCount
+        }
 
-        MATCH (untargeted:non_targeted_therapy)
-        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount,
-            COUNT(DISTINCT untargeted.targeted_therapy) AS untargetedTherapyCount
+        CALL {
+            MATCH (untargeted:non_targeted_therapy)
+            RETURN COUNT(DISTINCT untargeted.targeted_therapy) AS untargetedTherapyCount
+        }
 
-        MATCH (diag:diagnosis)
-        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount,
-            COUNT(DISTINCT diag.ctep_disease_term) AS countofDiagnoses,
+        CALL {
+            MATCH (diag:diagnosis)
+            RETURN COUNT(DISTINCT diag.ctep_disease_term) AS countofDiagnoses
+        }
+
+        WITH dataFileByType, dataFileCount, participantcount, 
+            targetTherapyCount, untargetedTherapyCount, countofDiagnoses,
             (untargetedTherapyCount + targetTherapyCount) AS TotalTherapy
 
+        // Get specimen counts by stage
         MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
-        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
-            { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
-        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
-            COLLECT(specimenCountbyStageOfDisease) AS specimenList
-        UNWIND specimenList AS item
-        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
-            COLLECT(DISTINCT item) AS specimenCountbyStageOfDisease
+        WITH dataFileByType, dataFileCount, participantcount, targetTherapyCount, 
+            untargetedTherapyCount, countofDiagnoses, TotalTherapy,
+            diag.stage_of_disease AS stage, COUNT(*) AS stageCount
+        WITH dataFileByType, dataFileCount, participantcount, targetTherapyCount, 
+            untargetedTherapyCount, countofDiagnoses, TotalTherapy,
+            COLLECT(DISTINCT {group: stage, subjects: stageCount}) AS specimenCountbyStageOfDisease
 
-        RETURN DISTINCT
+        RETURN 
           TotalTherapy AS numberOfTherapies,
           participantcount AS numberOfParticipants,
           countofDiagnoses AS numberOfDiagnoses,
