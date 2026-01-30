@@ -273,6 +273,11 @@ indices:
         MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
         WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
             { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
+        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
+            COLLECT(specimenCountbyStageOfDisease) AS specimenList
+        UNWIND specimenList AS item
+        WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
+            COLLECT(DISTINCT item) AS specimenCountbyStageOfDisease
 
         RETURN DISTINCT
           TotalTherapy AS numberOfTherapies,
@@ -281,13 +286,13 @@ indices:
           untargetedTherapyCount AS numberOfNonTargeted,
           targetTherapyCount AS numberOfTargeted,
           dataFileCount AS dataFileCount,
-          apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) AS specimenCountbyStageOfDisease,
+          specimenCountbyStageOfDisease,
           dataFileByType AS dataFileByType
       page_size: 1
       # File Genomic Info 
   #   - name: "widgets_facets_counts"
   - index_name: "widgets_facets_counts"
-    id_field: "numberOfParticipants"
+    id_field: "participant_id"
     mapping:
       long:
         - numberOfParticipants
@@ -417,6 +422,7 @@ indices:
       page_size: 1000
   #     # File Imaging
   - index_name: "tab_participants"
+    id_field: "participant_id"
     mapping:
       keyword:
         - type
