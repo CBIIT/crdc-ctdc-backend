@@ -244,17 +244,20 @@ indices:
         - dataFileByType.subjects
     initial_query:
       query: |
-        MATCH (sub:participant)<-[*..2]-(df:file)
-        WITH DISTINCT df
-        WHERE df.data_file_format <> 'zip'
+        CALL {
+            MATCH (sub:participant)<-[*..2]-(df:file)
+            WITH DISTINCT df
+            WHERE df.data_file_format <> 'zip'
+            WITH df.data_file_type AS t, COUNT(*) AS c
+            RETURN COLLECT({group: t, subjects: c}) AS dataFileByType
+        }
+        
+        CALL {
+            MATCH (df:file)
+            WHERE df.data_file_format <> 'zip'
+            RETURN COUNT(*) AS dataFileCount
+        }
 
-        WITH df.data_file_type AS t, COUNT(*) AS c
-        WITH COLLECT({group: t, subjects: c}) AS dataFileByType
-
-        WITH dataFileByType,
-            REDUCE(total=0, x IN dataFileByType | total + x.subjects) AS dataFileCount
-
-        // Get all counts in parallel using CALL subqueries
         CALL {
             MATCH (sb:participant)
             RETURN COUNT(sb) AS participantcount
@@ -280,14 +283,11 @@ indices:
             targetTherapyCount, untargetedTherapyCount, countofDiagnoses,
             (untargetedTherapyCount + targetTherapyCount) AS TotalTherapy
 
-        // Get specimen counts by stage
-        MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
-        WITH dataFileByType, dataFileCount, participantcount, targetTherapyCount, 
-            untargetedTherapyCount, countofDiagnoses, TotalTherapy,
-            diag.stage_of_disease AS stage, COUNT(*) AS stageCount
-        WITH dataFileByType, dataFileCount, participantcount, targetTherapyCount, 
-            untargetedTherapyCount, countofDiagnoses, TotalTherapy,
-            COLLECT(DISTINCT {group: stage, subjects: stageCount}) AS specimenCountbyStageOfDisease
+        CALL {
+            MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
+            WITH diag.stage_of_disease AS stage, COUNT(*) AS stageCount
+            RETURN COLLECT(DISTINCT {group: stage, subjects: stageCount}) AS specimenCountbyStageOfDisease
+        }
 
         RETURN 
           TotalTherapy AS numberOfTherapies,
