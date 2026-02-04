@@ -470,7 +470,6 @@ type ClinicalParticipantStatus {
   participant_ids: String
   off_study: String
   off_study_reason: String
-  participant_id: String
   participant_status_record_id: String
   survival_status: String
 }
