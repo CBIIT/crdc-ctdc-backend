@@ -239,7 +239,7 @@ Indices:
           assessment_timepoint:
             type: keyword
           collection_date:
-            type: double
+            type: keyword
             
     cypher_query: "
       MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
@@ -261,7 +261,7 @@ Indices:
           anatomical_collection_site: sp.anatomical_collection_site,
           tissue_category: sp.tissue_category,
           assessment_timepoint: sp.assessment_timepoint,
-          collection_date: sp.collection_date
+          collection_date: toFloat(sp.collection_date)
         }) as specimen,
         specimen_count"
   - index_name: study_diagnosis
@@ -397,7 +397,7 @@ Indices:
     type: neo4j
     # Widgets,Facets,and Global Stats bar
     mapping:
-      type:
+      participant_id:
         type: keyword
       study_short_name:
         type: keyword
@@ -516,12 +516,14 @@ Indices:
       'participants' as type,
       sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
+
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
       COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
       COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
       COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
       COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
+      
       sex,
       race,
       ethnicity,
@@ -1572,6 +1574,25 @@ Indices:
         type: integer
       specimenParticipantCount:
         type: integer
+      participantStatusNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          off_study:
+            type: keyword
+          off_study_reason:
+            type: keyword
+          participant_id:
+            type: keyword
+          participant_status_record_id:
+            type: keyword
+          survival_status:
+            type: keyword
+      participantStatusNodeCount:
+        type: integer
+      participantStatusParticipantCount:
+        type: integer
 
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(p:participant)
@@ -1592,6 +1613,10 @@ Indices:
       OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
       WITH study, all_participant_ids, diag_data, demo_data, exp_data,
         COLLECT({node: spec, participant_id: p_spec.participant_id}) AS spec_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_ps:participant)
+      OPTIONAL MATCH (p_ps)<-[:of_participant]-(ps:participant_status)
+      WITH study, all_participant_ids, diag_data, demo_data, exp_data, spec_data,
+        COLLECT({node: ps, participant_id: p_ps.participant_id}) AS ps_data
       WITH study, all_participant_ids,
         apoc.coll.toSet([x IN diag_data WHERE x.node IS NOT NULL | x.node]) AS unique_diag,
         diag_data,
@@ -1600,7 +1625,9 @@ Indices:
         apoc.coll.toSet([x IN exp_data WHERE x.node IS NOT NULL | x.node]) AS unique_exp,
         exp_data,
         apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL | x.node]) AS unique_spec,
-        spec_data
+        spec_data,
+        apoc.coll.toSet([x IN ps_data WHERE x.node IS NOT NULL | x.node]) AS unique_ps,
+        ps_data
       WITH study,
         [d IN unique_diag | {
           participant_ids: apoc.text.join([x IN diag_data WHERE x.node = d AND x.participant_id IS NOT NULL | x.participant_id], '|'),
@@ -1671,7 +1698,16 @@ Indices:
           tissue_category: s.tissue_category
         }] AS specimenNodeData,
         size(apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
-        ['diagnosis','demographic','exposure','specimen'] AS unique_node_types
+        [p IN unique_ps | {
+          participant_ids: apoc.text.join([x IN ps_data WHERE x.node = p AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          off_study: p.off_study,
+          off_study_reason: p.off_study_reason,
+          participant_id: p.participant_id,
+          participant_status_record_id: p.participant_status_record_id,
+          survival_status: p.survival_status
+        }] AS participantStatusNodeData,
+        size(apoc.coll.toSet([x IN ps_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS participantStatusParticipantCount,
+        ['diagnosis','demographic','exposure','specimen','participant_status'] AS unique_node_types
       RETURN
         study.study_short_name AS study_short_name,
         unique_node_types,
@@ -1686,7 +1722,10 @@ Indices:
         exposureParticipantCount,
         specimenNodeData,
         size(apoc.coll.toSet([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
-        specimenParticipantCount;
+        specimenParticipantCount,
+        participantStatusNodeData,
+        size(apoc.coll.toSet([p IN participantStatusNodeData | p.participant_status_record_id])) AS participantStatusNodeCount,
+        participantStatusParticipantCount;
         "
   - index_name: clinical_trial_data_tab
     type: neo4j
