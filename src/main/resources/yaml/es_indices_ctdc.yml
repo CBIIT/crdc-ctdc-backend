@@ -288,7 +288,7 @@ indices:
           dataFileCount AS dataFileCount,
           specimenCountbyStageOfDisease,
           dataFileByType AS dataFileByType
-          SKIP 1 LIMIT 1
+        SKIP $skip LIMIT $limit
       page_size: 1
       # File Genomic Info 
   #   - name: "widgets_facets_counts"
