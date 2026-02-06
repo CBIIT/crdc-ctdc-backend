@@ -490,9 +490,9 @@ indices:
                 WITH sb
                 OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
                 WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
-                WITH apoc.coll.toSet([t IN ts | toLower(t)]) AS dedup
+                WITH COLLECT(DISTINCT t) AS dedup
                 RETURN dedup AS targeted_therapy,
-                  apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
+                  REDUCE(result = '', item IN dedup | result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS targeted_therapy_string
               }
 
               RETURN DISTINCT
@@ -605,13 +605,13 @@ indices:
         OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
         OPTIONAL MATCH (sub)<-[*..2]-(df:file)
         WITH sub, spec, study, demo, exp, df,
-            apoc.text.capitalizeAll(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
+            capitalize(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
 
         CALL {
         WITH sub
         OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-        WITH COLLECT(tt.targeted_therapy) AS ts
-        RETURN apoc.coll.toSet([t IN ts WHERE t IS NOT NULL AND t <> '']) AS targeted_therapy
+        WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
+        RETURN COLLECT(DISTINCT t) AS targeted_therapy
         }
 
         CALL {
@@ -632,9 +632,8 @@ indices:
         WITH sub
         OPTIONAL MATCH (t:targeted_therapy)-[:of_participant]->(sub)
         WITH [x IN COLLECT(t.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-        WITH apoc.coll.toSet([x IN ts | toLower(x)]) AS dedup
-        WITH apoc.coll.sort(dedup) AS arr
-        RETURN apoc.text.join(arr, '|') AS targeted_therapy_string
+        WITH COLLECT(DISTINCT LOWER(x)) AS dedup
+        RETURN REDUCE(result = '', item IN dedup | result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS targeted_therapy_string
         }
 
         RETURN DISTINCT
