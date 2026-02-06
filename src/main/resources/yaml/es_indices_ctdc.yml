@@ -420,7 +420,7 @@ indices:
           data_file_type: file.data_file_type
         }) AS file_info
         SKIP 1000 LIMIT 1000
-        " 
+        
       page_size: 1000
   #     # File Imaging
   - index_name: "tab_participants"
