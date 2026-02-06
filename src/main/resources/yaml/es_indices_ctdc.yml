@@ -288,7 +288,7 @@ indices:
           dataFileCount AS dataFileCount,
           specimenCountbyStageOfDisease,
           dataFileByType AS dataFileByType
-          SKIP $skip LIMIT $limit
+          SKIP 1 LIMIT 1
       page_size: 1
       # File Genomic Info 
   #   - name: "widgets_facets_counts"
@@ -419,6 +419,7 @@ indices:
           data_file_format: file.data_file_format,
           data_file_type: file.data_file_type
         }) AS file_info
+        SKIP 1000 LIMIT 1000
         " 
       page_size: 1000
   #     # File Imaging
@@ -539,6 +540,7 @@ indices:
               COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
               COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
               ORDER BY COALESCE(sb.participant_id, '') ASC
+              SKIP 10000 LIMIT 10000
       page_size: 10000
           # File Proteomicx
   - index_name: "tab_biospecimens"
@@ -677,6 +679,7 @@ indices:
         COLLECT(DISTINCT df.data_file_type) AS data_file_type,
         COLLECT(DISTINCT df.data_file_format) AS data_file_format
         ORDER BY COALESCE(spec.specimen_id, '') ASC
+        SKIP 10000 LIMIT 10000
       page_size: 10000
   - index_name: "tab_data_files"
     id_field: "data_file_uuid"
@@ -835,6 +838,7 @@ indices:
           [{ data_file_uuid: f.data_file_uuid,
             data_file_format: f.data_file_format,
             data_file_type:   f.data_file_type }]               AS file_info
+            SKIP 1000 LIMIT 1000
       page_size: 1000
   - index_name: clinical_data_tab
     id_field: "study_short_name"
@@ -1023,6 +1027,7 @@ indices:
           specimenNodeData,
           size(apoc.coll.toSet([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
           specimenParticipantCount
+          SKIP 1000 LIMIT 1000
       page_size: 1000
   - index_name: clinical_trial_data_tab
     id_field: "study_short_name"
@@ -1148,6 +1153,7 @@ indices:
           surgeryNodeData,
           size(apoc.coll.toSet([s IN surgeryNodeData | s.surgical_procedure_record_id])) AS surgeryNodeCount,
           surgeryParticipantCount
+          SKIP 1000 LIMIT 1000
       page_size: 1000
   - index_name: study_node_counts
     id_field: "short_name"
@@ -1200,4 +1206,5 @@ indices:
           count(DISTINCT participant) AS participant_count,
           sum(node_count) AS total_node_count
         ORDER BY participant_count DESC
+        SKIP 10000 LIMIT 10000
       page_size: 10000
