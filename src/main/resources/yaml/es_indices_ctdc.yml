@@ -79,6 +79,7 @@ indices:
                 COUNT( DISTINCT ic) as image_collection_count,
                 COUNT( DISTINCT df) as study_file_count,
                 COUNT( DISTINCT f) as participant_file_count
+                SKIP $skip LIMIT $limit
       page_size: 10000
       update_queries:
       # Participant Samples
@@ -142,6 +143,7 @@ indices:
             data_file_location: df.data_file_location
           }) AS data_files,
           COLLECT(DISTINCT df.data_file_type) as list_type
+          SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: "study_specimen"
     id_field: "study_short_name"
@@ -186,6 +188,7 @@ indices:
             collection_date: toFloat(sp.collection_date)
           }) as specimen,
           specimen_count
+          SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: "study_diagnosis"
     id_field: "study_short_name"
@@ -226,6 +229,7 @@ indices:
             stage_of_disease: sd.stage_of_disease,
             tumor_grade: sd.tumor_grade
           }) as diagnosis
+          SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: "home_page"
     id_field: "numberOfParticipants"
