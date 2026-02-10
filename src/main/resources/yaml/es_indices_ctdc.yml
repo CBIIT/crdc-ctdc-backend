@@ -526,9 +526,7 @@ indices:
               COLLECT(DISTINCT(spec.anatomical_collection_site)) AS anatomical_collection_site,
               COLLECT(DISTINCT(spec.specimen_type)) AS specimen_type,
               COLLECT(DISTINCT(spec.tissue_category)) AS tissue_category,
-              COLLECT(DISTINCT(spec.assessment_timepoint)) AS assessment_timepoint,
-              COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
-              COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
+              COLLECT(DISTINCT(spec.assessment_timepoint)) AS assessment_timepoint
               SKIP $skip LIMIT $limit
       page_size: 10000
           # File Proteomicx
