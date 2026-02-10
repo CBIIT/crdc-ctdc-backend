@@ -333,9 +333,9 @@ indices:
         - biospecimen_info.anatomical_collection_site_biospecimen_info
         - biospecimen_info.tissue_category_biospecimen_info
         - biospecimen_info.assessment_timepoint_biospecimen_info
-        - file_info.data_file_uuid
-        - file_info.data_file_type
-        - file_info.data_file_format
+        - file_info.data_file_uuid_file_info
+        - file_info.data_file_type_file_info
+        - file_info.data_file_format_file_info
 
     initial_query:
       query: |
