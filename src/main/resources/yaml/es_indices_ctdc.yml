@@ -477,10 +477,9 @@ indices:
               OPTIONAL MATCH (sb)<-[:of_participant]-(surgery:surgery)
               OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
               WHERE tt.targeted_therapy IS NOT NULL AND tt.targeted_therapy <> ''
-             
-              WITH  study, diag, spec, demo, exp, df, surgery,sb,tt,
-              COLLECT(DISTINCT tt.targeted_therapy) AS targeted_therapy
 
+              WITH study, diag, spec, demo, exp, df, surgery, sb, tt,
+                  COLLECT(DISTINCT tt.targeted_therapy) AS targeted_therapy
 
               RETURN DISTINCT
               'participants' AS type,
@@ -501,9 +500,7 @@ indices:
               demo.ethnicity AS ethnicity,
               COALESCE(exp.carcinogen_exposure,'') AS carcinogen_exposure,
               targeted_therapy,
-
-              COLLECT(DISTINCT{
-                # data_file_uuid: df.data_file_uuid,
+              COLLECT(DISTINCT {
                 data_file_name: df.data_file_name,
                 data_file_type: df.data_file_type,
                 data_file_description: df.data_file_description,
@@ -514,18 +511,18 @@ indices:
                 data_file_compression_status: df.data_file_compression_status,
                 data_file_location: df.data_file_location
               }) AS data_files,
-              COLLECT(DISTINCT(surgery.surgical_procedure)) AS surgical_procedure,
-              COLLECT(DISTINCT(surgery.surgical_procedure_anatomical_location)) AS surgical_procedure_anatomical_location,
-              COLLECT(DISTINCT(surgery.surgical_procedure_date)) AS surgical_procedure_date,
-              COLLECT(DISTINCT(surgery.surgical_procedure_findings)) AS surgical_procedure_findings,
-              COLLECT(DISTINCT(surgery.surgical_procedure_id)) AS surgical_procedure_id,
-              COLLECT(DISTINCT(surgery.surgical_procedure_therapeutic)) AS surgical_procedure_therapeutic,
-              COLLECT(DISTINCT(surgery.extent_of_residual_disease)) AS extent_of_residual_disease,
-              COLLECT(DISTINCT(spec.specimen_id)) AS specimen_id,
-              COLLECT(DISTINCT(spec.anatomical_collection_site)) AS anatomical_collection_site,
-              COLLECT(DISTINCT(spec.specimen_type)) AS specimen_type,
-              COLLECT(DISTINCT(spec.tissue_category)) AS tissue_category,
-              COLLECT(DISTINCT(spec.assessment_timepoint)) AS assessment_timepoint
+              COLLECT(DISTINCT surgery.surgical_procedure) AS surgical_procedure,
+              COLLECT(DISTINCT surgery.surgical_procedure_anatomical_location) AS surgical_procedure_anatomical_location,
+              COLLECT(DISTINCT surgery.surgical_procedure_date) AS surgical_procedure_date,
+              COLLECT(DISTINCT surgery.surgical_procedure_findings) AS surgical_procedure_findings,
+              COLLECT(DISTINCT surgery.surgical_procedure_id) AS surgical_procedure_id,
+              COLLECT(DISTINCT surgery.surgical_procedure_therapeutic) AS surgical_procedure_therapeutic,
+              COLLECT(DISTINCT surgery.extent_of_residual_disease) AS extent_of_residual_disease,
+              COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
+              COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+              COLLECT(DISTINCT spec.specimen_type) AS specimen_type,
+              COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
+              COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint
               SKIP $skip LIMIT $limit
     page_size: 10000
           # File Proteomicx
