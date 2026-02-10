@@ -466,7 +466,8 @@ indices:
         # - data_file_format
       long:
         - age_at_enrollment
-      initial_query: |
+      initial_query:
+        query: |
               MATCH (study:study)<-[:belongs_to]-(sb:participant)
               OPTIONAL MATCH (sb:participant)<-[*..2]-(df:file)
               OPTIONAL MATCH (sb)<-[:of_participant]-(diag:diagnosis)
