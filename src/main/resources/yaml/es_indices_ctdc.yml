@@ -520,7 +520,6 @@ indices:
               COLLECT(DISTINCT(surgery.surgical_procedure_id)) AS surgical_procedure_id,
               COLLECT(DISTINCT(surgery.surgical_procedure_therapeutic)) AS surgical_procedure_therapeutic,
               COLLECT(DISTINCT(surgery.extent_of_residual_disease)) AS extent_of_residual_disease,
-              COLLECT(DISTINCT(df.data_file_uuid)) AS data_file_uuid,
               COLLECT(DISTINCT(spec.specimen_id)) AS specimen_id,
               COLLECT(DISTINCT(spec.anatomical_collection_site)) AS anatomical_collection_site,
               COLLECT(DISTINCT(spec.specimen_type)) AS specimen_type,
