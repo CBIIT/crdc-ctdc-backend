@@ -481,7 +481,7 @@ indices:
              
               WITH  study, diag, spec, demo, exp, df, surgery,sb,tt,
               COLLECT(DISTINCT tt.targeted_therapy) AS targeted_therapy
-              with nci_crdc_functions.remove_collection_braces(targeted_therapy) AS targeted_therapy_string ,targeted_therapy,study, diag, spec, demo, exp, df, surgery,sb,tt
+
 
               RETURN DISTINCT
               'participants' AS type,
@@ -502,7 +502,7 @@ indices:
               demo.ethnicity AS ethnicity,
               COALESCE(exp.carcinogen_exposure,'') AS carcinogen_exposure,
               targeted_therapy,
-              targeted_therapy_string,
+
               COLLECT(DISTINCT{
                 data_file_uuid: df.data_file_uuid,
                 data_file_name: df.data_file_name,
