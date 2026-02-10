@@ -441,7 +441,6 @@ indices:
         - carcinogen_exposure
         - targeted_therapy
         - targeted_therapy_string
-        - data_files.data_file_uuid
         - data_files.data_file_name
         - data_files.data_file_type
         - data_files.data_file_description
