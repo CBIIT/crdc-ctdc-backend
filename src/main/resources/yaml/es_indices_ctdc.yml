@@ -463,6 +463,8 @@ indices:
         - specimen_type
         - tissue_category
         - assessment_timepoint
+        # - data_file_type
+        # - data_file_format
       long:
         - age_at_enrollment
       initial_query:
@@ -546,12 +548,12 @@ indices:
         - stage_of_disease
         - primary_disease_site
         - primary_diagnosis_disease_group
-        - specimen_id
-        - specimen_record_id
-        - specimen_type
-        - anatomical_collection_site
-        - tissue_category
-        - assessment_timepoint
+        # - specimen_id
+        # - specimen_record_id
+        # - specimen_type
+        # - anatomical_collection_site
+        # - tissue_category
+        # - assessment_timepoint
         - study_short_name
         - data_files.data_file_uuid
         - data_files.data_file_name
@@ -576,8 +578,8 @@ indices:
         - carcinogen_exposure
         - targeted_therapy
         - targeted_therapy_string
-        - data_file_type
-        - data_file_format
+        # - data_file_type
+        # - data_file_format
       long:
         - data_file_size
         - data_files.data_file_size
