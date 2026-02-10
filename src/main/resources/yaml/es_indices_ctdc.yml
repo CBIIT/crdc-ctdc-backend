@@ -1594,8 +1594,6 @@ Indices:
             type: keyword
           off_study_reason:
             type: keyword
-          participant_id:
-            type: keyword
           participant_status_record_id:
             type: keyword
           survival_status:
@@ -1713,7 +1711,6 @@ Indices:
           participant_ids: apoc.text.join([x IN ps_data WHERE x.node = p AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           off_study: p.off_study,
           off_study_reason: p.off_study_reason,
-          participant_id: p.participant_id,
           participant_status_record_id: p.participant_status_record_id,
           survival_status: p.survival_status
         }] AS participantStatusNodeData,
