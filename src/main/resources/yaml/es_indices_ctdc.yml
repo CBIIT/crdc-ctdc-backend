@@ -118,6 +118,8 @@ Indices:
     mapping:
       study_short_name:
         type: keyword
+      study_id:
+        type: keyword
       list_type:
         type: keyword
       study_data_files:
@@ -174,6 +176,7 @@ Indices:
       optional MATCH (sb:participant)<-[*..2]-(df:file)
       RETURN DISTINCT 
         s.study_short_name as study_short_name,
+        s.study_id AS study_id,
         COLLECT(DISTINCT{
                     data_file_uuid: study_file.data_file_uuid,
                     data_file_name: study_file.data_file_name,
@@ -206,6 +209,8 @@ Indices:
     # type mapping for each property of the index
     mapping:
       study_short_name:
+        type: keyword
+      study_id:
         type: keyword
       specimen_types:
         type: nested
@@ -252,6 +257,7 @@ Indices:
       WITH specimen_count, specimen_type, count1, assessment_timepoint, count2, s, sp
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
+        s.study_id AS study_id,
         COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
         COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
         COLLECT(DISTINCT{
@@ -269,6 +275,8 @@ Indices:
     # type mapping for each property of the index
     mapping:
       study_short_name:
+        type: keyword
+      study_id:
         type: keyword
       diagnosis:
         type: nested
@@ -304,6 +312,7 @@ Indices:
         optional MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
         RETURN DISTINCT
             s.study_short_name AS study_short_name,
+            s.study_id AS study_id,
             COLLECT(DISTINCT sd.ctep_disease_term) as ctep_disease_terms,
             COLLECT(DISTINCT{
             diagnosis_record_id: sd.diagnosis_record_id,
@@ -1430,6 +1439,8 @@ Indices:
     mapping:
       study_short_name:
         type: keyword
+      study_id:
+        type: keyword
       unique_node_types:
         type: keyword
       diagnosisNodeData:
@@ -1710,6 +1721,7 @@ Indices:
         ['diagnosis','demographic','exposure','specimen','participant_status'] AS unique_node_types
       RETURN
         study.study_short_name AS study_short_name,
+        study.study_id AS study_id,
         unique_node_types,
         diagnosisNodeData,
         size(apoc.coll.toSet([d IN diagnosisNodeData | d.diagnosis_record_id])) AS diagnosisNodeCount,
@@ -1731,6 +1743,8 @@ Indices:
     type: neo4j
     mapping:
       study_short_name:
+        type: keyword
+      study_id:
         type: keyword
       targetedTherapyNodeData:
         type: nested
@@ -1884,6 +1898,7 @@ Indices:
         size(apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS surgeryParticipantCount
       RETURN
         study.study_short_name AS study_short_name,
+        study.study_id AS study_id,
         targetedTherapyNodeData,
         size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
         targetedTherapyParticipantCount,
