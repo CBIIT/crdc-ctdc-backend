@@ -463,8 +463,6 @@ indices:
         - specimen_type
         - tissue_category
         - assessment_timepoint
-        - data_file_type
-        - data_file_format
       long:
         - age_at_enrollment
       initial_query:
