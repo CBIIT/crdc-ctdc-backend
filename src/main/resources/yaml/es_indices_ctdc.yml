@@ -482,7 +482,7 @@ indices:
              
               WITH  study, diag, spec, demo, exp, df, surgery,sb,tt,
               COLLECT(DISTINCT tt.targeted_therapy) AS targeted_therapy
-              with nci_functions.remove_collection_braces(targeted_therapy) AS targeted_therapy_string ,targeted_therapy,study, diag, spec, demo, exp, df, surgery,sb,tt
+              with nci_crdc_functions.remove_collection_braces(targeted_therapy) AS targeted_therapy_string ,targeted_therapy,study, diag, spec, demo, exp, df, surgery,sb,tt
 
               RETURN DISTINCT
               'participants' AS type,
