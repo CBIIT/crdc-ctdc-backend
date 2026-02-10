@@ -329,10 +329,10 @@ indices:
         - data_file_uuid
         - data_file_type
         - data_file_format
-        - biospecimen_info.specimen_id
-        - biospecimen_info.anatomical_collection_site
-        - biospecimen_info.tissue_category
-        - biospecimen_info.assessment_timepoint
+        - biospecimen_info.specimen_id_biospecimen_info
+        - biospecimen_info.anatomical_collection_site_biospecimen_info
+        - biospecimen_info.tissue_category_biospecimen_info
+        - biospecimen_info.assessment_timepoint_biospecimen_info
         - file_info.data_file_uuid
         - file_info.data_file_type
         - file_info.data_file_format
@@ -405,15 +405,15 @@ indices:
           COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
           COLLECT(DISTINCT file.data_file_format) AS data_file_format,
           COLLECT(DISTINCT{
-            specimen_id: spec.specimen_id,
-            anatomical_collection_site: spec.anatomical_collection_site,
-            tissue_category: spec.tissue_category,
-            assessment_timepoint: spec.assessment_timepoint
+            specimen_id_biospecimen_info: spec.specimen_id,
+            anatomical_collection_site_biospecimen_info: spec.anatomical_collection_site,
+            tissue_category_biospecimen_info: spec.tissue_category,
+            assessment_timepoint_biospecimen_info: spec.assessment_timepoint
           }) AS biospecimen_info,
           COLLECT(DISTINCT{
-            data_file_uuid: file.data_file_uuid,
-            data_file_format: file.data_file_format,
-            data_file_type: file.data_file_type
+            data_file_uuid_file_info: file.data_file_uuid,
+            data_file_format_file_info: file.data_file_format,
+            data_file_type_file_info: file.data_file_type
           }) AS file_info
           SKIP $skip LIMIT $limit
           " 
