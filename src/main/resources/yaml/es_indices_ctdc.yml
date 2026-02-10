@@ -630,7 +630,7 @@ indices:
           data_file_type: df.data_file_type,
           data_file_description: df.data_file_description,
           data_file_format: df.data_file_format,
-          data_file_size: df.data_file_size,
+          # data_file_size: df.data_file_size,
           data_file_checksum_value: df.data_file_checksum_value,
           data_file_checksum_type: df.data_file_checksum_type,
           data_file_compression_status: df.data_file_compression_status,
