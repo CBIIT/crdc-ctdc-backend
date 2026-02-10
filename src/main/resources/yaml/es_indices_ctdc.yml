@@ -503,7 +503,7 @@ indices:
               targeted_therapy,
 
               COLLECT(DISTINCT{
-                data_file_uuid: df.data_file_uuid,
+                # data_file_uuid: df.data_file_uuid,
                 data_file_name: df.data_file_name,
                 data_file_type: df.data_file_type,
                 data_file_description: df.data_file_description,
