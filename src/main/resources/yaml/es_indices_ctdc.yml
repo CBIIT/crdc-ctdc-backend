@@ -477,16 +477,12 @@ indices:
               OPTIONAL MATCH (sb)<-[:of_participant]-(demo:demographic)
               OPTIONAL MATCH (sb)<-[:of_participant]-(exp:exposure)
               OPTIONAL MATCH (sb)<-[:of_participant]-(surgery:surgery)
-              WITH sb, study, diag, spec, demo, exp, df, surgery
-
-              CALL {
-                WITH sb
-                OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-                WITH [t IN COLLECT(tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS ts
-                WITH COLLECT(DISTINCT t) AS dedup
-                RETURN dedup AS targeted_therapy,
-                  REDUCE(result = '', item IN dedup | result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS targeted_therapy_string
-              }
+              OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+              WHERE tt.targeted_therapy IS NOT NULL AND tt.targeted_therapy <> ''
+             
+              WITH  study, diag, spec, demo, exp, df, surgery,sb,tt,
+              COLLECT(DISTINCT tt.targeted_therapy) AS targeted_therapy
+              with nci_functions.remove_collection_braces(targeted_therapy) AS targeted_therapy_string ,targeted_therapy,study, diag, spec, demo, exp, df, surgery,sb,tt
 
               RETURN DISTINCT
               'participants' AS type,
@@ -535,7 +531,6 @@ indices:
               COLLECT(DISTINCT(spec.assessment_timepoint)) AS assessment_timepoint,
               COLLECT(DISTINCT(df.data_file_type)) AS data_file_type,
               COLLECT(DISTINCT(df.data_file_format)) AS data_file_format
-              ORDER BY COALESCE(sb.participant_id, '') ASC
               SKIP $skip LIMIT $limit
       page_size: 10000
           # File Proteomicx
