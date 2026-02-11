@@ -340,38 +340,26 @@ indices:
     initial_query:
       query: |
           MATCH (study:study)<-[:belongs_to]-(sb:participant)
-          WITH DISTINCT sb, study
-
-          CALL {
-              WITH sb
-              OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-              WHERE tt.targeted_therapy IS NOT NULL AND tt.targeted_therapy <> ''
-              WITH COLLECT(DISTINCT tt.targeted_therapy) AS therapy_names,
-                  COLLECT(DISTINCT tt.targeted_therapy_id) AS therapy_ids
-              RETURN
-                therapy_names AS targeted_therapy,
-                therapy_ids AS targeted_therapy_id,
-                REDUCE(result = '', item IN therapy_names | result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS targeted_therapy_string
-          }
-
-          CALL {
-              WITH sb
-              OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
-              WHERE spec.anatomical_collection_site IS NOT NULL AND spec.anatomical_collection_site <> ''
-              WITH COLLECT(DISTINCT toLower(spec.anatomical_collection_site)) AS acs
-              RETURN acs AS anatomical_collection_site
-          }
-
-          CALL {
-            WITH sb
-            OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
-            WHERE demo.race IS NOT NULL OR demo.sex IS NOT NULL OR demo.ethnicity IS NOT NULL
-            WITH COLLECT(DISTINCT demo.race) AS race,
-                COLLECT(DISTINCT demo.sex) AS sex,
-                COLLECT(DISTINCT demo.ethnicity) AS ethnicity
-            RETURN race, sex, ethnicity
-          }
-
+          OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+          WHERE tt.targeted_therapy IS NOT NULL AND tt.targeted_therapy <> ''
+          WITH sb, study,
+            COLLECT(DISTINCT tt.targeted_therapy) AS targeted_therapy,
+            COLLECT(DISTINCT tt.targeted_therapy_id) AS targeted_therapy_id
+          WITH sb, study, targeted_therapy, targeted_therapy_id,
+            REDUCE(result = '', item IN targeted_therapy | result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS targeted_therapy_string
+          
+          OPTIONAL MATCH (spec_acs:specimen)-[:of_participant]->(sb)
+          WHERE spec_acs.anatomical_collection_site IS NOT NULL AND spec_acs.anatomical_collection_site <> ''
+          WITH sb, study, targeted_therapy, targeted_therapy_id, targeted_therapy_string,
+            COLLECT(DISTINCT toLower(spec_acs.anatomical_collection_site)) AS anatomical_collection_site
+          
+          OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
+          WHERE demo.race IS NOT NULL OR demo.sex IS NOT NULL OR demo.ethnicity IS NOT NULL
+          WITH sb, study, targeted_therapy, targeted_therapy_id, targeted_therapy_string, anatomical_collection_site,
+            COLLECT(DISTINCT demo.race) AS race,
+            COLLECT(DISTINCT demo.sex) AS sex,
+            COLLECT(DISTINCT demo.ethnicity) AS ethnicity
+          
           OPTIONAL MATCH (spec:specimen)-[:of_participant]->(sb)
           OPTIONAL MATCH (sb)<-[*..2]-(file:file)
           OPTIONAL MATCH (diag:diagnosis)-[:of_participant]->(sb)
