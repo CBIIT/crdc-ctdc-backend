@@ -306,6 +306,7 @@ indices:
         - numberOfTherapies
         - dataFileCount
       keyword:
+        - type
         - participant_id
         - study_short_name
         - ctep_disease_term
