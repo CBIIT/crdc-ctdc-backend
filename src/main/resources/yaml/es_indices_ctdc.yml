@@ -406,7 +406,6 @@ indices:
             data_file_type_file_info: file.data_file_type
           }) AS file_info
           SKIP $skip LIMIT $limit
-          " 
       page_size: 1000
   #     # File Imaging
   - index_name: "tab_participants"
@@ -548,7 +547,6 @@ indices:
         - data_files.data_file_compression_status
         - data_files.data_file_location
         - biospecimen_info.specimen_record_id
-        - biospecimen_info.specimen_record_id
         - biospecimen_info.anatomical_collection_site
         - biospecimen_info.specimen_type
         - biospecimen_info.tissue_category
@@ -628,7 +626,6 @@ indices:
           }) AS data_files,
           COLLECT(DISTINCT {
             specimen_record_id: spec.specimen_record_id,
-            specimen_record_id: spec.specimen_record_id,
             anatomical_collection_site: acs_norm,
             specimen_type: spec.specimen_type,
             tissue_category: spec.tissue_category,
@@ -682,15 +679,14 @@ indices:
         - carcinogen_exposure
         - targeted_therapy
         - targeted_therapy_string
-        - biospecimen_info.specimen_record_id
-        - biospecimen_info.specimen_record_id
-        - biospecimen_info.anatomical_collection_site
-        - biospecimen_info.specimen_type
-        - biospecimen_info.tissue_category
-        - biospecimen_info.assessment_timepoint
-        - file_info.data_file_uuid
-        - file_info.data_file_format
-        - file_info.data_file_type
+        - biospecimen_info.specimen_record_id_biospecimen_info
+        - biospecimen_info.anatomical_collection_site_biospecimen_info
+        - biospecimen_info.specimen_type_biospecimen_info
+        - biospecimen_info.tissue_category_biospecimen_info
+        - biospecimen_info.assessment_timepoint_biospecimen_info
+        - file_info.data_file_uuid_file_info
+        - file_info.data_file_format_file_info
+        - file_info.data_file_type_file_info
       long:
         - data_file_size
         - age_at_enrollment
@@ -791,16 +787,15 @@ indices:
           targeted_therapy_raw                                   AS targeted_therapy,
           targeted_therapy_string                                AS targeted_therapy_string,
           [x IN specs | {
-            specimen_record_id:          x.specimen_record_id,
-            specimen_record_id:                 x.specimen_record_id,
-            anatomical_collection_site:  x.anatomical_collection_site,
-            specimen_type:               x.specimen_type,
-            tissue_category:             x.tissue_category,
-            assessment_timepoint:        x.assessment_timepoint
+            specimen_record_id_biospecimen_info:          x.specimen_record_id,
+            anatomical_collection_site_biospecimen_info:  x.anatomical_collection_site,
+            specimen_type_biospecimen_info:               x.specimen_type,
+            tissue_category_biospecimen_info:             x.tissue_category,
+            assessment_timepoint_biospecimen_info:        x.assessment_timepoint
           }]                                                     AS biospecimen_info,
-          [{ data_file_uuid: f.data_file_uuid,
-            data_file_format: f.data_file_format,
-            data_file_type:   f.data_file_type }]               AS file_info
+          [{ data_file_uuid_file_info: f.data_file_uuid,
+            data_file_format_file_info: f.data_file_format,
+            data_file_type_file_info:   f.data_file_type }]               AS file_info
             SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: clinical_data_tab
