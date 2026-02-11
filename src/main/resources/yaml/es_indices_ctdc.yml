@@ -364,6 +364,8 @@ indices:
           OPTIONAL MATCH (sb)<-[*..2]-(file:file)
           OPTIONAL MATCH (diag:diagnosis)-[:of_participant]->(sb)
           OPTIONAL MATCH (expose:exposure)-[:of_participant]->(sb)
+          WITH sb, study, targeted_therapy, targeted_therapy_id, targeted_therapy_string, anatomical_collection_site,
+            race, sex, ethnicity, spec, file, diag, expose
 
           RETURN DISTINCT
           'participants' as type,
