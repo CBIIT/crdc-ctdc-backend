@@ -324,12 +324,12 @@ indices:
         - anatomical_collection_site
         - tissue_category
         - assessment_timepoint
-        - specimen_id
+        - specimen_record_id
         - specimen_type
         - data_file_uuid
         - data_file_type
         - data_file_format
-        - biospecimen_info.specimen_id_biospecimen_info
+        - biospecimen_info.specimen_record_id_biospecimen_info
         - biospecimen_info.anatomical_collection_site_biospecimen_info
         - biospecimen_info.tissue_category_biospecimen_info
         - biospecimen_info.assessment_timepoint_biospecimen_info
@@ -389,13 +389,13 @@ indices:
           anatomical_collection_site,
           COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
           COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
-          COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
+          COLLECT(DISTINCT spec.specimen_record_id) AS specimen_record_id,
           COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
           COLLECT(DISTINCT file.data_file_type) AS data_file_type,
           COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
           COLLECT(DISTINCT file.data_file_format) AS data_file_format,
           COLLECT(DISTINCT{
-            specimen_id_biospecimen_info: spec.specimen_id,
+            specimen_record_id_biospecimen_info: spec.specimen_record_id,
             anatomical_collection_site_biospecimen_info: spec.anatomical_collection_site,
             tissue_category_biospecimen_info: spec.tissue_category,
             assessment_timepoint_biospecimen_info: spec.assessment_timepoint
@@ -447,7 +447,7 @@ indices:
         - surgical_procedure_id
         - surgical_procedure_therapeutic
         - extent_of_residual_disease
-        - specimen_id
+        - specimen_record_id
         - anatomical_collection_site
         - specimen_type
         - tissue_category
@@ -508,7 +508,7 @@ indices:
               COLLECT(DISTINCT surgery.surgical_procedure_id) AS surgical_procedure_id,
               COLLECT(DISTINCT surgery.surgical_procedure_therapeutic) AS surgical_procedure_therapeutic,
               COLLECT(DISTINCT surgery.extent_of_residual_disease) AS extent_of_residual_disease,
-              COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
+              COLLECT(DISTINCT spec.specimen_record_id) AS specimen_record_id,
               COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
               COLLECT(DISTINCT spec.specimen_type) AS specimen_type,
               COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
@@ -517,7 +517,7 @@ indices:
     page_size: 10000
           # File Proteomicx
   - index_name: "tab_biospecimens"
-    id_field: "specimen_id"
+    id_field: "specimen_record_id"
             # analytical_fractions
             # instrument_makes
             # aliquot_ids
@@ -531,7 +531,7 @@ indices:
         - stage_of_disease
         - primary_disease_site
         - primary_diagnosis_disease_group
-        # - specimen_id
+        # - specimen_record_id
         # - specimen_record_id
         # - specimen_type
         # - anatomical_collection_site
@@ -548,7 +548,7 @@ indices:
         - data_files.data_file_compression_status
         - data_files.data_file_location
         - biospecimen_info.specimen_record_id
-        - biospecimen_info.specimen_id
+        - biospecimen_info.specimen_record_id
         - biospecimen_info.anatomical_collection_site
         - biospecimen_info.specimen_type
         - biospecimen_info.tissue_category
@@ -628,7 +628,7 @@ indices:
           }) AS data_files,
           COLLECT(DISTINCT {
             specimen_record_id: spec.specimen_record_id,
-            specimen_id: spec.specimen_id,
+            specimen_record_id: spec.specimen_record_id,
             anatomical_collection_site: acs_norm,
             specimen_type: spec.specimen_type,
             tissue_category: spec.tissue_category,
@@ -668,7 +668,7 @@ indices:
         - data_file_compression_status
         - association
         - participant_id
-        - specimen_id
+        - specimen_record_id
         - ctep_disease_term
         - primary_diagnosis_disease_group
         - stage_of_disease
@@ -683,7 +683,7 @@ indices:
         - targeted_therapy
         - targeted_therapy_string
         - biospecimen_info.specimen_record_id
-        - biospecimen_info.specimen_id
+        - biospecimen_info.specimen_record_id
         - biospecimen_info.anatomical_collection_site
         - biospecimen_info.specimen_type
         - biospecimen_info.tissue_category
@@ -775,7 +775,7 @@ indices:
           f.data_file_compression_status                        AS data_file_compression_status,
           associations                                          AS association,
           head([x IN subs  WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
-          head([x IN specs WHERE x.specimen_id    IS NOT NULL | x.specimen_id])    AS specimen_id,
+          head([x IN specs WHERE x.specimen_record_id    IS NOT NULL | x.specimen_record_id])    AS specimen_record_id,
           head([x IN ctep_terms   WHERE x IS NOT NULL])          AS ctep_disease_term,
           head([x IN pdg_list     WHERE x IS NOT NULL])          AS primary_diagnosis_disease_group,
           head([x IN stage_list   WHERE x IS NOT NULL])          AS stage_of_disease,
@@ -792,7 +792,7 @@ indices:
           targeted_therapy_string                                AS targeted_therapy_string,
           [x IN specs | {
             specimen_record_id:          x.specimen_record_id,
-            specimen_id:                 x.specimen_id,
+            specimen_record_id:                 x.specimen_record_id,
             anatomical_collection_site:  x.anatomical_collection_site,
             specimen_type:               x.specimen_type,
             tissue_category:             x.tissue_category,
