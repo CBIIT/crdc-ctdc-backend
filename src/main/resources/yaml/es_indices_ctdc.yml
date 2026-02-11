@@ -118,6 +118,8 @@ Indices:
     mapping:
       study_short_name:
         type: keyword
+      study_id:
+        type: keyword
       list_type:
         type: keyword
       study_data_files:
@@ -174,6 +176,7 @@ Indices:
       optional MATCH (sb:participant)<-[*..2]-(df:file)
       RETURN DISTINCT 
         s.study_short_name as study_short_name,
+        s.study_id AS study_id,
         COLLECT(DISTINCT{
                     data_file_uuid: study_file.data_file_uuid,
                     data_file_name: study_file.data_file_name,
@@ -207,6 +210,8 @@ Indices:
     mapping:
       study_short_name:
         type: keyword
+      study_id:
+        type: keyword
       specimen_types:
         type: nested
         properties:
@@ -239,7 +244,7 @@ Indices:
           assessment_timepoint:
             type: keyword
           collection_date:
-            type: double
+            type: keyword
             
     cypher_query: "
       MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
@@ -252,6 +257,7 @@ Indices:
       WITH specimen_count, specimen_type, count1, assessment_timepoint, count2, s, sp
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
+        s.study_id AS study_id,
         COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
         COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
         COLLECT(DISTINCT{
@@ -261,7 +267,7 @@ Indices:
           anatomical_collection_site: sp.anatomical_collection_site,
           tissue_category: sp.tissue_category,
           assessment_timepoint: sp.assessment_timepoint,
-          collection_date: sp.collection_date
+          collection_date: toFloat(sp.collection_date)
         }) as specimen,
         specimen_count"
   - index_name: study_diagnosis
@@ -269,6 +275,8 @@ Indices:
     # type mapping for each property of the index
     mapping:
       study_short_name:
+        type: keyword
+      study_id:
         type: keyword
       diagnosis:
         type: nested
@@ -304,6 +312,7 @@ Indices:
         optional MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
         RETURN DISTINCT
             s.study_short_name AS study_short_name,
+            s.study_id AS study_id,
             COLLECT(DISTINCT sd.ctep_disease_term) as ctep_disease_terms,
             COLLECT(DISTINCT{
             diagnosis_record_id: sd.diagnosis_record_id,
@@ -397,7 +406,7 @@ Indices:
     type: neo4j
     # Widgets,Facets,and Global Stats bar
     mapping:
-      type:
+      participant_id:
         type: keyword
       study_short_name:
         type: keyword
@@ -516,12 +525,14 @@ Indices:
       'participant' as type,
       sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
+
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
       COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
       COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
       COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
       COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
+      
       sex,
       race,
       ethnicity,
@@ -1013,6 +1024,8 @@ Indices:
         type: keyword
       study_short_name:
         type: keyword
+      study_accession:
+        type: keyword
     cypher_query: "
       CALL {
         MATCH (sub:participant)<-[*..2]-(parent)<--(f:file)
@@ -1026,7 +1039,7 @@ Indices:
       MATCH (f:file {data_file_uuid: uuid})
 
       OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
-      OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
       WITH
         f,
         associations,
@@ -1037,12 +1050,13 @@ Indices:
       WHERE sPart IN subs
       WITH
         f, associations, subs, specs,
-        COLLECT(DISTINCT study.study_short_name)              AS study_short_names
+        COLLECT(DISTINCT study.study_short_name)              AS study_short_names,
+        COllect(distinct study.study_accession)           AS study_accessions
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
       WHERE dPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names, study_accessions,
         COLLECT(DISTINCT diag.ctep_disease_term)              AS ctep_terms,
         COLLECT(DISTINCT diag.primary_diagnosis_disease_group) AS pdg_list,
         COLLECT(DISTINCT diag.stage_of_disease)               AS stage_list,
@@ -1054,7 +1068,7 @@ Indices:
       OPTIONAL MATCH (dmPart:participant)<-[:of_participant]-(demo:demographic)
       WHERE dmPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names, study_accessions,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         COLLECT(DISTINCT demo.sex)                            AS sex_list,
         COLLECT(DISTINCT demo.race)                           AS race_list,
@@ -1064,15 +1078,15 @@ Indices:
       OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
       WHERE exPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names, study_accessions,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
 
-      OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
+       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
       WHERE ttPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,
+        f, associations, subs, specs, study_short_names,study_accessions,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
@@ -1084,6 +1098,8 @@ Indices:
       RETURN
         'data file' AS type,
         head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
+        
+        head([s IN study_accessions WHERE s IS NOT NULL]) AS study_accession,
 
         COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]), '') AS anatomical_collection_site,
         COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,
@@ -1397,6 +1413,535 @@ Indices:
         data_file_type: file.data_file_type
       }) AS file_info
       "
+
+  - index_name: study_node_counts
+    type: neo4j
+    mapping:
+      short_name:
+        type: keyword
+      node_label:
+        type: keyword
+      participant_count:
+        type: integer
+      total_node_count:
+        type: integer
+    cypher_query: "
+      MATCH (study:study)<-[:belongs_to]-(p:participant)
+      OPTIONAL MATCH (p)<-[:of_participant]-(diag:diagnosis)
+      OPTIONAL MATCH (p)<-[:of_participant]-(spec:specimen)
+      OPTIONAL MATCH (p)<-[:of_participant]-(demo:demographic)
+      OPTIONAL MATCH (p)<-[:of_participant]-(exp:exposure)
+      OPTIONAL MATCH (p)<-[:of_participant]-(surg:surgery)
+      OPTIONAL MATCH (p)<-[:of_participant]-(tt:targeted_therapy)
+      OPTIONAL MATCH (p)<-[:of_participant]-(nt:non_targeted_therapy)
+      OPTIONAL MATCH (p)<-[:of_participant]-(rt:radiotherapy)
+      WITH study,p,
+        collect(DISTINCT diag) AS diags,
+        collect(DISTINCT spec) AS specs,
+        collect(DISTINCT demo) AS demos,
+        collect(DISTINCT exp) AS exps,
+        collect(DISTINCT surg) AS surgs,
+        collect(DISTINCT tt) AS tts,
+        collect(DISTINCT nt) AS nts,
+        collect(DISTINCT rt) as rts
+      WITH study,p,
+        [
+          {label: 'diagnosis', nodeCount: size(diags), participant: CASE WHEN size(diags) > 0 THEN p END},
+          {label: 'specimen', nodeCount: size(specs), participant: CASE WHEN size(specs) > 0 THEN p END},
+          {label: 'demographic', nodeCount: size(demos), participant: CASE WHEN size(demos) > 0 THEN p END},
+          {label: 'exposure', nodeCount: size(exps), participant: CASE WHEN size(exps) > 0 THEN p END},
+          {label: 'surgery', nodeCount: size(surgs), participant: CASE WHEN size(surgs) > 0 THEN p END},
+          {label: 'radiotherapy', nodeCount: size(rts), participant: CASE WHEN size(rts) > 0 THEN p END},
+          {label: 'targeted_therapy', nodeCount: size(tts), participant: CASE WHEN size(tts) > 0 THEN p END},
+          {label: 'non_targeted_therapy', nodeCount: size(nts), participant: CASE WHEN size(nts) > 0 THEN p END}
+        ] AS rows
+      UNWIND rows AS row
+      WITH row.label AS node_label,
+          row.nodeCount AS node_count,
+          row.participant AS participant,
+          study
+      RETURN
+        study.study_short_name as short_name,
+        node_label,
+        count(DISTINCT participant) AS participant_count,
+        sum(node_count) AS total_node_count
+      ORDER BY participant_count DESC
+      "
+  - index_name: clinical_data_tab
+    type: neo4j
+    mapping:
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      unique_node_types:
+        type: keyword
+      diagnosisNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          ctep_disease_term:
+            type: keyword
+          date_of_diagnosis:
+            type: keyword
+          date_of_diagnosis_original:
+            type: keyword
+          date_of_diagnosis_unit:
+            type: keyword
+          diagnosis_record_id:
+            type: keyword
+          histological_subtype:
+            type: keyword
+          histology:
+            type: keyword
+          meddra_disease_code:
+            type: keyword
+          primary_diagnosis_disease_group:
+            type: keyword
+          primary_disease_site:
+            type: keyword
+          snomed_disease_code:
+            type: keyword
+          snomed_disease_term:
+            type: keyword
+          UUID:
+            type: keyword
+      diagnosisNodeCount:
+        type: integer
+      diagnosisParticipantCount:
+        type: integer
+      demographicNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          age_at_enrollment:
+            type: keyword
+          age_at_enrollment_original:
+            type: keyword
+          age_at_enrollment_original_unit:
+            type: keyword
+          age_at_enrollment_unit:
+            type: keyword
+          body_surface_area:
+            type: keyword
+          body_surface_area_original:
+            type: keyword
+          body_surface_area_original_unit:
+            type: keyword
+          body_surface_area_unit:
+            type: keyword
+          demographic_record_id:
+            type: keyword
+          ethnicity:
+            type: keyword
+          height:
+            type: keyword
+          height_original:
+            type: keyword
+          height_original_unit:
+            type: keyword
+          height_unit:
+            type: keyword
+          ncbi_taxonomy_id:
+            type: keyword
+          ncbi_taxonomy_name:
+            type: keyword
+          race:
+            type: keyword
+          sex:
+            type: keyword
+          uuid:
+            type: keyword
+          weight:
+            type: keyword
+          weight_original:
+            type: keyword
+          weight_original_unit:
+            type: keyword
+          weight_unit:
+            type: keyword
+          occupation:
+            type: keyword
+          income:
+            type: keyword
+          highest_level_of_education:
+            type: keyword
+      demographicNodeCount:
+        type: integer
+      demographicParticipantCount:
+        type: integer
+      exposureNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          carcinogen_exposure:
+            type: keyword
+          exposure_record_id:
+            type: keyword
+      exposureNodeCount:
+        type: integer
+      exposureParticipantCount:
+        type: integer
+      specimenNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          anatomical_collection_site:
+            type: keyword
+          assessment_timepoint:
+            type: keyword
+          collection_date:
+            type: keyword
+          collection_date_original:
+            type: keyword
+          collection_date_original_unit:
+            type: keyword
+          collection_date_unit:
+            type: keyword
+          crdc_id:
+            type: keyword
+          created:
+            type: keyword
+          specimen_category:
+            type: keyword
+          specimen_record_id:
+            type: keyword
+          specimen_type_concept_code:
+            type: keyword
+          tissue_category:
+            type: keyword
+      specimenNodeCount:
+        type: integer
+      specimenParticipantCount:
+        type: integer
+      participantStatusNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          off_study:
+            type: keyword
+          off_study_reason:
+            type: keyword
+          participant_status_record_id:
+            type: keyword
+          survival_status:
+            type: keyword
+      participantStatusNodeCount:
+        type: integer
+      participantStatusParticipantCount:
+        type: integer
+
+    cypher_query: "
+      MATCH (study:study)<-[:belongs_to]-(p:participant)
+      WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_diag:participant)
+      OPTIONAL MATCH (p_diag)<-[:of_participant]-(diag:diagnosis)
+      WITH study, all_participant_ids,
+        COLLECT({node: diag, participant_id: p_diag.participant_id}) AS diag_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_demo:participant)
+      OPTIONAL MATCH (p_demo)<-[:of_participant]-(demo:demographic)
+      WITH study, all_participant_ids, diag_data,
+        COLLECT({node: demo, participant_id: p_demo.participant_id}) AS demo_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)
+      OPTIONAL MATCH (p_exp)<-[:of_participant]-(exp:exposure)
+      WITH study, all_participant_ids, diag_data, demo_data,
+        COLLECT({node: exp, participant_id: p_exp.participant_id}) AS exp_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)
+      OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
+      WITH study, all_participant_ids, diag_data, demo_data, exp_data,
+        COLLECT({node: spec, participant_id: p_spec.participant_id}) AS spec_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_ps:participant)
+      OPTIONAL MATCH (p_ps)<-[:of_participant]-(ps:participant_status)
+      WITH study, all_participant_ids, diag_data, demo_data, exp_data, spec_data,
+        COLLECT({node: ps, participant_id: p_ps.participant_id}) AS ps_data
+      WITH study, all_participant_ids,
+        apoc.coll.toSet([x IN diag_data WHERE x.node IS NOT NULL | x.node]) AS unique_diag,
+        diag_data,
+        apoc.coll.toSet([x IN demo_data WHERE x.node IS NOT NULL | x.node]) AS unique_demo,
+        demo_data,
+        apoc.coll.toSet([x IN exp_data WHERE x.node IS NOT NULL | x.node]) AS unique_exp,
+        exp_data,
+        apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL | x.node]) AS unique_spec,
+        spec_data,
+        apoc.coll.toSet([x IN ps_data WHERE x.node IS NOT NULL | x.node]) AS unique_ps,
+        ps_data
+      WITH study,
+        [d IN unique_diag | {
+          participant_ids: apoc.text.join([x IN diag_data WHERE x.node = d AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          ctep_disease_term: d.ctep_disease_term,
+          date_of_diagnosis: d.date_of_diagnosis,
+          date_of_diagnosis_original: d.date_of_diagnosis_original,
+          date_of_diagnosis_unit: d.date_of_diagnosis_unit,
+          diagnosis_record_id: d.diagnosis_record_id,
+          histological_subtype: d.histological_subtype,
+          histology: d.histology,
+          meddra_disease_code: d.meddra_disease_code,
+          primary_diagnosis_disease_group: d.primary_diagnosis_disease_group,
+          primary_disease_site: d.primary_disease_site,
+          snomed_disease_code: d.snomed_disease_code,
+          snomed_disease_term: d.snomed_disease_term,
+          UUID: d.uuid
+        }] AS diagnosisNodeData,
+        size(apoc.coll.toSet([x IN diag_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS diagnosisParticipantCount,
+        [dm IN unique_demo | {
+          participant_ids: apoc.text.join([x IN demo_data WHERE x.node = dm AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          age_at_enrollment: dm.age_at_enrollment,
+          age_at_enrollment_original: dm.age_at_enrollment_original,
+          age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
+          age_at_enrollment_unit: dm.age_at_enrollment_unit,
+          body_surface_area: dm.body_surface_area,
+          body_surface_area_original: dm.body_surface_area_original,
+          body_surface_area_original_unit: dm.body_surface_area_original_unit,
+          body_surface_area_unit: dm.body_surface_area_unit,
+          demographic_record_id: dm.demographic_record_id,
+          ethnicity: dm.ethnicity,
+          height: dm.height,
+          height_original: dm.height_original,
+          height_original_unit: dm.height_original_unit,
+          height_unit: dm.height_unit,
+          ncbi_taxonomy_id: dm.ncbi_taxonomy_id,
+          ncbi_taxonomy_name: dm.ncbi_taxonomy_name,
+          race: dm.race,
+          sex: dm.sex,
+          uuid: dm.uuid,
+          weight: dm.weight,
+          weight_original: dm.weight_original,
+          weight_original_unit: dm.weight_original_unit,
+          weight_unit: dm.weight_unit,
+          occupation: dm.occupation,
+          income: dm.income,
+          highest_level_of_education: dm.highest_level_of_education
+        }] AS demographicNodeData,
+        size(apoc.coll.toSet([x IN demo_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS demographicParticipantCount,
+        [e IN unique_exp | {
+          participant_ids: apoc.text.join([x IN exp_data WHERE x.node = e AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          carcinogen_exposure: e.carcinogen_exposure,
+          exposure_record_id: e.exposure_record_id
+        }] AS exposureNodeData,
+        size(apoc.coll.toSet([x IN exp_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS exposureParticipantCount,
+        [s IN unique_spec | {
+          participant_ids: apoc.text.join([x IN spec_data WHERE x.node = s AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          anatomical_collection_site: s.anatomical_collection_site,
+          assessment_timepoint: toString(s.assessment_timepoint),
+          collection_date: toString(s.collection_date),
+          collection_date_original: toString(s.collection_date_original),
+          collection_date_original_unit: s.collection_date_original_unit,
+          collection_date_unit: toString(s.collection_date_unit),
+          crdc_id: s.crdc_id,
+          created: toString(s.created),
+          specimen_category: s.specimen_category,
+          specimen_record_id: s.specimen_record_id,
+          specimen_type_concept_code: s.specimen_type_concept_code,
+          tissue_category: s.tissue_category
+        }] AS specimenNodeData,
+        size(apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
+        [p IN unique_ps | {
+          participant_ids: apoc.text.join([x IN ps_data WHERE x.node = p AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          off_study: p.off_study,
+          off_study_reason: p.off_study_reason,
+          participant_status_record_id: p.participant_status_record_id,
+          survival_status: p.survival_status
+        }] AS participantStatusNodeData,
+        size(apoc.coll.toSet([x IN ps_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS participantStatusParticipantCount,
+        ['diagnosis','demographic','exposure','specimen','participant_status'] AS unique_node_types
+      RETURN
+        study.study_short_name AS study_short_name,
+        study.study_id AS study_id,
+        unique_node_types,
+        diagnosisNodeData,
+        size(apoc.coll.toSet([d IN diagnosisNodeData | d.diagnosis_record_id])) AS diagnosisNodeCount,
+        diagnosisParticipantCount,
+        demographicNodeData,
+        size(apoc.coll.toSet([d IN demographicNodeData | d.demographic_record_id])) AS demographicNodeCount,
+        demographicParticipantCount,
+        exposureNodeData,
+        size(apoc.coll.toSet([e IN exposureNodeData | e.exposure_record_id])) AS exposureNodeCount,
+        exposureParticipantCount,
+        specimenNodeData,
+        size(apoc.coll.toSet([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
+        specimenParticipantCount,
+        participantStatusNodeData,
+        size(apoc.coll.toSet([p IN participantStatusNodeData | p.participant_status_record_id])) AS participantStatusNodeCount,
+        participantStatusParticipantCount;
+        "
+  - index_name: clinical_trial_data_tab
+    type: neo4j
+    mapping:
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      targetedTherapyNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          targeted_therapy:
+            type: keyword
+          targeted_therapy_dose:
+            type: keyword
+          targeted_therapy_frequency:
+            type: keyword
+          targeted_therapy_record_id:
+            type: keyword
+      targetedTherapyNodeCount:
+        type: integer
+      targetedTherapyParticipantCount:
+        type: integer
+      nonTargetedTherapyNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          non_targeted_therapy_record_id:
+            type: keyword
+          best_response_to_non_targeted_therapy:
+            type: keyword
+          non_targeted_therapy:
+            type: keyword
+          non_targeted_therapy_dose:
+            type: keyword
+          non_targeted_therapy_frequency:
+            type: keyword
+      nonTargetedTherapyNodeCount:
+        type: integer
+      nonTargetedTherapyParticipantCount:
+        type: integer
+      radiotherapyNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          radiation_dose:
+            type: keyword
+          radiation_extent:
+            type: keyword
+          radiation_frequency:
+            type: keyword
+          radiological_procedure:
+            type: keyword
+          radiological_procedure_anatomical_location:
+            type: keyword
+          radiological_procedure_record_id:
+            type: keyword
+          uuid:
+            type: keyword
+      radiotherapyNodeCount:
+        type: integer
+      radiotherapyParticipantCount:
+        type: integer
+      surgeryNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          extent_of_residual_disease:
+            type: keyword
+          surgical_procedure:
+            type: keyword
+          surgical_procedure_anatomical_location:
+            type: keyword
+          surgical_procedure_date:
+            type: keyword
+          surgical_procedure_findings:
+            type: keyword
+          surgical_procedure_record_id:
+            type: keyword
+          surgical_procedure_therapeutic:
+            type: keyword
+      surgeryNodeCount:
+        type: integer
+      surgeryParticipantCount:
+        type: integer
+    cypher_query: "
+      MATCH (study:study)<-[:belongs_to]-(p:participant)
+      WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
+      OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
+      WITH study, all_participant_ids,
+        COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
+      OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
+      WITH study, all_participant_ids, tt_data,
+        COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
+      OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
+      WITH study, all_participant_ids, tt_data, nt_data,
+        COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
+      OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
+      WITH study, all_participant_ids, tt_data, nt_data, rt_data,
+        COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
+      WITH study, all_participant_ids,
+        apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL | x.node]) AS unique_tt,
+        tt_data,
+        apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL | x.node]) AS unique_nt,
+        nt_data,
+        apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL | x.node]) AS unique_rt,
+        rt_data,
+        apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL | x.node]) AS unique_surg,
+        surg_data
+      WITH study,
+        [t IN unique_tt | {
+          participant_ids: apoc.text.join([x IN tt_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          targeted_therapy: t.targeted_therapy,
+          targeted_therapy_dose: t.targeted_therapy_dose,
+          targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
+          targeted_therapy_record_id: t.targeted_therapy_record_id
+        }] AS targetedTherapyNodeData,
+        size(apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
+        [n IN unique_nt | {
+          participant_ids: apoc.text.join([x IN nt_data WHERE x.node = n AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
+          best_response_to_non_targeted_therapy: toString(COALESCE(n.best_response_to_non_targeted_therapy, '')),
+          non_targeted_therapy: toString(COALESCE(n.non_targeted_therapy, '')),
+          non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
+          non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
+        }] AS nonTargetedTherapyNodeData,
+        size(apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
+        [r IN unique_rt | {
+          participant_ids: apoc.text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          radiation_dose: r.radiation_dose,
+          radiation_extent: r.radiation_extent,
+          radiation_frequency: r.radiation_frequency,
+          radiological_procedure: r.radiological_procedure,
+          radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
+          radiological_procedure_record_id: r.radiological_procedure_record_id,
+          uuid: r.uuid
+        }] AS radiotherapyNodeData,
+        size(apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS radiotherapyParticipantCount,
+        [sg IN unique_surg | {
+          participant_ids: apoc.text.join([x IN surg_data WHERE x.node = sg AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          extent_of_residual_disease: sg.extent_of_residual_disease,
+          surgical_procedure: sg.surgical_procedure,
+          surgical_procedure_anatomical_location: sg.surgical_procedure_anatomical_location,
+          surgical_procedure_date: toString(sg.surgical_procedure_date),
+          surgical_procedure_findings: sg.surgical_procedure_findings,
+          surgical_procedure_record_id: sg.surgical_procedure_record_id,
+          surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
+        }] AS surgeryNodeData,
+        size(apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS surgeryParticipantCount
+      RETURN
+        study.study_short_name AS study_short_name,
+        study.study_id AS study_id,
+        targetedTherapyNodeData,
+        size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
+        targetedTherapyParticipantCount,
+        nonTargetedTherapyNodeData,
+        size(apoc.coll.toSet([n IN nonTargetedTherapyNodeData | n.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
+        nonTargetedTherapyParticipantCount,
+        radiotherapyNodeData,
+        size(apoc.coll.toSet([r IN radiotherapyNodeData | r.radiological_procedure_record_id])) AS radiotherapyNodeCount,
+        radiotherapyParticipantCount,
+        surgeryNodeData,
+        size(apoc.coll.toSet([s IN surgeryNodeData | s.surgical_procedure_record_id])) AS surgeryNodeCount,
+        surgeryParticipantCount;
+        "
   - index_name: about_page
     type: about_file
     # type mapping for each property of the index
