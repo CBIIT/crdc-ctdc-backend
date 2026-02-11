@@ -653,7 +653,6 @@ indices:
         - specimen_type
         - tissue_category
         - assessment_timepoint
-        - specimen_record_id
         - data_file_name
         - data_file_format
         - data_file_type
@@ -704,8 +703,8 @@ indices:
         OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
         WITH
           f, associations,
-          apoc.coll.toSet(COLLECT(sub1) + COLLECT(sub2))        AS subs,
-          apoc.coll.toSet(COLLECT(spec1))                       AS specs
+          nci_crdc_functions.remove_collection_braces(COLLECT(sub1) + COLLECT(sub2))        AS subs,
+          nci_crdc_functions.remove_collection_braces(COLLECT(spec1))                       AS specs
         OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
         WHERE sPart IN subs
         WITH
@@ -738,16 +737,16 @@ indices:
           f, associations, subs, specs, study_short_names, study_accession_ids,
           ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
           sex_list, race_list, ethnicity_list, ages,
-          apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
+          nci_crdc_functions.remove_collection_braces(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
         OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
         WHERE ttPart IN subs
         WITH
           f, associations, subs, specs, study_short_names, study_accession_ids,
           ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
           sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
-          apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
+          nci_crdc_functions.remove_collection_braces(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
           text.join(
-            apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
+            sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
             '|'
           )                                                     AS targeted_therapy_string
         RETURN
@@ -892,13 +891,13 @@ indices:
         WITH study, all_participant_ids, diag_data, demo_data, exp_data,
           COLLECT({node: spec, participant_id: p_spec.participant_id}) AS spec_data
         WITH study, all_participant_ids,
-          apoc.coll.toSet([x IN diag_data WHERE x.node IS NOT NULL | x.node]) AS unique_diag,
+          nci_crdc_functions.remove_collection_braces([x IN diag_data WHERE x.node IS NOT NULL | x.node]) AS unique_diag,
           diag_data,
-          apoc.coll.toSet([x IN demo_data WHERE x.node IS NOT NULL | x.node]) AS unique_demo,
+          nci_crdc_functions.remove_collection_braces([x IN demo_data WHERE x.node IS NOT NULL | x.node]) AS unique_demo,
           demo_data,
-          apoc.coll.toSet([x IN exp_data WHERE x.node IS NOT NULL | x.node]) AS unique_exp,
+          nci_crdc_functions.remove_collection_braces([x IN exp_data WHERE x.node IS NOT NULL | x.node]) AS unique_exp,
           exp_data,
-          apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL | x.node]) AS unique_spec,
+          nci_crdc_functions.remove_collection_braces([x IN spec_data WHERE x.node IS NOT NULL | x.node]) AS unique_spec,
           spec_data
         WITH study,
           [d IN unique_diag | {
@@ -917,7 +916,7 @@ indices:
             snomed_disease_term: d.snomed_disease_term,
             UUID: d.uuid
           }] AS diagnosisNodeData,
-          size(apoc.coll.toSet([x IN diag_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS diagnosisNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN diag_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS diagnosisNodeCount,
           [dm IN unique_demo | {
             participant_ids: text.join([x IN demo_data WHERE x.node = dm AND x.participant_id IS NOT NULL | x.participant_id], '|'),
             age_at_enrollment: dm.age_at_enrollment,
@@ -947,13 +946,13 @@ indices:
             income: dm.income,
             highest_level_of_education: dm.highest_level_of_education
           }] AS demographicNodeData,
-          size(apoc.coll.toSet([x IN demo_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS demographicParticipantCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN demo_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS demographicParticipantCount,
           [e IN unique_exp | {
             participant_ids: text.join([x IN exp_data WHERE x.node = e AND x.participant_id IS NOT NULL | x.participant_id], '|'),
             carcinogen_exposure: e.carcinogen_exposure,
             exposure_record_id: e.exposure_record_id
           }] AS exposureNodeData,
-          size(apoc.coll.toSet([x IN exp_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS exposureParticipantCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN exp_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS exposureParticipantCount,
           [s IN unique_spec | {
             participant_ids: text.join([x IN spec_data WHERE x.node = s AND x.participant_id IS NOT NULL | x.participant_id], '|'),
             anatomical_collection_site: s.anatomical_collection_site,
@@ -969,22 +968,22 @@ indices:
             specimen_type_concept_code: s.specimen_type_concept_code,
             tissue_category: s.tissue_category
           }] AS specimenNodeData,
-          size(apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
           ['diagnosis','demographic','exposure','specimen'] AS unique_node_types
         RETURN
           study.study_short_name AS study_short_name,
           unique_node_types,
           diagnosisNodeData,
-          size(apoc.coll.toSet([d IN diagnosisNodeData | d.diagnosis_record_id])) AS diagnosisNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([d IN diagnosisNodeData | d.diagnosis_record_id])) AS diagnosisNodeCount,
           diagnosisParticipantCount,
           demographicNodeData,
-          size(apoc.coll.toSet([d IN demographicNodeData | d.demographic_record_id])) AS demographicNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([d IN demographicNodeData | d.demographic_record_id])) AS demographicNodeCount,
           demographicParticipantCount,
           exposureNodeData,
-          size(apoc.coll.toSet([e IN exposureNodeData | e.exposure_record_id])) AS exposureNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([e IN exposureNodeData | e.exposure_record_id])) AS exposureNodeCount,
           exposureParticipantCount,
           specimenNodeData,
-          size(apoc.coll.toSet([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
           specimenParticipantCount
         SKIP $skip LIMIT $limit
       page_size: 1000
@@ -1050,13 +1049,13 @@ indices:
         WITH study, all_participant_ids, tt_data, nt_data, rt_data,
           COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
         WITH study, all_participant_ids,
-          apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL | x.node]) AS unique_tt,
+          nci_crdc_functions.remove_collection_braces([x IN tt_data WHERE x.node IS NOT NULL | x.node]) AS unique_tt,
           tt_data,
-          apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL | x.node]) AS unique_nt,
+          nci_crdc_functions.remove_collection_braces([x IN nt_data WHERE x.node IS NOT NULL | x.node]) AS unique_nt,
           nt_data,
-          apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL | x.node]) AS unique_rt,
+          nci_crdc_functions.remove_collection_braces([x IN rt_data WHERE x.node IS NOT NULL | x.node]) AS unique_rt,
           rt_data,
-          apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL | x.node]) AS unique_surg,
+          nci_crdc_functions.remove_collection_braces([x IN surg_data WHERE x.node IS NOT NULL | x.node]) AS unique_surg,
           surg_data
         WITH study,
           [t IN unique_tt | {
@@ -1066,7 +1065,7 @@ indices:
             targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
             targeted_therapy_record_id: t.targeted_therapy_record_id
           }] AS targetedTherapyNodeData,
-          size(apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN tt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
           [n IN unique_nt | {
             participant_ids: text.join([x IN nt_data WHERE x.node = n AND x.participant_id IS NOT NULL | x.participant_id], '|'),
             non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
@@ -1075,7 +1074,7 @@ indices:
             non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
             non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
           }] AS nonTargetedTherapyNodeData,
-          size(apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN nt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
           [r IN unique_rt | {
             participant_ids: text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
             radiation_dose: r.radiation_dose,
@@ -1086,7 +1085,7 @@ indices:
             radiological_procedure_record_id: r.radiological_procedure_record_id,
             uuid: r.uuid
           }] AS radiotherapyNodeData,
-          size(apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS radiotherapyParticipantCount,
+          size(nci_crdc_functions.remove_collection_braces([x IN rt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS radiotherapyParticipantCount,
           [sg IN unique_surg | {
             participant_ids: text.join([x IN surg_data WHERE x.node = sg AND x.participant_id IS NOT NULL | x.participant_id], '|'),
             extent_of_residual_disease: sg.extent_of_residual_disease,
@@ -1097,20 +1096,20 @@ indices:
             surgical_procedure_record_id: sg.surgical_procedure_record_id,
             surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
           }] AS surgeryNodeData,
-          size(apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS surgeryParticipantCount
+          size(nci_crdc_functions.remove_collection_braces([x IN surg_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS surgeryParticipantCount
         RETURN
           study.study_short_name AS study_short_name,
           targetedTherapyNodeData,
-          size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
           targetedTherapyParticipantCount,
           nonTargetedTherapyNodeData,
-          size(apoc.coll.toSet([n IN nonTargetedTherapyNodeData | n.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([n IN nonTargetedTherapyNodeData | n.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
           nonTargetedTherapyParticipantCount,
           radiotherapyNodeData,
-          size(apoc.coll.toSet([r IN radiotherapyNodeData | r.radiological_procedure_record_id])) AS radiotherapyNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([r IN radiotherapyNodeData | r.radiological_procedure_record_id])) AS radiotherapyNodeCount,
           radiotherapyParticipantCount,
           surgeryNodeData,
-          size(apoc.coll.toSet([s IN surgeryNodeData | s.surgical_procedure_record_id])) AS surgeryNodeCount,
+          size(nci_crdc_functions.remove_collection_braces([s IN surgeryNodeData | s.surgical_procedure_record_id])) AS surgeryNodeCount,
           surgeryParticipantCount
         SKIP $skip LIMIT $limit
       page_size: 1000
