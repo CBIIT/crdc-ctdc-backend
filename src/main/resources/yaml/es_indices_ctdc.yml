@@ -705,7 +705,7 @@ indices:
         OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
         WITH
           f, associations,
-          COLLECT(sub1 + COLLECT(sub2) AS subs,
+          COLLECT(sub1) + COLLECT(sub2) AS subs,
           COLLECT(spec1)                AS specs
         OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
         WHERE sPart IN subs
