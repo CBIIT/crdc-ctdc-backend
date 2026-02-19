@@ -783,7 +783,6 @@ indices:
           f.data_file_compression_status                     AS data_file_compression_status,
           associations                                       AS association,
           first_sub.participant_id                           AS participant_id,
-          first_spec.specimen_record_id                      AS specimen_record_id,
           ctep_terms[0]                                      AS ctep_disease_term,
           pdg_list[0]                                        AS primary_diagnosis_disease_group,
           stage_list[0]                                      AS stage_of_disease,
