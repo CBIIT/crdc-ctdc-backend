@@ -40,45 +40,73 @@ indices:
       # dbGaP_subject_id
       query: |
         MATCH (s:study)
-          optional MATCH (s)<-[:associated_with]-(ic:image_collection)
-          optional MATCH (s)<-[:associated_with]-(al:associated_link)
-          optional MATCH (s)<-[:belongs_to]-(participant)
-          optional MATCH (participant)<-[*..2]-(parent)<--(f:file)
-          optional MATCH (s)<-[:associated_with]-(df:file)
-          WHERE NOT (df)--(:participant)
-          AND NOT (df)-[:associated_with]->(:specimen)
-          RETURN DISTINCT
-                s.study_name as study_name,
-                s.study_short_name as study_short_name,
-                s.study_accession as study_accession,
-                s.study_id as study_id,
-                s.study_description as study_description,
-                s.study_type as study_type,
-                s.dates_of_conduct as dates_of_conduct,
-                COLLECT(DISTINCT{
-                    associated_link_record_id: al.associated_link_record_id,
-                    associated_link_name: al.associated_link_name,
-                    associated_link_url: al.associated_link_url
-                }) AS associated_links,
-                COLLECT(DISTINCT{
-                    image_collection_record_id: ic.image_collection_record_id,
-                    image_collection_name: ic.image_collection_name,
-                    image_type_included: ic.image_type_included,
-                    image_collection_url: ic.image_collection_url,
-                    repository_name: ic.repository_name,
-                    collection_access: ic.collection_access
-                }) AS image_collection,
-                COLLECT(DISTINCT{
-                  biomarker_results_available: participant.biomarker_results_available,
-                  histology_images_available: participant.histology_images_available,
-                  radiology_images_available: participant.radiology_images_available,
-                  radiology_report_available: participant.radiology_report_available,
-                  participant_id: participant.participant_id
-                  })as participants,
-                COUNT( DISTINCT participant) as participant_count,
-                COUNT( DISTINCT ic) as image_collection_count,
-                COUNT( DISTINCT df) as study_file_count,
-                COUNT( DISTINCT f) as participant_file_count
+        OPTIONAL MATCH (s)<-[:associated_with]-(ic:image_collection)
+        OPTIONAL MATCH (s)<-[:associated_with]-(al:associated_link)
+        OPTIONAL MATCH (s)<-[:belongs_to]-(participant:participant)
+        OPTIONAL MATCH (participant)<-[*..2]-(parent)<--(f:file)
+        OPTIONAL MATCH (s)<-[:associated_with]-(df:file)
+        OPTIONAL MATCH (df)--(df_participant:participant)
+        OPTIONAL MATCH (df)-[:associated_with]->(df_specimen:specimen)
+        WITH s, ic, al, participant, f, df,
+          df_participant, df_specimen
+        // ---- CHANGE START: replaced NOT (df)--(:participant) and NOT (df)-[:associated_with]->(:specimen) 
+        //      with null checks on the optional matches above ----
+        WITH s, ic, al, participant, f,
+          CASE WHEN df_participant IS NULL AND df_specimen IS NULL THEN df ELSE null END AS df
+        // ---- CHANGE END ----
+        WITH
+          s,
+          COLLECT(DISTINCT ic)           AS image_collections,
+          COLLECT(DISTINCT al)           AS associated_links_raw,
+          COLLECT(DISTINCT participant)  AS participants_raw,
+          COLLECT(DISTINCT f)            AS participant_files,
+          COLLECT(DISTINCT df)           AS study_files
+
+        UNWIND CASE WHEN size(associated_links_raw) = 0 THEN [null] ELSE associated_links_raw END AS al
+        WITH s, image_collections, participants_raw, participant_files, study_files,
+          COLLECT({
+            associated_link_record_id: al.associated_link_record_id,
+            associated_link_name:      al.associated_link_name,
+            associated_link_url:       al.associated_link_url
+          }) AS associated_links
+
+        UNWIND CASE WHEN size(image_collections) = 0 THEN [null] ELSE image_collections END AS ic
+        WITH s, associated_links, participants_raw, participant_files, study_files,
+          COLLECT({
+            image_collection_record_id: ic.image_collection_record_id,
+            image_collection_name:      ic.image_collection_name,
+            image_type_included:        ic.image_type_included,
+            image_collection_url:       ic.image_collection_url,
+            repository_name:            ic.repository_name,
+            collection_access:          ic.collection_access
+          }) AS image_collection
+
+        UNWIND CASE WHEN size(participants_raw) = 0 THEN [null] ELSE participants_raw END AS participant
+        WITH s, associated_links, image_collection, participant_files, study_files,
+          COLLECT({
+            biomarker_results_available: participant.biomarker_results_available,
+            histology_images_available:  participant.histology_images_available,
+            radiology_images_available:  participant.radiology_images_available,
+            radiology_report_available:  participant.radiology_report_available,
+            participant_id:              participant.participant_id
+          }) AS participants,
+          size(participants_raw) AS participant_count
+
+        RETURN
+          s.study_name                   AS study_name,
+          s.study_short_name             AS study_short_name,
+          s.study_accession_id             AS study_accession,
+          s.study_id                     AS study_id,
+          s.study_description            AS study_description,
+          s.study_type                   AS study_type,
+          s.dates_of_conduct             AS dates_of_conduct,
+          associated_links,
+          image_collection,
+          participants,
+          participant_count,
+          size(image_collection)         AS image_collection_count,
+          size(study_files)              AS study_file_count,
+          size(participant_files)        AS participant_file_count
                 SKIP $skip LIMIT $limit
       page_size: 10000
       update_queries:
