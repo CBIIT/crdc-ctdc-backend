@@ -705,8 +705,8 @@ indices:
         OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
         WITH
           f, associations,
-          nci_crdc_functions.remove_collection_braces(COLLECT(sub1) + COLLECT(sub2)) AS subs,
-          nci_crdc_functions.remove_collection_braces(COLLECT(spec1))                AS specs
+          COLLECT(sub1 + COLLECT(sub2) AS subs,
+          COLLECT(spec1)                AS specs
         OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
         WHERE sPart IN subs
         WITH
@@ -739,7 +739,7 @@ indices:
           f, associations, subs, specs, study_short_names, study_accession_ids,
           ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
           sex_list, race_list, ethnicity_list, ages,
-          nci_crdc_functions.remove_collection_braces(COLLECT(exp.carcinogen_exposure)) AS carcinogen_exposure
+          COLLECT(exp.carcinogen_exposure) AS carcinogen_exposure
         OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
         WHERE ttPart IN subs
         WITH
