@@ -1030,163 +1030,171 @@ indices:
               MATCH (study:study)<-[:belongs_to]-(p:participant)
               WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
 
-                OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
-                OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
-                WITH study, all_participant_ids,
-                  COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
+              OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
+              WITH study, all_participant_ids,
+                COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
 
-                OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
-                OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
-                WITH study, all_participant_ids, tt_data,
-                  COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
+              OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
+              WITH study, all_participant_ids, tt_data,
+                COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
 
-                OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
-                OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
-                WITH study, all_participant_ids, tt_data, nt_data,
-                  COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
+              OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
+              WITH study, all_participant_ids, tt_data, nt_data,
+                COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
 
-                OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
-                OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
-                WITH study, all_participant_ids, tt_data, nt_data, rt_data,
-                  COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
+              OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data,
+                COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
 
-                UNWIND tt_data AS tt_item
-                WITH study, all_participant_ids, COLLECT(DISTINCT tt_item.node) AS unique_tt, tt_data, nt_data, rt_data, surg_data
+              // ---- CHANGE START: moved all participant count unwinding here before raw data goes out of scope ----
+              UNWIND tt_data AS tt_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data,
+                COLLECT(DISTINCT CASE WHEN tt_count_item.node IS NOT NULL AND tt_count_item.participant_id IS NOT NULL THEN tt_count_item.participant_id ELSE NULL END) AS tt_participant_list
 
-                UNWIND nt_data AS nt_item
-                WITH study, all_participant_ids, unique_tt, COLLECT(DISTINCT nt_item.node) AS unique_nt, tt_data, nt_data, rt_data, surg_data
+              UNWIND nt_data AS nt_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list,
+                COLLECT(DISTINCT CASE WHEN nt_count_item.node IS NOT NULL AND nt_count_item.participant_id IS NOT NULL THEN nt_count_item.participant_id ELSE NULL END) AS nt_participant_list
 
-                UNWIND rt_data AS rt_item
-                WITH study, all_participant_ids, unique_tt, unique_nt, COLLECT(DISTINCT rt_item.node) AS unique_rt, tt_data, nt_data, rt_data, surg_data
+              UNWIND rt_data AS rt_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list, nt_participant_list,
+                COLLECT(DISTINCT CASE WHEN rt_count_item.node IS NOT NULL AND rt_count_item.participant_id IS NOT NULL THEN rt_count_item.participant_id ELSE NULL END) AS rt_participant_list
 
-                UNWIND surg_data AS surg_item
-                WITH study, all_participant_ids, unique_tt, unique_nt, unique_rt, COLLECT(DISTINCT surg_item.node) AS unique_surg, tt_data, nt_data, rt_data, surg_data
+              UNWIND surg_data AS surg_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list, nt_participant_list, rt_participant_list,
+                COLLECT(DISTINCT CASE WHEN surg_count_item.node IS NOT NULL AND surg_count_item.participant_id IS NOT NULL THEN surg_count_item.participant_id ELSE NULL END) AS surg_participant_list
+              // ---- CHANGE END ----
 
-                UNWIND unique_tt AS t
-                UNWIND tt_data AS tt_item
-                WITH study, t, tt_item, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg
-                WHERE tt_item.node = t AND tt_item.participant_id IS NOT NULL
-                WITH study, t, COLLECT(tt_item.participant_id) AS tt_pids, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg
-                WITH study, t, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg,
-                  REDUCE(result = '', item IN tt_pids | 
-                    result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS tt_participant_ids
+              UNWIND tt_data AS tt_item
+              WITH study, all_participant_ids, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT tt_item.node) AS unique_tt, tt_data, nt_data, rt_data, surg_data
 
-                WITH study, COLLECT({
-                  participant_ids: tt_participant_ids,
-                  targeted_therapy: t.targeted_therapy,
-                  targeted_therapy_dose: t.targeted_therapy_dose,
-                  targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
-                  targeted_therapy_record_id: t.targeted_therapy_record_id
-                }) AS targetedTherapyNodeData,
-                nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg
+              UNWIND nt_data AS nt_item
+              WITH study, all_participant_ids, unique_tt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT nt_item.node) AS unique_nt, tt_data, nt_data, rt_data, surg_data
 
-                UNWIND unique_nt AS n
-                UNWIND nt_data AS nt_item
-                WITH study, n, nt_item, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg
-                WHERE nt_item.node = n AND nt_item.participant_id IS NOT NULL
-                WITH study, n, COLLECT(nt_item.participant_id) AS nt_pids, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg
-                WITH study, n, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg,
-                  REDUCE(result = '', item IN nt_pids | 
-                    result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS nt_participant_ids
+              UNWIND rt_data AS rt_item
+              WITH study, all_participant_ids, unique_tt, unique_nt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT rt_item.node) AS unique_rt, tt_data, nt_data, rt_data, surg_data
 
-                WITH study, targetedTherapyNodeData, COLLECT({
-                  participant_ids: nt_participant_ids,
-                  non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
-                  best_response_to_non_targeted_therapy: toString(COALESCE(n.best_response_to_non_targeted_therapy, '')),
-                  non_targeted_therapy: toString(COALESCE(n.non_targeted_therapy, '')),
-                  non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
-                  non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
-                }) AS nonTargetedTherapyNodeData,
-                rt_data, surg_data, unique_rt, unique_surg
+              UNWIND surg_data AS surg_item
+              WITH study, all_participant_ids, unique_tt, unique_nt, unique_rt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT surg_item.node) AS unique_surg, tt_data, nt_data, rt_data, surg_data
 
-                UNWIND nt_data AS nt_count_item
-                WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg,
-                  COLLECT(DISTINCT CASE WHEN nt_count_item.node IS NOT NULL AND nt_count_item.participant_id IS NOT NULL THEN nt_count_item.participant_id ELSE NULL END) AS nt_participant_list
+              UNWIND unique_tt AS t
+              UNWIND tt_data AS tt_item
+              WITH study, t, tt_item, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE tt_item.node = t AND tt_item.participant_id IS NOT NULL
+              WITH study, t, COLLECT(tt_item.participant_id) AS tt_pids, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, t, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN tt_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS tt_participant_ids
 
-                UNWIND unique_rt AS r
-                UNWIND rt_data AS rt_item
-                WITH study, r, rt_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, nt_participant_list
-                WHERE rt_item.node = r AND rt_item.participant_id IS NOT NULL
-                WITH study, r, COLLECT(rt_item.participant_id) AS rt_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, nt_participant_list
-                WITH study, r, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, nt_participant_list,
-                  REDUCE(result = '', item IN rt_pids | 
-                    result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS rt_participant_ids
+              WITH study, COLLECT({
+                participant_ids: tt_participant_ids,
+                targeted_therapy: t.targeted_therapy,
+                targeted_therapy_dose: t.targeted_therapy_dose,
+                targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
+                targeted_therapy_record_id: t.targeted_therapy_record_id
+              }) AS targetedTherapyNodeData,
+              nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-                WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, COLLECT({
-                  participant_ids: rt_participant_ids,
-                  radiation_dose: r.radiation_dose,
-                  radiation_extent: r.radiation_extent,
-                  radiation_frequency: r.radiation_frequency,
-                  radiological_procedure: r.radiological_procedure,
-                  radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
-                  radiological_procedure_record_id: r.radiological_procedure_record_id,
-                  uuid: r.uuid
-                }) AS radiotherapyNodeData,
-                surg_data, unique_surg, nt_participant_list
+              UNWIND unique_nt AS n
+              UNWIND nt_data AS nt_item
+              WITH study, n, nt_item, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE nt_item.node = n AND nt_item.participant_id IS NOT NULL
+              WITH study, n, COLLECT(nt_item.participant_id) AS nt_pids, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, n, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN nt_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS nt_participant_ids
 
-                UNWIND rt_data AS rt_count_item
-                WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surg_data, unique_surg, nt_participant_list,
-                  COLLECT(DISTINCT CASE WHEN rt_count_item.node IS NOT NULL AND rt_count_item.participant_id IS NOT NULL THEN rt_count_item.participant_id ELSE NULL END) AS rt_participant_list
+              WITH study, targetedTherapyNodeData, COLLECT({
+                participant_ids: nt_participant_ids,
+                non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
+                best_response_to_non_targeted_therapy: toString(COALESCE(n.best_response_to_non_targeted_therapy, '')),
+                non_targeted_therapy: toString(COALESCE(n.non_targeted_therapy, '')),
+                non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
+                non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
+              }) AS nonTargetedTherapyNodeData,
+              rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-                UNWIND unique_surg AS sg
-                UNWIND surg_data AS surg_item
-                WITH study, sg, surg_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, nt_participant_list, rt_participant_list
-                WHERE surg_item.node = sg AND surg_item.participant_id IS NOT NULL
-                WITH study, sg, COLLECT(surg_item.participant_id) AS surg_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, nt_participant_list, rt_participant_list
-                WITH study, sg, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, nt_participant_list, rt_participant_list,
-                  REDUCE(result = '', item IN surg_pids | 
-                    result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS surg_participant_ids
+              UNWIND unique_rt AS r
+              UNWIND rt_data AS rt_item
+              WITH study, r, rt_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE rt_item.node = r AND rt_item.participant_id IS NOT NULL
+              WITH study, r, COLLECT(rt_item.participant_id) AS rt_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, r, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN rt_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS rt_participant_ids
 
-                WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, COLLECT({
-                  participant_ids: surg_participant_ids,
-                  extent_of_residual_disease: sg.extent_of_residual_disease,
-                  surgical_procedure: sg.surgical_procedure,
-                  surgical_procedure_anatomical_location: sg.surgical_procedure_anatomical_location,
-                  surgical_procedure_date: toString(sg.surgical_procedure_date),
-                  surgical_procedure_findings: sg.surgical_procedure_findings,
-                  surgical_procedure_record_id: sg.surgical_procedure_record_id,
-                  surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
-                }) AS surgeryNodeData,
-                nt_participant_list, rt_participant_list
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, COLLECT({
+                participant_ids: rt_participant_ids,
+                radiation_dose: r.radiation_dose,
+                radiation_extent: r.radiation_extent,
+                radiation_frequency: r.radiation_frequency,
+                radiological_procedure: r.radiological_procedure,
+                radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
+                radiological_procedure_record_id: r.radiological_procedure_record_id,
+                uuid: r.uuid
+              }) AS radiotherapyNodeData,
+              surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-                    UNWIND tt_data AS tt_count_item
-                    WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, nt_participant_list, rt_participant_list,
-                      COLLECT(DISTINCT CASE WHEN tt_count_item.node IS NOT NULL AND tt_count_item.participant_id IS NOT NULL THEN tt_count_item.participant_id ELSE NULL END) AS tt_participant_list
+              UNWIND unique_surg AS sg
+              UNWIND surg_data AS surg_item
+              WITH study, sg, surg_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE surg_item.node = sg AND surg_item.participant_id IS NOT NULL
+              WITH study, sg, COLLECT(surg_item.participant_id) AS surg_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, sg, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN surg_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS surg_participant_ids
 
-                    UNWIND surg_data AS surg_count_item
-                    WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list,
-                      COLLECT(DISTINCT CASE WHEN surg_count_item.node IS NOT NULL AND surg_count_item.participant_id IS NOT NULL THEN surg_count_item.participant_id ELSE NULL END) AS surg_participant_list
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, COLLECT({
+                participant_ids: surg_participant_ids,
+                extent_of_residual_disease: sg.extent_of_residual_disease,
+                surgical_procedure: sg.surgical_procedure,
+                surgical_procedure_anatomical_location: sg.surgical_procedure_anatomical_location,
+                surgical_procedure_date: toString(sg.surgical_procedure_date),
+                surgical_procedure_findings: sg.surgical_procedure_findings,
+                surgical_procedure_record_id: sg.surgical_procedure_record_id,
+                surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
+              }) AS surgeryNodeData,
+              tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-                    UNWIND targetedTherapyNodeData AS tt_node_data
-                    WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-                      COLLECT(tt_node_data.targeted_therapy_record_id) AS tt_record_ids
+              // ---- CHANGE START: removed the 4 UNWIND count blocks that were here originally, counts are already computed above ----
+              UNWIND targetedTherapyNodeData AS tt_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(tt_node_data.targeted_therapy_record_id) AS tt_record_ids
 
-                    UNWIND nonTargetedTherapyNodeData AS nt_node_data
-                    WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids,
-                      COLLECT(nt_node_data.non_targeted_therapy_record_id) AS nt_record_ids
+              UNWIND nonTargetedTherapyNodeData AS nt_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids,
+                COLLECT(nt_node_data.non_targeted_therapy_record_id) AS nt_record_ids
 
-                    UNWIND radiotherapyNodeData AS r_node_data
-                    WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids,
-                      COLLECT(r_node_data.radiological_procedure_record_id) AS r_record_ids
+              UNWIND radiotherapyNodeData AS r_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids,
+                COLLECT(r_node_data.radiological_procedure_record_id) AS r_record_ids
 
-                    UNWIND surgeryNodeData AS s_node_data
-                    WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids, r_record_ids,
-                      COLLECT(s_node_data.surgical_procedure_record_id) AS s_record_ids
+              UNWIND surgeryNodeData AS s_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids, r_record_ids,
+                COLLECT(s_node_data.surgical_procedure_record_id) AS s_record_ids
+              // ---- CHANGE END ----
 
-                    RETURN
-                      study.study_short_name AS study_short_name,
-                      targetedTherapyNodeData,
-                      size(nci_crdc_functions.remove_collection_braces(tt_record_ids)) AS targetedTherapyNodeCount,
-                      size(nci_crdc_functions.remove_collection_braces(tt_participant_list)) AS targetedTherapyParticipantCount,
-                      nonTargetedTherapyNodeData,
-                      size(nci_crdc_functions.remove_collection_braces(nt_record_ids)) AS nonTargetedTherapyNodeCount,
-                      size(nci_crdc_functions.remove_collection_braces(nt_participant_list)) AS nonTargetedTherapyParticipantCount,
-                      radiotherapyNodeData,
-                      size(nci_crdc_functions.remove_collection_braces(r_record_ids)) AS radiotherapyNodeCount,
-                      size(nci_crdc_functions.remove_collection_braces(rt_participant_list)) AS radiotherapyParticipantCount,
-                      surgeryNodeData,
-                      size(nci_crdc_functions.remove_collection_braces(s_record_ids)) AS surgeryNodeCount,
-                      size(nci_crdc_functions.remove_collection_braces(surg_participant_list)) AS surgeryParticipantCount
+              RETURN
+                study.study_short_name                AS study_short_name,
+                targetedTherapyNodeData,
+                size(tt_record_ids)                   AS targetedTherapyNodeCount,
+                size(tt_participant_list)             AS targetedTherapyParticipantCount,
+                nonTargetedTherapyNodeData,
+                size(nt_record_ids)                   AS nonTargetedTherapyNodeCount,
+                size(nt_participant_list)             AS nonTargetedTherapyParticipantCount,
+                radiotherapyNodeData,
+                size(r_record_ids)                    AS radiotherapyNodeCount,
+                size(rt_participant_list)             AS radiotherapyParticipantCount,
+                surgeryNodeData,
+                size(s_record_ids)                    AS surgeryNodeCount,
+                size(surg_participant_list)           AS surgeryParticipantCount
                     SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: study_node_counts
