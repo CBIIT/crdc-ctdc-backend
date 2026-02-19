@@ -881,114 +881,107 @@ indices:
         OPTIONAL MATCH (study)<-[:belongs_to]-(p_diag:participant)
         OPTIONAL MATCH (p_diag)<-[:of_participant]-(diag:diagnosis)
         WITH study, all_participant_ids,
-          COLLECT({node: diag, participant_id: p_diag.participant_id}) AS diag_data
+          COLLECT(DISTINCT diag) AS unique_diag
         OPTIONAL MATCH (study)<-[:belongs_to]-(p_demo:participant)
         OPTIONAL MATCH (p_demo)<-[:of_participant]-(demo:demographic)
-        WITH study, all_participant_ids, diag_data,
-          COLLECT({node: demo, participant_id: p_demo.participant_id}) AS demo_data
+        WITH study, all_participant_ids, unique_diag,
+          COLLECT(DISTINCT demo) AS unique_demo
         OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)
         OPTIONAL MATCH (p_exp)<-[:of_participant]-(exp:exposure)
-        WITH study, all_participant_ids, diag_data, demo_data,
-          COLLECT({node: exp, participant_id: p_exp.participant_id}) AS exp_data
+        WITH study, all_participant_ids, unique_diag, unique_demo,
+          COLLECT(DISTINCT exp) AS unique_exp
         OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)
         OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
-        WITH study, all_participant_ids, diag_data, demo_data, exp_data,
-          COLLECT({node: spec, participant_id: p_spec.participant_id}) AS spec_data
-        WITH study, all_participant_ids,
-          nci_crdc_functions.remove_collection_braces([x IN diag_data WHERE x.node IS NOT NULL | x.node]) AS unique_diag,
-          diag_data,
-          nci_crdc_functions.remove_collection_braces([x IN demo_data WHERE x.node IS NOT NULL | x.node]) AS unique_demo,
-          demo_data,
-          nci_crdc_functions.remove_collection_braces([x IN exp_data WHERE x.node IS NOT NULL | x.node]) AS unique_exp,
-          exp_data,
-          nci_crdc_functions.remove_collection_braces([x IN spec_data WHERE x.node IS NOT NULL | x.node]) AS unique_spec,
-          spec_data
-        WITH study,
-          [d IN unique_diag | {
-            participant_ids: text.join([x IN diag_data WHERE x.node = d AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-            ctep_disease_term: d.ctep_disease_term,
-            date_of_diagnosis: d.date_of_diagnosis,
-            date_of_diagnosis_original: d.date_of_diagnosis_original,
-            date_of_diagnosis_unit: d.date_of_diagnosis_unit,
-            diagnosis_record_id: d.diagnosis_record_id,
-            histological_subtype: d.histological_subtype,
-            histology: d.histology,
-            meddra_disease_code: d.meddra_disease_code,
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp,
+          COLLECT(DISTINCT spec) AS unique_spec
+        UNWIND CASE WHEN size(unique_diag) = 0 THEN [null] ELSE unique_diag END AS d
+        OPTIONAL MATCH (dp:participant)-[:of_participant]->(d2:diagnosis)
+        WHERE d2 = d
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
+          COLLECT({
+            ctep_disease_term:               d.ctep_disease_term,
+            date_of_diagnosis:               d.date_of_diagnosis,
+            date_of_diagnosis_original:      d.date_of_diagnosis_original,
+            date_of_diagnosis_unit:          d.date_of_diagnosis_unit,
+            diagnosis_record_id:             d.diagnosis_record_id,
+            histological_subtype:            d.histological_subtype,
+            histology:                       d.histology,
+            meddra_disease_code:             d.meddra_disease_code,
             primary_diagnosis_disease_group: d.primary_diagnosis_disease_group,
-            primary_disease_site: d.primary_disease_site,
-            snomed_disease_code: d.snomed_disease_code,
-            snomed_disease_term: d.snomed_disease_term,
-            UUID: d.uuid
-          }] AS diagnosisNodeData,
-          size(nci_crdc_functions.remove_collection_braces([x IN diag_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS diagnosisNodeCount,
-          [dm IN unique_demo | {
-            participant_ids: text.join([x IN demo_data WHERE x.node = dm AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-            age_at_enrollment: dm.age_at_enrollment,
-            age_at_enrollment_original: dm.age_at_enrollment_original,
+            primary_disease_site:            d.primary_disease_site,
+            snomed_disease_code:             d.snomed_disease_code,
+            snomed_disease_term:             d.snomed_disease_term,
+            UUID:                            d.uuid
+          }) AS diagnosisNodeData
+        UNWIND CASE WHEN size(unique_demo) = 0 THEN [null] ELSE unique_demo END AS dm
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec, diagnosisNodeData,
+          COLLECT({
+            age_at_enrollment:               dm.age_at_enrollment,
+            age_at_enrollment_original:      dm.age_at_enrollment_original,
             age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
-            age_at_enrollment_unit: dm.age_at_enrollment_unit,
-            body_surface_area: dm.body_surface_area,
-            body_surface_area_original: dm.body_surface_area.original,
+            age_at_enrollment_unit:          dm.age_at_enrollment_unit,
+            body_surface_area:               dm.body_surface_area,
+            body_surface_area_original:      dm.body_surface_area_original,
             body_surface_area_original_unit: dm.body_surface_area_original_unit,
-            body_surface_area_unit: dm.body_surface_area.unit,
-            demographic_record_id: dm.demographic_record_id,
-            ethnicity: dm.ethnicity,
-            height: dm.height,
-            height_original: dm.height_original,
-            height_original_unit: dm.height_original_unit,
-            height_unit: dm.height_unit,
-            ncbi_taxonomy_id: dm.ncbi_taxonomy_id,
-            ncbi_taxonomy_name: dm.ncbi_taxonomy_name,
-            race: dm.race,
-            sex: dm.sex,
-            uuid: dm.uuid,
-            weight: dm.weight,
-            weight_original: dm.weight_original,
-            weight_original_unit: dm.weight_original.unit,
-            weight_unit: dm.weight.unit,
-            occupation: dm.occupation,
-            income: dm.income,
-            highest_level_of_education: dm.highest_level_of_education
-          }] AS demographicNodeData,
-          size(nci_crdc_functions.remove_collection_braces([x IN demo_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS demographicParticipantCount,
-          [e IN unique_exp | {
-            participant_ids: text.join([x IN exp_data WHERE x.node = e AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-            carcinogen_exposure: e.carcinogen_exposure,
-            exposure_record_id: e.exposure_record_id
-          }] AS exposureNodeData,
-          size(nci_crdc_functions.remove_collection_braces([x IN exp_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS exposureParticipantCount,
-          [s IN unique_spec | {
-            participant_ids: text.join([x IN spec_data WHERE x.node = s AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-            anatomical_collection_site: s.anatomical_collection_site,
-            assessment_timepoint: toString(s.assessment_timepoint),
-            collection_date: toString(s.collection_date),
-            collection_date_original: toString(s.collection_date_original),
+            body_surface_area_unit:          dm.body_surface_area_unit,
+            demographic_record_id:           dm.demographic_record_id,
+            ethnicity:                       dm.ethnicity,
+            height:                          dm.height,
+            height_original:                 dm.height_original,
+            height_original_unit:            dm.height_original_unit,
+            height_unit:                     dm.height_unit,
+            ncbi_taxonomy_id:                dm.ncbi_taxonomy_id,
+            ncbi_taxonomy_name:              dm.ncbi_taxonomy_name,
+            race:                            dm.race,
+            sex:                             dm.sex,
+            uuid:                            dm.uuid,
+            weight:                          dm.weight,
+            weight_original:                 dm.weight_original,
+            weight_original_unit:            dm.weight_original_unit,
+            weight_unit:                     dm.weight_unit,
+            occupation:                      dm.occupation,
+            income:                          dm.income,
+            highest_level_of_education:      dm.highest_level_of_education
+          }) AS demographicNodeData
+        UNWIND CASE WHEN size(unique_exp) = 0 THEN [null] ELSE unique_exp END AS e
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
+          diagnosisNodeData, demographicNodeData,
+          COLLECT({
+            carcinogen_exposure:  e.carcinogen_exposure,
+            exposure_record_id:   e.exposure_record_id
+          }) AS exposureNodeData
+        UNWIND CASE WHEN size(unique_spec) = 0 THEN [null] ELSE unique_spec END AS s
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
+          diagnosisNodeData, demographicNodeData, exposureNodeData,
+          COLLECT({
+            anatomical_collection_site:    s.anatomical_collection_site,
+            assessment_timepoint:          toString(s.assessment_timepoint),
+            collection_date:               toString(s.collection_date),
+            collection_date_original:      toString(s.collection_date_original),
             collection_date_original_unit: s.collection_date_original_unit,
-            collection_date_unit: toString(s.collection_date_unit),
-            crdc_id: s.crdc_id,
-            created: toString(s.created),
-            specimen_category: s.specimen_category,
-            specimen_record_id: s.specimen_record_id,
-            specimen_type_concept_code: s.specimen_type_concept_code,
-            tissue_category: s.tissue_category
-          }] AS specimenNodeData,
-          size(nci_crdc_functions.remove_collection_braces([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
-          ['diagnosis','demographic','exposure','specimen'] AS unique_node_types
+            collection_date_unit:          toString(s.collection_date_unit),
+            crdc_id:                       s.crdc_id,
+            created:                       toString(s.created),
+            specimen_category:             s.specimen_category,
+            specimen_record_id:            s.specimen_record_id,
+            specimen_type_concept_code:    s.specimen_type_concept_code,
+            tissue_category:               s.tissue_category
+          }) AS specimenNodeData
         RETURN
-          study.study_short_name AS study_short_name,
-          unique_node_types,
+          study.study_short_name                AS study_short_name,
+          ['diagnosis','demographic','exposure','specimen'] AS unique_node_types,
           diagnosisNodeData,
-          size(nci_crdc_functions.remove_collection_braces([d IN diagnosisNodeData | d.diagnosis_record_id])) AS diagnosisNodeCount,
-          diagnosisParticipantCount,
+          size(diagnosisNodeData)               AS diagnosisNodeCount,
+          size(all_participant_ids)             AS diagnosisParticipantCount,
           demographicNodeData,
-          size(nci_crdc_functions.remove_collection_braces([d IN demographicNodeData | d.demographic_record_id])) AS demographicNodeCount,
-          demographicParticipantCount,
+          size(demographicNodeData)             AS demographicNodeCount,
+          size(all_participant_ids)             AS demographicParticipantCount,
           exposureNodeData,
-          size(nci_crdc_functions.remove_collection_braces([e IN exposureNodeData | e.exposure_record_id])) AS exposureNodeCount,
-          exposureParticipantCount,
+          size(exposureNodeData)                AS exposureNodeCount,
+          size(all_participant_ids)             AS exposureParticipantCount,
           specimenNodeData,
-          size(nci_crdc_functions.remove_collection_braces([s IN specimenNodeData | s.specimen_record_id])) AS specimenNodeCount,
-          specimenParticipantCount
+          size(specimenNodeData)                AS specimenNodeCount,
+          size(all_participant_ids)             AS specimenParticipantCount
         SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: clinical_trial_data_tab
