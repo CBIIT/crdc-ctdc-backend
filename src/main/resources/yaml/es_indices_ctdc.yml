@@ -1225,56 +1225,56 @@ indices:
                 size(surg_participant_list)           AS surgeryParticipantCount
                     SKIP $skip LIMIT $limit
       page_size: 1000
-  - index_name: study_node_counts
-    id_field: "short_name"
-    mapping:
-      keyword:
-        - short_name
-        - node_label
-      long:
-        - participant_count
-        - total_node_count
-    initial_query:
-      query: |
-        MATCH (study:study)<-[:belongs_to]-(p:participant)
-        OPTIONAL MATCH (p)<-[:of_participant]-(diag:diagnosis)
-        OPTIONAL MATCH (p)<-[:of_participant]-(spec:specimen)
-        OPTIONAL MATCH (p)<-[:of_participant]-(demo:demographic)
-        OPTIONAL MATCH (p)<-[:of_participant]-(exp:exposure)
-        OPTIONAL MATCH (p)<-[:of_participant]-(surg:surgery)
-        OPTIONAL MATCH (p)<-[:of_participant]-(tt:targeted_therapy)
-        OPTIONAL MATCH (p)<-[:of_participant]-(nt:non_targeted_therapy)
-        OPTIONAL MATCH (p)<-[:of_participant]-(rt:radiotherapy)
-        WITH study,p,
-          collect(DISTINCT diag) AS diags,
-          collect(DISTINCT spec) AS specs,
-          collect(DISTINCT demo) AS demos,
-          collect(DISTINCT exp) AS exps,
-          collect(DISTINCT surg) AS surgs,
-          collect(DISTINCT tt) AS tts,
-          collect(DISTINCT nt) AS nts,
-          collect(DISTINCT rt) as rts
-        WITH study,p,
-          [
-            {label: 'diagnosis', nodeCount: size(diags), participant: CASE WHEN size(diags) > 0 THEN p END},
-            {label: 'specimen', nodeCount: size(specs), participant: CASE WHEN size(specs) > 0 THEN p END},
-            {label: 'demographic', nodeCount: size(demos), participant: CASE WHEN size(demos) > 0 THEN p END},
-            {label: 'exposure', nodeCount: size(exps), participant: CASE WHEN size(exps) > 0 THEN p END},
-            {label: 'surgery', nodeCount: size(surgs), participant: CASE WHEN size(surgs) > 0 THEN p END},
-            {label: 'radiotherapy', nodeCount: size(rts), participant: CASE WHEN size(rts) > 0 THEN p END},
-            {label: 'targeted_therapy', nodeCount: size(tts), participant: CASE WHEN size(tts) > 0 THEN p END},
-            {label: 'non_targeted_therapy', nodeCount: size(nts), participant: CASE WHEN size(nts) > 0 THEN p END}
-          ] AS rows
-        UNWIND rows AS row
-        WITH row.label AS node_label,
-            row.nodeCount AS node_count,
-            row.participant AS participant,
-            study
-        RETURN
-          study.study_short_name as short_name,
-          node_label,
-          count(DISTINCT participant) AS participant_count,
-          sum(node_count) AS total_node_count
-        ORDER BY participant_count DESC
-        SKIP $skip LIMIT $limit
-      page_size: 10000
+  # - index_name: study_node_counts
+  #   id_field: "short_name"
+  #   mapping:
+  #     keyword:
+  #       - short_name
+  #       - node_label
+  #     long:
+  #       - participant_count
+  #       - total_node_count
+  #   initial_query:
+  #     query: |
+  #       MATCH (study:study)<-[:belongs_to]-(p:participant)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(diag:diagnosis)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(spec:specimen)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(demo:demographic)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(exp:exposure)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(surg:surgery)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(tt:targeted_therapy)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(nt:non_targeted_therapy)
+  #       OPTIONAL MATCH (p)<-[:of_participant]-(rt:radiotherapy)
+  #       WITH study,p,
+  #         collect(DISTINCT diag) AS diags,
+  #         collect(DISTINCT spec) AS specs,
+  #         collect(DISTINCT demo) AS demos,
+  #         collect(DISTINCT exp) AS exps,
+  #         collect(DISTINCT surg) AS surgs,
+  #         collect(DISTINCT tt) AS tts,
+  #         collect(DISTINCT nt) AS nts,
+  #         collect(DISTINCT rt) as rts
+  #       WITH study,p,
+  #         [
+  #           {label: 'diagnosis', nodeCount: size(diags), participant: CASE WHEN size(diags) > 0 THEN p END},
+  #           {label: 'specimen', nodeCount: size(specs), participant: CASE WHEN size(specs) > 0 THEN p END},
+  #           {label: 'demographic', nodeCount: size(demos), participant: CASE WHEN size(demos) > 0 THEN p END},
+  #           {label: 'exposure', nodeCount: size(exps), participant: CASE WHEN size(exps) > 0 THEN p END},
+  #           {label: 'surgery', nodeCount: size(surgs), participant: CASE WHEN size(surgs) > 0 THEN p END},
+  #           {label: 'radiotherapy', nodeCount: size(rts), participant: CASE WHEN size(rts) > 0 THEN p END},
+  #           {label: 'targeted_therapy', nodeCount: size(tts), participant: CASE WHEN size(tts) > 0 THEN p END},
+  #           {label: 'non_targeted_therapy', nodeCount: size(nts), participant: CASE WHEN size(nts) > 0 THEN p END}
+  #         ] AS rows
+  #       UNWIND rows AS row
+  #       WITH row.label AS node_label,
+  #           row.nodeCount AS node_count,
+  #           row.participant AS participant,
+  #           study
+  #       RETURN
+  #         study.study_short_name as short_name,
+  #         node_label,
+  #         count(DISTINCT participant) AS participant_count,
+  #         sum(node_count) AS total_node_count
+  #       ORDER BY participant_count DESC
+  #       SKIP $skip LIMIT $limit
+  #     page_size: 10000
