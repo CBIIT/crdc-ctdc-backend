@@ -1023,18 +1023,18 @@ indices:
     mapping:
       keyword:
         - study_short_name
-        - targetedTherapyNodeData.participant_ids
+        - targetedTherapyNodeData.participant_ids_targeted
         - targetedTherapyNodeData.targeted_therapy
         - targetedTherapyNodeData.targeted_therapy_dose
         - targetedTherapyNodeData.targeted_therapy_frequency
         - targetedTherapyNodeData.targeted_therapy_record_id
-        - nonTargetedTherapyNodeData.participant_ids
+        - nonTargetedTherapyNodeData.participant_ids_non_targeted
         - nonTargetedTherapyNodeData.non_targeted_therapy_record_id
         - nonTargetedTherapyNodeData.best_response_to_non_targeted_therapy
         - nonTargetedTherapyNodeData.non_targeted_therapy
         - nonTargetedTherapyNodeData.non_targeted_therapy_dose
         - nonTargetedTherapyNodeData.non_targeted_therapy_frequency
-        - radiotherapyNodeData.participant_ids
+        - radiotherapyNodeData.participant_ids_radiotherapy
         - radiotherapyNodeData.radiation_dose
         - radiotherapyNodeData.radiation_extent
         - radiotherapyNodeData.radiation_frequency
@@ -1042,7 +1042,7 @@ indices:
         - radiotherapyNodeData.radiological_procedure_anatomical_location
         - radiotherapyNodeData.radiological_procedure_record_id
         - radiotherapyNodeData.uuid
-        - surgeryNodeData.participant_ids
+        - surgeryNodeData.participant_ids_surgical
         - surgeryNodeData.extent_of_residual_disease
         - surgeryNodeData.surgical_procedure
         - surgeryNodeData.surgical_procedure_anatomical_location
