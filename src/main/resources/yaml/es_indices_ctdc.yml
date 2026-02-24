@@ -838,7 +838,7 @@ indices:
       keyword:
         - study_short_name
         - unique_node_types
-        - diagnosisNodeData.participant_ids
+        - diagnosisNodeData.participant_ids_diagnosis
         - diagnosisNodeData.ctep_disease_term
         - diagnosisNodeData.date_of_diagnosis
         - diagnosisNodeData.date_of_diagnosis_original
@@ -852,7 +852,7 @@ indices:
         - diagnosisNodeData.snomed_disease_code
         - diagnosisNodeData.snomed_disease_term
         - diagnosisNodeData.UUID
-        - demographicNodeData.participant_ids
+        - demographicNodeData.participant_ids_demographic
         - demographicNodeData.age_at_enrollment
         - demographicNodeData.age_at_enrollment_original
         - demographicNodeData.age_at_enrollment_original_unit
@@ -879,10 +879,10 @@ indices:
         - demographicNodeData.occupation
         - demographicNodeData.income
         - demographicNodeData.highest_level_of_education
-        - exposureNodeData.participant_ids
+        - exposureNodeData.participant_ids_exposure
         - exposureNodeData.carcinogen_exposure
         - exposureNodeData.exposure_record_id
-        - specimenNodeData.participant_ids
+        - specimenNodeData.participant_ids_specimen
         - specimenNodeData.anatomical_collection_site
         - specimenNodeData.assessment_timepoint
         - specimenNodeData.collection_date
@@ -929,6 +929,7 @@ indices:
         WHERE d2 = d
         WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
           COLLECT({
+            participant_ids_diagnosis:                 all_participant_ids,
             ctep_disease_term:               d.ctep_disease_term,
             date_of_diagnosis:               d.date_of_diagnosis,
             date_of_diagnosis_original:      d.date_of_diagnosis_original,
@@ -946,6 +947,7 @@ indices:
         UNWIND CASE WHEN size(unique_demo) = 0 THEN [null] ELSE unique_demo END AS dm
         WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec, diagnosisNodeData,
           COLLECT({
+            participant_ids_demographic:                 all_participant_ids,
             age_at_enrollment:               dm.age_at_enrollment,
             age_at_enrollment_original:      dm.age_at_enrollment_original,
             age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
@@ -977,6 +979,7 @@ indices:
         WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
           diagnosisNodeData, demographicNodeData,
           COLLECT({
+            participant_ids_exposure:      all_participant_ids,
             carcinogen_exposure:  e.carcinogen_exposure,
             exposure_record_id:   e.exposure_record_id
           }) AS exposureNodeData
@@ -984,6 +987,7 @@ indices:
         WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
           diagnosisNodeData, demographicNodeData, exposureNodeData,
           COLLECT({
+            participant_ids_specimen:               all_participant_ids,
             anatomical_collection_site:    s.anatomical_collection_site,
             assessment_timepoint:          toString(s.assessment_timepoint),
             collection_date:               toString(s.collection_date),
