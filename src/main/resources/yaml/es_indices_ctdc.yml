@@ -783,11 +783,11 @@ indices:
           subs[0]  AS first_sub,
           specs[0] AS first_spec,
           COLLECT({
-            specimen_record_id_biospecimen_info:         spec.specimen_record_id_biospecimen_info,
-            anatomical_collection_site_biospecimen_info: spec.anatomical_collection_site_biospecimen_info,
-            specimen_type_biospecimen_info:              spec.specimen_type_biospecimen_info,
-            tissue_category_biospecimen_info:            spec.tissue_category_biospecimen_info,
-            assessment_timepoint_biospecimen_info:       spec.assessment_timepoint_biospecimen_info
+            specimen_record_id:         spec.specimen_record_id,
+            anatomical_collection_site: spec.anatomical_collection_site,
+            specimen_type:              spec.specimen_type,
+            tissue_category:            spec.tissue_category,
+            assessment_timepoint:       spec.assessment_timepoint
           }) AS biospecimen_info
         RETURN
           'data file'                                        AS type,
