@@ -849,7 +849,7 @@ indices:
         - type
         - data_file_name
         - data_file_format
-        - data_file_typ
+        - data_file_type
         - data_file_size
         - data_file_uuid
         - data_file_description
