@@ -1002,7 +1002,9 @@ indices:
         optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
         WHERE target IS NOT NULL AND target.targeted_therapy <> ''
         WITH collect(DISTINCT target.targeted_therapy) as array_raw, sb, study
-        WITH [x IN array_raw WHERE x IS NOT NULL AND x <> ''] as array_raw_filtered, sb, study
+        WITH REDUCE(result = [], x IN array_raw |
+          CASE WHEN x IS NOT NULL AND x <> '' THEN result + [x] ELSE result END
+        ) as array_raw_filtered, sb, study
         UNWIND CASE WHEN size(array_raw_filtered) = 0 THEN [null] ELSE array_raw_filtered END AS array_item
         WITH sb,study,array_item
         ORDER BY array_item
