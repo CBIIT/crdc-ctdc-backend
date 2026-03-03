@@ -944,11 +944,8 @@ indices:
       page_size: 1000
   - index_name: gs_list
     id_field: "autocomplete_list"
-    # type mapping for each property of the index
     mapping:
-      
-      mapping:
-        keyword:
+      keyword:
         - study_short_name
         - autocomplete_list
     initial_query: |
@@ -968,9 +965,7 @@ indices:
     id_field: "participant_id"
     # type mapping for each property of the index
     mapping:
-      
-      mapping:
-        keyword:
+      keyword:
         - type
         - study_short_name
         - ctep_disease_term
