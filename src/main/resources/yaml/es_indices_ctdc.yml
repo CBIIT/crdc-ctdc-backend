@@ -948,18 +948,17 @@ indices:
       keyword:
         - study_short_name
         - autocomplete_list
-    initial_query: |
-      MATCH (spec:specimen)-[:of_participant]->(sub:participant)
-      optional MATCH (study:study)<-[:belongs_to]-(sub)
-      optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
-      WITH stage,ctep, stage + ctep + participantID + specimenID as list
-      UNWIND list as autocomplete_list
-      RETURN distinct
-
-      
-      autocomplete_list
-      SKIP $skip LIMIT $limit
+    initial_query:
+      query: |
+        MATCH (spec:specimen)-[:of_participant]->(sub:participant)
+        optional MATCH (study:study)<-[:belongs_to]-(sub)
+        optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+        WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
+        WITH stage,ctep, stage + ctep + participantID + specimenID as list
+        UNWIND list as autocomplete_list
+        RETURN distinct
+        autocomplete_list
+        SKIP $skip LIMIT $limit
     page_size: 10
   - index_name: therapy_count
     id_field: "participant_id"
@@ -997,63 +996,67 @@ indices:
         - file_info.data_file_format
         - file_info.data_file_type
         - participant_id
-    initial_query: |
-      MATCH (study:study)<-[:belongs_to]-(sb:participant)
-      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
-      WITH [x IN COLLECT(DISTINCT target.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] as array_raw,sb,study
-      UNWIND CASE WHEN size(array_raw) = 0 THEN [null] ELSE array_raw END AS array_item
-      WITH sb,study,array_item
-      ORDER BY array_item
-      WITH sb,study,COLLECT(array_item) AS array_sorted
-      WITH sb,study,
-        REDUCE(result = '', item IN [x IN array_sorted WHERE x IS NOT NULL | x] |
-          result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS array
-      optional MATCH (spec:specimen)-[:of_participant]->(sb)
-      optional MATCH (sb)<-[*..2]-(file:file)
-      optional MATCH (demo:demographic)-[:of_participant]->(sb)
-      optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
-      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
-      optional MATCH (expose:exposure)-[:of_participant]->(sb)
-      WHERE target IS NOT NULL AND target.targeted_therapy <> ''
-      with expose,sb,target,diag,demo,file,spec,study,array
-      RETURN DISTINCT
-      'participants' as type,
-      sb.participant_id as participant_id,
-      COLLECT(DISTINCT study.study_short_name) as study_short_name,
-      COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
-      COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
-      COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
-      COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
-      COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
-      COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
-      COLLECT(DISTINCT demo.sex) as sex,
-      COLLECT(DISTINCT demo.race) as race,
-      COLLECT(DISTINCT demo.ethnicity) as ethnicity,
-      COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
-      COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
-      COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
-      array as targeted_therapy_string,
-      COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
-      COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
-      COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
-      COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
-      COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
-      COLLECT(DISTINCT file.data_file_type) AS data_file_type,
-      COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
-      COLLECT(DISTINCT file.data_file_format) AS data_file_format,
-      COLLECT(DISTINCT{
-        specimen_id: spec.specimen_id,
-        anatomical_collection_site: spec.anatomical_collection_site,
-        tissue_category: spec.tissue_category,
-        assessment_timepoint: spec.assessment_timepoint
-      }) AS biospecimen_info,
-      COLLECT(DISTINCT{
-        data_file_uuid: file.data_file_uuid,
-        data_file_format: file.data_file_format,
-        data_file_type: file.data_file_type
-      }) AS file_info
-      SKIP $skip LIMIT $limit
-    page_size: 10
+    initial_query:
+      query: |
+        MATCH (study:study)<-[:belongs_to]-(sb:participant)
+        optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+        WHERE target IS NOT NULL AND target.targeted_therapy <> ''
+        WITH collect(DISTINCT target.targeted_therapy) as array_raw, sb, study
+        WITH [x IN array_raw WHERE x IS NOT NULL AND x <> ''] as array_raw_filtered, sb, study
+        UNWIND CASE WHEN size(array_raw_filtered) = 0 THEN [null] ELSE array_raw_filtered END AS array_item
+        WITH sb,study,array_item
+        ORDER BY array_item
+        WITH sb,study,COLLECT(array_item) AS array_sorted
+        WITH sb,study,
+          REDUCE(result = '', item IN array_sorted |
+            CASE WHEN item IS NULL THEN result
+                 ELSE result + CASE WHEN result = '' THEN item ELSE '|' + item END
+            END) AS array
+        optional MATCH (spec:specimen)-[:of_participant]->(sb)
+        optional MATCH (sb)<-[*..2]-(file:file)
+        optional MATCH (demo:demographic)-[:of_participant]->(sb)
+        optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
+        optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+        optional MATCH (expose:exposure)-[:of_participant]->(sb)
+        with expose,sb,target,diag,demo,file,spec,study,array
+        RETURN DISTINCT
+        'participants' as type,
+        sb.participant_id as participant_id,
+        COLLECT(DISTINCT study.study_short_name) as study_short_name,
+        COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
+        COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
+        COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
+        COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
+        COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
+        COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
+        COLLECT(DISTINCT demo.sex) as sex,
+        COLLECT(DISTINCT demo.race) as race,
+        COLLECT(DISTINCT demo.ethnicity) as ethnicity,
+        COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
+        COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
+        COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
+        array as targeted_therapy_string,
+        COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+        COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
+        COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
+        COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
+        COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
+        COLLECT(DISTINCT file.data_file_type) AS data_file_type,
+        COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
+        COLLECT(DISTINCT file.data_file_format) AS data_file_format,
+        COLLECT(DISTINCT{
+          specimen_id: spec.specimen_id,
+          anatomical_collection_site: spec.anatomical_collection_site,
+          tissue_category: spec.tissue_category,
+          assessment_timepoint: spec.assessment_timepoint
+        }) AS biospecimen_info,
+        COLLECT(DISTINCT{
+          data_file_uuid: file.data_file_uuid,
+          data_file_format: file.data_file_format,
+          data_file_type: file.data_file_type
+        }) AS file_info
+        SKIP $skip LIMIT $limit
+      page_size: 10
   # - index_name: clinical_data_tab
   #   id_field: "study_short_name"
   #   mapping:
