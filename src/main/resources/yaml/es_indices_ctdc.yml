@@ -946,18 +946,20 @@ indices:
     type: neo4j
     # type mapping for each property of the index
     mapping:
-      id_field: "autocomplete_list"
+      id_field: "study_short_name"
       mapping:
         keyword:
+        - study_short_name
         - autocomplete_list
     initial_query: |
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
-      WITH stage,ctep, stage + ctep + participantID + specimenID as list
+      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID,study
+      WITH stage,ctep, stage + ctep + participantID + specimenID as list,study
       UNWIND list as autocomplete_list
       RETURN distinct
+      study.study_short_name as study_short_name,
       
       autocomplete_list
       SKIP $skip LIMIT $limit
