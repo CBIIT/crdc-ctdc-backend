@@ -846,6 +846,7 @@ indices:
     id_field: "data_file_uuid"
     mapping:
       keyword:
+        - type
         - data_file_name
         - data_file_format
         - data_file_typ
