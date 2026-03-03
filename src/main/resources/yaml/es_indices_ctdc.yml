@@ -1059,455 +1059,455 @@ indices:
         }) AS file_info
         SKIP $skip LIMIT $limit
       page_size: 10
-  # - index_name: clinical_data_tab
-  #   id_field: "study_short_name"
-  #   mapping:
-  #     keyword:
-  #       - study_short_name
-  #       - unique_node_types
-  #       - diagnosisNodeData.participant_ids
-  #       - diagnosisNodeData.ctep_disease_term
-  #       - diagnosisNodeData.date_of_diagnosis
-  #       - diagnosisNodeData.date_of_diagnosis_original
-  #       - diagnosisNodeData.date_of_diagnosis_unit
-  #       - diagnosisNodeData.diagnosis_record_id
-  #       - diagnosisNodeData.histological_subtype
-  #       - diagnosisNodeData.histology
-  #       - diagnosisNodeData.meddra_disease_code
-  #       - diagnosisNodeData.primary_diagnosis_disease_group
-  #       - diagnosisNodeData.primary_disease_site
-  #       - diagnosisNodeData.snomed_disease_code
-  #       - diagnosisNodeData.snomed_disease_term
-  #       - diagnosisNodeData.UUID
-  #       - demographicNodeData.participant_ids
-  #       - demographicNodeData.age_at_enrollment
-  #       - demographicNodeData.age_at_enrollment_original
-  #       - demographicNodeData.age_at_enrollment_original_unit
-  #       - demographicNodeData.age_at_enrollment_unit
-  #       - demographicNodeData.body_surface_area
-  #       - demographicNodeData.body_surface_area_original
-  #       - demographicNodeData.body_surface_area_original_unit
-  #       - demographicNodeData.body_surface_area_unit
-  #       - demographicNodeData.demographic_record_id
-  #       - demographicNodeData.ethnicity
-  #       - demographicNodeData.height
-  #       - demographicNodeData.height_original
-  #       - demographicNodeData.height_original_unit
-  #       - demographicNodeData.height_unit
-  #       - demographicNodeData.ncbi_taxonomy_id
-  #       - demographicNodeData.ncbi_taxonomy_name
-  #       - demographicNodeData.race
-  #       - demographicNodeData.sex
-  #       - demographicNodeData.uuid
-  #       - demographicNodeData.weight
-  #       - demographicNodeData.weight_original
-  #       - demographicNodeData.weight_original_unit
-  #       - demographicNodeData.weight_unit
-  #       - demographicNodeData.occupation
-  #       - demographicNodeData.income
-  #       - demographicNodeData.highest_level_of_education
-  #       - exposureNodeData.participant_ids
-  #       - exposureNodeData.carcinogen_exposure
-  #       - exposureNodeData.exposure_record_id
-  #       - specimenNodeData.participant_ids
-  #       - specimenNodeData.anatomical_collection_site
-  #       - specimenNodeData.assessment_timepoint
-  #       - specimenNodeData.collection_date
-  #       - specimenNodeData.collection_date_original
-  #       - specimenNodeData.collection_date_original_unit
-  #       - specimenNodeData.collection_date_unit
-  #       - specimenNodeData.crdc_id
-  #       - specimenNodeData.created
-  #       - specimenNodeData.specimen_category
-  #       - specimenNodeData.specimen_record_id
-  #       - specimenNodeData.specimen_type_concept_code
-  #       - specimenNodeData.tissue_category
-  #     long:
-  #       - diagnosisNodeCount
-  #       - diagnosisParticipantCount
-  #       - demographicNodeCount
-  #       - demographicParticipantCount
-  #       - exposureNodeCount
-  #       - exposureParticipantCount
-  #       - specimenNodeCount
-  #       - specimenParticipantCount
-  #   initial_query:
-  #     query: |
-  #       MATCH (study:study)<-[:belongs_to]-(p:participant)
-  #       WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
-  #       OPTIONAL MATCH (study)<-[:belongs_to]-(p_diag:participant)
-  #       OPTIONAL MATCH (p_diag)<-[:of_participant]-(diag:diagnosis)
-  #       WITH study, all_participant_ids,
-  #         COLLECT(DISTINCT diag) AS unique_diag
-  #       OPTIONAL MATCH (study)<-[:belongs_to]-(p_demo:participant)
-  #       OPTIONAL MATCH (p_demo)<-[:of_participant]-(demo:demographic)
-  #       WITH study, all_participant_ids, unique_diag,
-  #         COLLECT(DISTINCT demo) AS unique_demo
-  #       OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)
-  #       OPTIONAL MATCH (p_exp)<-[:of_participant]-(exp:exposure)
-  #       WITH study, all_participant_ids, unique_diag, unique_demo,
-  #         COLLECT(DISTINCT exp) AS unique_exp
-  #       OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)
-  #       OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
-  #       WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp,
-  #         COLLECT(DISTINCT spec) AS unique_spec
-  #       UNWIND CASE WHEN size(unique_diag) = 0 THEN [null] ELSE unique_diag END AS d
-  #       OPTIONAL MATCH (dp:participant)-[:of_participant]->(d2:diagnosis)
-  #       WHERE d2 = d
-  #       WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
-  #         COLLECT({
-  #           participant_ids:                 all_participant_ids,
-  #           ctep_disease_term:               d.ctep_disease_term,
-  #           date_of_diagnosis:               d.date_of_diagnosis,
-  #           date_of_diagnosis_original:      d.date_of_diagnosis_original,
-  #           date_of_diagnosis_unit:          d.date_of_diagnosis_unit,
-  #           diagnosis_record_id:             d.diagnosis_record_id,
-  #           histological_subtype:            d.histological_subtype,
-  #           histology:                       d.histology,
-  #           meddra_disease_code:             d.meddra_disease_code,
-  #           primary_diagnosis_disease_group: d.primary_diagnosis_disease_group,
-  #           primary_disease_site:            d.primary_disease_site,
-  #           snomed_disease_code:             d.snomed_disease_code,
-  #           snomed_disease_term:             d.snomed_disease_term,
-  #           UUID:                            d.uuid
-  #         }) AS diagnosisNodeData
-  #       UNWIND CASE WHEN size(unique_demo) = 0 THEN [null] ELSE unique_demo END AS dm
-  #       WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec, diagnosisNodeData,
-  #         COLLECT({
-  #           participant_ids:                 all_participant_ids,
-  #           age_at_enrollment:               dm.age_at_enrollment,
-  #           age_at_enrollment_original:      dm.age_at_enrollment_original,
-  #           age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
-  #           age_at_enrollment_unit:          dm.age_at_enrollment_unit,
-  #           body_surface_area:               dm.body_surface_area,
-  #           body_surface_area_original:      dm.body_surface_area_original,
-  #           body_surface_area_original_unit: dm.body_surface_area_original_unit,
-  #           body_surface_area_unit:          dm.body_surface_area_unit,
-  #           demographic_record_id:           dm.demographic_record_id,
-  #           ethnicity:                       dm.ethnicity,
-  #           height:                          dm.height,
-  #           height_original:                 dm.height_original,
-  #           height_original_unit:            dm.height_original_unit,
-  #           height_unit:                     dm.height_unit,
-  #           ncbi_taxonomy_id:                dm.ncbi_taxonomy_id,
-  #           ncbi_taxonomy_name:              dm.ncbi_taxonomy_name,
-  #           race:                            dm.race,
-  #           sex:                             dm.sex,
-  #           uuid:                            dm.uuid,
-  #           weight:                          dm.weight,
-  #           weight_original:                 dm.weight_original,
-  #           weight_original_unit:            dm.weight_original_unit,
-  #           weight_unit:                     dm.weight_unit,
-  #           occupation:                      dm.occupation,
-  #           income:                          dm.income,
-  #           highest_level_of_education:      dm.highest_level_of_education
-  #         }) AS demographicNodeData
-  #       UNWIND CASE WHEN size(unique_exp) = 0 THEN [null] ELSE unique_exp END AS e
-  #       WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
-  #         diagnosisNodeData, demographicNodeData,
-  #         COLLECT({
-  #           participant_ids:      all_participant_ids,
-  #           carcinogen_exposure:  e.carcinogen_exposure,
-  #           exposure_record_id:   e.exposure_record_id
-  #         }) AS exposureNodeData
-  #       UNWIND CASE WHEN size(unique_spec) = 0 THEN [null] ELSE unique_spec END AS s
-  #       WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
-  #         diagnosisNodeData, demographicNodeData, exposureNodeData,
-  #         COLLECT({
-  #           participant_ids:               all_participant_ids,
-  #           anatomical_collection_site:    s.anatomical_collection_site,
-  #           assessment_timepoint:          toString(s.assessment_timepoint),
-  #           collection_date:               toString(s.collection_date),
-  #           collection_date_original:      toString(s.collection_date_original),
-  #           collection_date_original_unit: s.collection_date_original_unit,
-  #           collection_date_unit:          toString(s.collection_date_unit),
-  #           crdc_id:                       s.crdc_id,
-  #           created:                       toString(s.created),
-  #           specimen_category:             s.specimen_category,
-  #           specimen_record_id:            s.specimen_record_id,
-  #           specimen_type_concept_code:    s.specimen_type_concept_code,
-  #           tissue_category:               s.tissue_category
-  #         }) AS specimenNodeData
-  #       RETURN
-  #         study.study_short_name                AS study_short_name,
-  #         ['diagnosis','demographic','exposure','specimen'] AS unique_node_types,
-  #         diagnosisNodeData,
-  #         size(diagnosisNodeData)               AS diagnosisNodeCount,
-  #         size(all_participant_ids)             AS diagnosisParticipantCount,
-  #         demographicNodeData,
-  #         size(demographicNodeData)             AS demographicNodeCount,
-  #         size(all_participant_ids)             AS demographicParticipantCount,
-  #         exposureNodeData,
-  #         size(exposureNodeData)                AS exposureNodeCount,
-  #         size(all_participant_ids)             AS exposureParticipantCount,
-  #         specimenNodeData,
-  #         size(specimenNodeData)                AS specimenNodeCount,
-  #         size(all_participant_ids)             AS specimenParticipantCount
-  #       SKIP $skip LIMIT $limit
-  #     page_size: 1000
-  # - index_name: clinical_trial_data_tab
-  #   id_field: "study_short_name"
-  #   mapping:
-  #     keyword:
-  #       - study_short_name
-  #       - targetedTherapyNodeData.participant_ids
-  #       - targetedTherapyNodeData.targeted_therapy
-  #       - targetedTherapyNodeData.targeted_therapy_dose
-  #       - targetedTherapyNodeData.targeted_therapy_frequency
-  #       - targetedTherapyNodeData.targeted_therapy_record_id
-  #       - nonTargetedTherapyNodeData.participant_ids
-  #       - nonTargetedTherapyNodeData.non_targeted_therapy_record_id
-  #       - nonTargetedTherapyNodeData.best_response_to_non_targeted_therapy
-  #       - nonTargetedTherapyNodeData.non_targeted_therapy
-  #       - nonTargetedTherapyNodeData.non_targeted_therapy_dose
-  #       - nonTargetedTherapyNodeData.non_targeted_therapy_frequency
-  #       - radiotherapyNodeData.participant_ids
-  #       - radiotherapyNodeData.radiation_dose
-  #       - radiotherapyNodeData.radiation_extent
-  #       - radiotherapyNodeData.radiation_frequency
-  #       - radiotherapyNodeData.radiological_procedure
-  #       - radiotherapyNodeData.radiological_procedure_anatomical_location
-  #       - radiotherapyNodeData.radiological_procedure_record_id
-  #       - radiotherapyNodeData.uuid
-  #       - surgeryNodeData.participant_ids
-  #       - surgeryNodeData.extent_of_residual_disease
-  #       - surgeryNodeData.surgical_procedure
-  #       - surgeryNodeData.surgical_procedure_anatomical_location
-  #       - surgeryNodeData.surgical_procedure_date
-  #       - surgeryNodeData.surgical_procedure_findings
-  #       - surgeryNodeData.surgical_procedure_record_id
-  #       - surgeryNodeData.surgical_procedure_therapeutic
-  #     long:
-  #       - targetedTherapyNodeCount
-  #       - targetedTherapyParticipantCount
-  #       - nonTargetedTherapyNodeCount
-  #       - nonTargetedTherapyParticipantCount
-  #       - radiotherapyNodeCount
-  #       - radiotherapyParticipantCount
-  #       - surgeryNodeCount
-  #       - surgeryParticipantCount
-  #   initial_query:
-  #     query: |
-  #             MATCH (study:study)<-[:belongs_to]-(p:participant)
-  #             WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
+  - index_name: clinical_data_tab
+    id_field: "study_short_name"
+    mapping:
+      keyword:
+        - study_short_name
+        - unique_node_types
+        - diagnosisNodeData.participant_ids
+        - diagnosisNodeData.ctep_disease_term
+        - diagnosisNodeData.date_of_diagnosis
+        - diagnosisNodeData.date_of_diagnosis_original
+        - diagnosisNodeData.date_of_diagnosis_unit
+        - diagnosisNodeData.diagnosis_record_id
+        - diagnosisNodeData.histological_subtype
+        - diagnosisNodeData.histology
+        - diagnosisNodeData.meddra_disease_code
+        - diagnosisNodeData.primary_diagnosis_disease_group
+        - diagnosisNodeData.primary_disease_site
+        - diagnosisNodeData.snomed_disease_code
+        - diagnosisNodeData.snomed_disease_term
+        - diagnosisNodeData.UUID
+        - demographicNodeData.participant_ids
+        - demographicNodeData.age_at_enrollment
+        - demographicNodeData.age_at_enrollment_original
+        - demographicNodeData.age_at_enrollment_original_unit
+        - demographicNodeData.age_at_enrollment_unit
+        - demographicNodeData.body_surface_area
+        - demographicNodeData.body_surface_area_original
+        - demographicNodeData.body_surface_area_original_unit
+        - demographicNodeData.body_surface_area_unit
+        - demographicNodeData.demographic_record_id
+        - demographicNodeData.ethnicity
+        - demographicNodeData.height
+        - demographicNodeData.height_original
+        - demographicNodeData.height_original_unit
+        - demographicNodeData.height_unit
+        - demographicNodeData.ncbi_taxonomy_id
+        - demographicNodeData.ncbi_taxonomy_name
+        - demographicNodeData.race
+        - demographicNodeData.sex
+        - demographicNodeData.uuid
+        - demographicNodeData.weight
+        - demographicNodeData.weight_original
+        - demographicNodeData.weight_original_unit
+        - demographicNodeData.weight_unit
+        - demographicNodeData.occupation
+        - demographicNodeData.income
+        - demographicNodeData.highest_level_of_education
+        - exposureNodeData.participant_ids
+        - exposureNodeData.carcinogen_exposure
+        - exposureNodeData.exposure_record_id
+        - specimenNodeData.participant_ids
+        - specimenNodeData.anatomical_collection_site
+        - specimenNodeData.assessment_timepoint
+        - specimenNodeData.collection_date
+        - specimenNodeData.collection_date_original
+        - specimenNodeData.collection_date_original_unit
+        - specimenNodeData.collection_date_unit
+        - specimenNodeData.crdc_id
+        - specimenNodeData.created
+        - specimenNodeData.specimen_category
+        - specimenNodeData.specimen_record_id
+        - specimenNodeData.specimen_type_concept_code
+        - specimenNodeData.tissue_category
+      long:
+        - diagnosisNodeCount
+        - diagnosisParticipantCount
+        - demographicNodeCount
+        - demographicParticipantCount
+        - exposureNodeCount
+        - exposureParticipantCount
+        - specimenNodeCount
+        - specimenParticipantCount
+    initial_query:
+      query: |
+        MATCH (study:study)<-[:belongs_to]-(p:participant)
+        WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
+        OPTIONAL MATCH (study)<-[:belongs_to]-(p_diag:participant)
+        OPTIONAL MATCH (p_diag)<-[:of_participant]-(diag:diagnosis)
+        WITH study, all_participant_ids,
+          COLLECT(DISTINCT diag) AS unique_diag
+        OPTIONAL MATCH (study)<-[:belongs_to]-(p_demo:participant)
+        OPTIONAL MATCH (p_demo)<-[:of_participant]-(demo:demographic)
+        WITH study, all_participant_ids, unique_diag,
+          COLLECT(DISTINCT demo) AS unique_demo
+        OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)
+        OPTIONAL MATCH (p_exp)<-[:of_participant]-(exp:exposure)
+        WITH study, all_participant_ids, unique_diag, unique_demo,
+          COLLECT(DISTINCT exp) AS unique_exp
+        OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)
+        OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp,
+          COLLECT(DISTINCT spec) AS unique_spec
+        UNWIND CASE WHEN size(unique_diag) = 0 THEN [null] ELSE unique_diag END AS d
+        OPTIONAL MATCH (dp:participant)-[:of_participant]->(d2:diagnosis)
+        WHERE d2 = d
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
+          COLLECT({
+            participant_ids:                 all_participant_ids,
+            ctep_disease_term:               d.ctep_disease_term,
+            date_of_diagnosis:               d.date_of_diagnosis,
+            date_of_diagnosis_original:      d.date_of_diagnosis_original,
+            date_of_diagnosis_unit:          d.date_of_diagnosis_unit,
+            diagnosis_record_id:             d.diagnosis_record_id,
+            histological_subtype:            d.histological_subtype,
+            histology:                       d.histology,
+            meddra_disease_code:             d.meddra_disease_code,
+            primary_diagnosis_disease_group: d.primary_diagnosis_disease_group,
+            primary_disease_site:            d.primary_disease_site,
+            snomed_disease_code:             d.snomed_disease_code,
+            snomed_disease_term:             d.snomed_disease_term,
+            UUID:                            d.uuid
+          }) AS diagnosisNodeData
+        UNWIND CASE WHEN size(unique_demo) = 0 THEN [null] ELSE unique_demo END AS dm
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec, diagnosisNodeData,
+          COLLECT({
+            participant_ids:                 all_participant_ids,
+            age_at_enrollment:               dm.age_at_enrollment,
+            age_at_enrollment_original:      dm.age_at_enrollment_original,
+            age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
+            age_at_enrollment_unit:          dm.age_at_enrollment_unit,
+            body_surface_area:               dm.body_surface_area,
+            body_surface_area_original:      dm.body_surface_area_original,
+            body_surface_area_original_unit: dm.body_surface_area_original_unit,
+            body_surface_area_unit:          dm.body_surface_area_unit,
+            demographic_record_id:           dm.demographic_record_id,
+            ethnicity:                       dm.ethnicity,
+            height:                          dm.height,
+            height_original:                 dm.height_original,
+            height_original_unit:            dm.height_original_unit,
+            height_unit:                     dm.height_unit,
+            ncbi_taxonomy_id:                dm.ncbi_taxonomy_id,
+            ncbi_taxonomy_name:              dm.ncbi_taxonomy_name,
+            race:                            dm.race,
+            sex:                             dm.sex,
+            uuid:                            dm.uuid,
+            weight:                          dm.weight,
+            weight_original:                 dm.weight_original,
+            weight_original_unit:            dm.weight_original_unit,
+            weight_unit:                     dm.weight_unit,
+            occupation:                      dm.occupation,
+            income:                          dm.income,
+            highest_level_of_education:      dm.highest_level_of_education
+          }) AS demographicNodeData
+        UNWIND CASE WHEN size(unique_exp) = 0 THEN [null] ELSE unique_exp END AS e
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
+          diagnosisNodeData, demographicNodeData,
+          COLLECT({
+            participant_ids:      all_participant_ids,
+            carcinogen_exposure:  e.carcinogen_exposure,
+            exposure_record_id:   e.exposure_record_id
+          }) AS exposureNodeData
+        UNWIND CASE WHEN size(unique_spec) = 0 THEN [null] ELSE unique_spec END AS s
+        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
+          diagnosisNodeData, demographicNodeData, exposureNodeData,
+          COLLECT({
+            participant_ids:               all_participant_ids,
+            anatomical_collection_site:    s.anatomical_collection_site,
+            assessment_timepoint:          toString(s.assessment_timepoint),
+            collection_date:               toString(s.collection_date),
+            collection_date_original:      toString(s.collection_date_original),
+            collection_date_original_unit: s.collection_date_original_unit,
+            collection_date_unit:          toString(s.collection_date_unit),
+            crdc_id:                       s.crdc_id,
+            created:                       toString(s.created),
+            specimen_category:             s.specimen_category,
+            specimen_record_id:            s.specimen_record_id,
+            specimen_type_concept_code:    s.specimen_type_concept_code,
+            tissue_category:               s.tissue_category
+          }) AS specimenNodeData
+        RETURN
+          study.study_short_name                AS study_short_name,
+          ['diagnosis','demographic','exposure','specimen'] AS unique_node_types,
+          diagnosisNodeData,
+          size(diagnosisNodeData)               AS diagnosisNodeCount,
+          size(all_participant_ids)             AS diagnosisParticipantCount,
+          demographicNodeData,
+          size(demographicNodeData)             AS demographicNodeCount,
+          size(all_participant_ids)             AS demographicParticipantCount,
+          exposureNodeData,
+          size(exposureNodeData)                AS exposureNodeCount,
+          size(all_participant_ids)             AS exposureParticipantCount,
+          specimenNodeData,
+          size(specimenNodeData)                AS specimenNodeCount,
+          size(all_participant_ids)             AS specimenParticipantCount
+        SKIP $skip LIMIT $limit
+      page_size: 1000
+  - index_name: clinical_trial_data_tab
+    id_field: "study_short_name"
+    mapping:
+      keyword:
+        - study_short_name
+        - targetedTherapyNodeData.participant_ids
+        - targetedTherapyNodeData.targeted_therapy
+        - targetedTherapyNodeData.targeted_therapy_dose
+        - targetedTherapyNodeData.targeted_therapy_frequency
+        - targetedTherapyNodeData.targeted_therapy_record_id
+        - nonTargetedTherapyNodeData.participant_ids
+        - nonTargetedTherapyNodeData.non_targeted_therapy_record_id
+        - nonTargetedTherapyNodeData.best_response_to_non_targeted_therapy
+        - nonTargetedTherapyNodeData.non_targeted_therapy
+        - nonTargetedTherapyNodeData.non_targeted_therapy_dose
+        - nonTargetedTherapyNodeData.non_targeted_therapy_frequency
+        - radiotherapyNodeData.participant_ids
+        - radiotherapyNodeData.radiation_dose
+        - radiotherapyNodeData.radiation_extent
+        - radiotherapyNodeData.radiation_frequency
+        - radiotherapyNodeData.radiological_procedure
+        - radiotherapyNodeData.radiological_procedure_anatomical_location
+        - radiotherapyNodeData.radiological_procedure_record_id
+        - radiotherapyNodeData.uuid
+        - surgeryNodeData.participant_ids
+        - surgeryNodeData.extent_of_residual_disease
+        - surgeryNodeData.surgical_procedure
+        - surgeryNodeData.surgical_procedure_anatomical_location
+        - surgeryNodeData.surgical_procedure_date
+        - surgeryNodeData.surgical_procedure_findings
+        - surgeryNodeData.surgical_procedure_record_id
+        - surgeryNodeData.surgical_procedure_therapeutic
+      long:
+        - targetedTherapyNodeCount
+        - targetedTherapyParticipantCount
+        - nonTargetedTherapyNodeCount
+        - nonTargetedTherapyParticipantCount
+        - radiotherapyNodeCount
+        - radiotherapyParticipantCount
+        - surgeryNodeCount
+        - surgeryParticipantCount
+    initial_query:
+      query: |
+              MATCH (study:study)<-[:belongs_to]-(p:participant)
+              WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
 
-  #             OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
-  #             OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
-  #             WITH study, all_participant_ids,
-  #               COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
+              OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
+              WITH study, all_participant_ids,
+                COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
 
-  #             OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
-  #             OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
-  #             WITH study, all_participant_ids, tt_data,
-  #               COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
+              OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
+              WITH study, all_participant_ids, tt_data,
+                COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
 
-  #             OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
-  #             OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
-  #             WITH study, all_participant_ids, tt_data, nt_data,
-  #               COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
+              OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
+              WITH study, all_participant_ids, tt_data, nt_data,
+                COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
 
-  #             OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
-  #             OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
-  #             WITH study, all_participant_ids, tt_data, nt_data, rt_data,
-  #               COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
+              OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
+              OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data,
+                COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
 
-  #             // ---- CHANGE START: moved all participant count unwinding here before raw data goes out of scope ----
-  #             UNWIND tt_data AS tt_count_item
-  #             WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data,
-  #               COLLECT(DISTINCT CASE WHEN tt_count_item.node IS NOT NULL AND tt_count_item.participant_id IS NOT NULL THEN tt_count_item.participant_id ELSE NULL END) AS tt_participant_list
+              // ---- CHANGE START: moved all participant count unwinding here before raw data goes out of scope ----
+              UNWIND tt_data AS tt_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data,
+                COLLECT(DISTINCT CASE WHEN tt_count_item.node IS NOT NULL AND tt_count_item.participant_id IS NOT NULL THEN tt_count_item.participant_id ELSE NULL END) AS tt_participant_list
 
-  #             UNWIND nt_data AS nt_count_item
-  #             WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list,
-  #               COLLECT(DISTINCT CASE WHEN nt_count_item.node IS NOT NULL AND nt_count_item.participant_id IS NOT NULL THEN nt_count_item.participant_id ELSE NULL END) AS nt_participant_list
+              UNWIND nt_data AS nt_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list,
+                COLLECT(DISTINCT CASE WHEN nt_count_item.node IS NOT NULL AND nt_count_item.participant_id IS NOT NULL THEN nt_count_item.participant_id ELSE NULL END) AS nt_participant_list
 
-  #             UNWIND rt_data AS rt_count_item
-  #             WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list, nt_participant_list,
-  #               COLLECT(DISTINCT CASE WHEN rt_count_item.node IS NOT NULL AND rt_count_item.participant_id IS NOT NULL THEN rt_count_item.participant_id ELSE NULL END) AS rt_participant_list
+              UNWIND rt_data AS rt_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list, nt_participant_list,
+                COLLECT(DISTINCT CASE WHEN rt_count_item.node IS NOT NULL AND rt_count_item.participant_id IS NOT NULL THEN rt_count_item.participant_id ELSE NULL END) AS rt_participant_list
 
-  #             UNWIND surg_data AS surg_count_item
-  #             WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list, nt_participant_list, rt_participant_list,
-  #               COLLECT(DISTINCT CASE WHEN surg_count_item.node IS NOT NULL AND surg_count_item.participant_id IS NOT NULL THEN surg_count_item.participant_id ELSE NULL END) AS surg_participant_list
-  #             // ---- CHANGE END ----
+              UNWIND surg_data AS surg_count_item
+              WITH study, all_participant_ids, tt_data, nt_data, rt_data, surg_data, tt_participant_list, nt_participant_list, rt_participant_list,
+                COLLECT(DISTINCT CASE WHEN surg_count_item.node IS NOT NULL AND surg_count_item.participant_id IS NOT NULL THEN surg_count_item.participant_id ELSE NULL END) AS surg_participant_list
+              // ---- CHANGE END ----
 
-  #             UNWIND tt_data AS tt_item
-  #             WITH study, all_participant_ids, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               COLLECT(DISTINCT tt_item.node) AS unique_tt, tt_data, nt_data, rt_data, surg_data
+              UNWIND tt_data AS tt_item
+              WITH study, all_participant_ids, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT tt_item.node) AS unique_tt, tt_data, nt_data, rt_data, surg_data
 
-  #             UNWIND nt_data AS nt_item
-  #             WITH study, all_participant_ids, unique_tt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               COLLECT(DISTINCT nt_item.node) AS unique_nt, tt_data, nt_data, rt_data, surg_data
+              UNWIND nt_data AS nt_item
+              WITH study, all_participant_ids, unique_tt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT nt_item.node) AS unique_nt, tt_data, nt_data, rt_data, surg_data
 
-  #             UNWIND rt_data AS rt_item
-  #             WITH study, all_participant_ids, unique_tt, unique_nt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               COLLECT(DISTINCT rt_item.node) AS unique_rt, tt_data, nt_data, rt_data, surg_data
+              UNWIND rt_data AS rt_item
+              WITH study, all_participant_ids, unique_tt, unique_nt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT rt_item.node) AS unique_rt, tt_data, nt_data, rt_data, surg_data
 
-  #             UNWIND surg_data AS surg_item
-  #             WITH study, all_participant_ids, unique_tt, unique_nt, unique_rt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               COLLECT(DISTINCT surg_item.node) AS unique_surg, tt_data, nt_data, rt_data, surg_data
+              UNWIND surg_data AS surg_item
+              WITH study, all_participant_ids, unique_tt, unique_nt, unique_rt, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(DISTINCT surg_item.node) AS unique_surg, tt_data, nt_data, rt_data, surg_data
 
-  #             UNWIND unique_tt AS t
-  #             UNWIND tt_data AS tt_item
-  #             WITH study, t, tt_item, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WHERE tt_item.node = t AND tt_item.participant_id IS NOT NULL
-  #             WITH study, t, COLLECT(tt_item.participant_id) AS tt_pids, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WITH study, t, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               REDUCE(result = '', item IN tt_pids |
-  #                 result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS tt_participant_ids
+              UNWIND unique_tt AS t
+              UNWIND tt_data AS tt_item
+              WITH study, t, tt_item, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE tt_item.node = t AND tt_item.participant_id IS NOT NULL
+              WITH study, t, COLLECT(tt_item.participant_id) AS tt_pids, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, t, nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN tt_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS tt_participant_ids
 
-  #             WITH study, COLLECT({
-  #               participant_ids: tt_participant_ids,
-  #               targeted_therapy: t.targeted_therapy,
-  #               targeted_therapy_dose: t.targeted_therapy_dose,
-  #               targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
-  #               targeted_therapy_record_id: t.targeted_therapy_record_id
-  #             }) AS targetedTherapyNodeData,
-  #             nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, COLLECT({
+                participant_ids: tt_participant_ids,
+                targeted_therapy: t.targeted_therapy,
+                targeted_therapy_dose: t.targeted_therapy_dose,
+                targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
+                targeted_therapy_record_id: t.targeted_therapy_record_id
+              }) AS targetedTherapyNodeData,
+              nt_data, rt_data, surg_data, unique_nt, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-  #             UNWIND unique_nt AS n
-  #             UNWIND nt_data AS nt_item
-  #             WITH study, n, nt_item, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WHERE nt_item.node = n AND nt_item.participant_id IS NOT NULL
-  #             WITH study, n, COLLECT(nt_item.participant_id) AS nt_pids, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WITH study, n, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               REDUCE(result = '', item IN nt_pids |
-  #                 result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS nt_participant_ids
+              UNWIND unique_nt AS n
+              UNWIND nt_data AS nt_item
+              WITH study, n, nt_item, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE nt_item.node = n AND nt_item.participant_id IS NOT NULL
+              WITH study, n, COLLECT(nt_item.participant_id) AS nt_pids, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, n, targetedTherapyNodeData, rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN nt_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS nt_participant_ids
 
-  #             WITH study, targetedTherapyNodeData, COLLECT({
-  #               participant_ids: nt_participant_ids,
-  #               non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
-  #               best_response_to_non_targeted_therapy: toString(COALESCE(n.best_response_to_non_targeted_therapy, '')),
-  #               non_targeted_therapy: toString(COALESCE(n.non_targeted_therapy, '')),
-  #               non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
-  #               non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
-  #             }) AS nonTargetedTherapyNodeData,
-  #             rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, targetedTherapyNodeData, COLLECT({
+                participant_ids: nt_participant_ids,
+                non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
+                best_response_to_non_targeted_therapy: toString(COALESCE(n.best_response_to_non_targeted_therapy, '')),
+                non_targeted_therapy: toString(COALESCE(n.non_targeted_therapy, '')),
+                non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
+                non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
+              }) AS nonTargetedTherapyNodeData,
+              rt_data, surg_data, unique_rt, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-  #             UNWIND unique_rt AS r
-  #             UNWIND rt_data AS rt_item
-  #             WITH study, r, rt_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WHERE rt_item.node = r AND rt_item.participant_id IS NOT NULL
-  #             WITH study, r, COLLECT(rt_item.participant_id) AS rt_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WITH study, r, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               REDUCE(result = '', item IN rt_pids |
-  #                 result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS rt_participant_ids
+              UNWIND unique_rt AS r
+              UNWIND rt_data AS rt_item
+              WITH study, r, rt_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE rt_item.node = r AND rt_item.participant_id IS NOT NULL
+              WITH study, r, COLLECT(rt_item.participant_id) AS rt_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, r, targetedTherapyNodeData, nonTargetedTherapyNodeData, surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN rt_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS rt_participant_ids
 
-  #             WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, COLLECT({
-  #               participant_ids: rt_participant_ids,
-  #               radiation_dose: r.radiation_dose,
-  #               radiation_extent: r.radiation_extent,
-  #               radiation_frequency: r.radiation_frequency,
-  #               radiological_procedure: r.radiological_procedure,
-  #               radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
-  #               radiological_procedure_record_id: r.radiological_procedure_record_id,
-  #               uuid: r.uuid
-  #             }) AS radiotherapyNodeData,
-  #             surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, COLLECT({
+                participant_ids: rt_participant_ids,
+                radiation_dose: r.radiation_dose,
+                radiation_extent: r.radiation_extent,
+                radiation_frequency: r.radiation_frequency,
+                radiological_procedure: r.radiological_procedure,
+                radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
+                radiological_procedure_record_id: r.radiological_procedure_record_id,
+                uuid: r.uuid
+              }) AS radiotherapyNodeData,
+              surg_data, unique_surg, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-  #             UNWIND unique_surg AS sg
-  #             UNWIND surg_data AS surg_item
-  #             WITH study, sg, surg_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WHERE surg_item.node = sg AND surg_item.participant_id IS NOT NULL
-  #             WITH study, sg, COLLECT(surg_item.participant_id) AS surg_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
-  #             WITH study, sg, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               REDUCE(result = '', item IN surg_pids |
-  #                 result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS surg_participant_ids
+              UNWIND unique_surg AS sg
+              UNWIND surg_data AS surg_item
+              WITH study, sg, surg_item, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WHERE surg_item.node = sg AND surg_item.participant_id IS NOT NULL
+              WITH study, sg, COLLECT(surg_item.participant_id) AS surg_pids, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, sg, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                REDUCE(result = '', item IN surg_pids |
+                  result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS surg_participant_ids
 
-  #             WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, COLLECT({
-  #               participant_ids: surg_participant_ids,
-  #               extent_of_residual_disease: sg.extent_of_residual_disease,
-  #               surgical_procedure: sg.surgical_procedure,
-  #               surgical_procedure_anatomical_location: sg.surgical_procedure_anatomical_location,
-  #               surgical_procedure_date: toString(sg.surgical_procedure_date),
-  #               surgical_procedure_findings: sg.surgical_procedure_findings,
-  #               surgical_procedure_record_id: sg.surgical_procedure_record_id,
-  #               surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
-  #             }) AS surgeryNodeData,
-  #             tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, COLLECT({
+                participant_ids: surg_participant_ids,
+                extent_of_residual_disease: sg.extent_of_residual_disease,
+                surgical_procedure: sg.surgical_procedure,
+                surgical_procedure_anatomical_location: sg.surgical_procedure_anatomical_location,
+                surgical_procedure_date: toString(sg.surgical_procedure_date),
+                surgical_procedure_findings: sg.surgical_procedure_findings,
+                surgical_procedure_record_id: sg.surgical_procedure_record_id,
+                surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
+              }) AS surgeryNodeData,
+              tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list
 
-  #             // ---- CHANGE START: removed the 4 UNWIND count blocks that were here originally, counts are already computed above ----
-  #             UNWIND targetedTherapyNodeData AS tt_node_data
-  #             WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
-  #               COLLECT(tt_node_data.targeted_therapy_record_id) AS tt_record_ids
+              // ---- CHANGE START: removed the 4 UNWIND count blocks that were here originally, counts are already computed above ----
+              UNWIND targetedTherapyNodeData AS tt_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list,
+                COLLECT(tt_node_data.targeted_therapy_record_id) AS tt_record_ids
 
-  #             UNWIND nonTargetedTherapyNodeData AS nt_node_data
-  #             WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids,
-  #               COLLECT(nt_node_data.non_targeted_therapy_record_id) AS nt_record_ids
+              UNWIND nonTargetedTherapyNodeData AS nt_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids,
+                COLLECT(nt_node_data.non_targeted_therapy_record_id) AS nt_record_ids
 
-  #             UNWIND radiotherapyNodeData AS r_node_data
-  #             WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids,
-  #               COLLECT(r_node_data.radiological_procedure_record_id) AS r_record_ids
+              UNWIND radiotherapyNodeData AS r_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids,
+                COLLECT(r_node_data.radiological_procedure_record_id) AS r_record_ids
 
-  #             UNWIND surgeryNodeData AS s_node_data
-  #             WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids, r_record_ids,
-  #               COLLECT(s_node_data.surgical_procedure_record_id) AS s_record_ids
-  #             // ---- CHANGE END ----
+              UNWIND surgeryNodeData AS s_node_data
+              WITH study, targetedTherapyNodeData, nonTargetedTherapyNodeData, radiotherapyNodeData, surgeryNodeData, tt_participant_list, nt_participant_list, rt_participant_list, surg_participant_list, tt_record_ids, nt_record_ids, r_record_ids,
+                COLLECT(s_node_data.surgical_procedure_record_id) AS s_record_ids
+              // ---- CHANGE END ----
 
-  #             RETURN
-  #               study.study_short_name                AS study_short_name,
-  #               targetedTherapyNodeData,
-  #               size(tt_record_ids)                   AS targetedTherapyNodeCount,
-  #               size(tt_participant_list)             AS targetedTherapyParticipantCount,
-  #               nonTargetedTherapyNodeData,
-  #               size(nt_record_ids)                   AS nonTargetedTherapyNodeCount,
-  #               size(nt_participant_list)             AS nonTargetedTherapyParticipantCount,
-  #               radiotherapyNodeData,
-  #               size(r_record_ids)                    AS radiotherapyNodeCount,
-  #               size(rt_participant_list)             AS radiotherapyParticipantCount,
-  #               surgeryNodeData,
-  #               size(s_record_ids)                    AS surgeryNodeCount,
-  #               size(surg_participant_list)           AS surgeryParticipantCount
-  #                   SKIP $skip LIMIT $limit
-  #     page_size: 1000
-  # - index_name: study_node_counts
-  #   id_field: "short_name"
-  #   mapping:
-  #     keyword:
-  #       - short_name
-  #       - node_label
-  #     long:
-  #       - participant_count
-  #       - total_node_count
-  #   initial_query:
-  #     query: |
-  #       MATCH (study:study)<-[:belongs_to]-(p:participant)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(diag:diagnosis)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(spec:specimen)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(demo:demographic)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(exp:exposure)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(surg:surgery)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(tt:targeted_therapy)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(nt:non_targeted_therapy)
-  #       OPTIONAL MATCH (p)<-[:of_participant]-(rt:radiotherapy)
-  #       WITH study,p,
-  #         collect(DISTINCT diag) AS diags,
-  #         collect(DISTINCT spec) AS specs,
-  #         collect(DISTINCT demo) AS demos,
-  #         collect(DISTINCT exp) AS exps,
-  #         collect(DISTINCT surg) AS surgs,
-  #         collect(DISTINCT tt) AS tts,
-  #         collect(DISTINCT nt) AS nts,
-  #         collect(DISTINCT rt) as rts
-  #       WITH study,p,
-  #         [
-  #           {label: 'diagnosis', nodeCount: size(diags), participant: CASE WHEN size(diags) > 0 THEN p END},
-  #           {label: 'specimen', nodeCount: size(specs), participant: CASE WHEN size(specs) > 0 THEN p END},
-  #           {label: 'demographic', nodeCount: size(demos), participant: CASE WHEN size(demos) > 0 THEN p END},
-  #           {label: 'exposure', nodeCount: size(exps), participant: CASE WHEN size(exps) > 0 THEN p END},
-  #           {label: 'surgery', nodeCount: size(surgs), participant: CASE WHEN size(surgs) > 0 THEN p END},
-  #           {label: 'radiotherapy', nodeCount: size(rts), participant: CASE WHEN size(rts) > 0 THEN p END},
-  #           {label: 'targeted_therapy', nodeCount: size(tts), participant: CASE WHEN size(tts) > 0 THEN p END},
-  #           {label: 'non_targeted_therapy', nodeCount: size(nts), participant: CASE WHEN size(nts) > 0 THEN p END}
-  #         ] AS rows
-  #       UNWIND rows AS row
-  #       WITH row.label AS node_label,
-  #           row.nodeCount AS node_count,
-  #           row.participant AS participant,
-  #           study
-  #       RETURN
-  #         study.study_short_name as short_name,
-  #         node_label,
-  #         count(DISTINCT participant) AS participant_count,
-  #         sum(node_count) AS total_node_count
-  #       ORDER BY participant_count DESC
-  #       SKIP $skip LIMIT $limit
-  #     page_size: 10000
+              RETURN
+                study.study_short_name                AS study_short_name,
+                targetedTherapyNodeData,
+                size(tt_record_ids)                   AS targetedTherapyNodeCount,
+                size(tt_participant_list)             AS targetedTherapyParticipantCount,
+                nonTargetedTherapyNodeData,
+                size(nt_record_ids)                   AS nonTargetedTherapyNodeCount,
+                size(nt_participant_list)             AS nonTargetedTherapyParticipantCount,
+                radiotherapyNodeData,
+                size(r_record_ids)                    AS radiotherapyNodeCount,
+                size(rt_participant_list)             AS radiotherapyParticipantCount,
+                surgeryNodeData,
+                size(s_record_ids)                    AS surgeryNodeCount,
+                size(surg_participant_list)           AS surgeryParticipantCount
+                    SKIP $skip LIMIT $limit
+      page_size: 1000
+  - index_name: study_node_counts
+    id_field: "short_name"
+    mapping:
+      keyword:
+        - short_name
+        - node_label
+      long:
+        - participant_count
+        - total_node_count
+    initial_query:
+      query: |
+        MATCH (study:study)<-[:belongs_to]-(p:participant)
+        OPTIONAL MATCH (p)<-[:of_participant]-(diag:diagnosis)
+        OPTIONAL MATCH (p)<-[:of_participant]-(spec:specimen)
+        OPTIONAL MATCH (p)<-[:of_participant]-(demo:demographic)
+        OPTIONAL MATCH (p)<-[:of_participant]-(exp:exposure)
+        OPTIONAL MATCH (p)<-[:of_participant]-(surg:surgery)
+        OPTIONAL MATCH (p)<-[:of_participant]-(tt:targeted_therapy)
+        OPTIONAL MATCH (p)<-[:of_participant]-(nt:non_targeted_therapy)
+        OPTIONAL MATCH (p)<-[:of_participant]-(rt:radiotherapy)
+        WITH study,p,
+          collect(DISTINCT diag) AS diags,
+          collect(DISTINCT spec) AS specs,
+          collect(DISTINCT demo) AS demos,
+          collect(DISTINCT exp) AS exps,
+          collect(DISTINCT surg) AS surgs,
+          collect(DISTINCT tt) AS tts,
+          collect(DISTINCT nt) AS nts,
+          collect(DISTINCT rt) as rts
+        WITH study,p,
+          [
+            {label: 'diagnosis', nodeCount: size(diags), participant: CASE WHEN size(diags) > 0 THEN p END},
+            {label: 'specimen', nodeCount: size(specs), participant: CASE WHEN size(specs) > 0 THEN p END},
+            {label: 'demographic', nodeCount: size(demos), participant: CASE WHEN size(demos) > 0 THEN p END},
+            {label: 'exposure', nodeCount: size(exps), participant: CASE WHEN size(exps) > 0 THEN p END},
+            {label: 'surgery', nodeCount: size(surgs), participant: CASE WHEN size(surgs) > 0 THEN p END},
+            {label: 'radiotherapy', nodeCount: size(rts), participant: CASE WHEN size(rts) > 0 THEN p END},
+            {label: 'targeted_therapy', nodeCount: size(tts), participant: CASE WHEN size(tts) > 0 THEN p END},
+            {label: 'non_targeted_therapy', nodeCount: size(nts), participant: CASE WHEN size(nts) > 0 THEN p END}
+          ] AS rows
+        UNWIND rows AS row
+        WITH row.label AS node_label,
+            row.nodeCount AS node_count,
+            row.participant AS participant,
+            study
+        RETURN
+          study.study_short_name as short_name,
+          node_label,
+          count(DISTINCT participant) AS participant_count,
+          sum(node_count) AS total_node_count
+        ORDER BY participant_count DESC
+        SKIP $skip LIMIT $limit
+      page_size: 10000
