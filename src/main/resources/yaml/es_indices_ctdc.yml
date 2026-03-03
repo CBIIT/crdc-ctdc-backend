@@ -943,10 +943,10 @@ indices:
           SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: gs_list
-    type: neo4j
+    id_field: "autocomplete_list"
     # type mapping for each property of the index
     mapping:
-      id_field: "study_short_name"
+      
       mapping:
         keyword:
         - study_short_name
@@ -955,20 +955,20 @@ indices:
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID,study
-      WITH stage,ctep, stage + ctep + participantID + specimenID as list,study
+      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
+      WITH stage,ctep, stage + ctep + participantID + specimenID as list
       UNWIND list as autocomplete_list
       RETURN distinct
-      study.study_short_name as study_short_name,
+
       
       autocomplete_list
       SKIP $skip LIMIT $limit
     page_size: 10
   - index_name: therapy_count
-    type: neo4j
+    id_field: "participant_id"
     # type mapping for each property of the index
     mapping:
-      id_field: "participant_id"
+      
       mapping:
         keyword:
         - type
