@@ -883,18 +883,22 @@ indices:
         OPTIONAL MATCH (tt:targeted_therapy)-[:of_participant]->(sub)
         WITH
           f, sub, spec,
-          [t IN collect(DISTINCT tt.targeted_therapy)
-            WHERE t IS NOT NULL AND t <> '' | t]                                  AS targeted_therapy,
-          [t IN collect(DISTINCT toLower(tt.targeted_therapy))
-            WHERE t IS NOT NULL AND t <> '' | t]                                  AS tt_lower
+          collect(DISTINCT tt.targeted_therapy)                                   AS tt_raw
+        WITH f, sub, spec,
+          REDUCE(result = [], t IN tt_raw |
+            CASE WHEN t IS NULL OR t = '' THEN result ELSE result + t END)        AS targeted_therapy,
+          REDUCE(result = [], t IN tt_raw |
+            CASE WHEN t IS NULL OR t = '' THEN result ELSE result + toLower(t) END) AS tt_lower
         UNWIND CASE WHEN size(tt_lower) = 0 THEN [null] ELSE tt_lower END AS tt_item
         WITH f, sub, spec, targeted_therapy, tt_item
         ORDER BY tt_item
         WITH f, sub, spec, targeted_therapy,
           COLLECT(tt_item)                                                        AS tt_sorted
         WITH f, sub, spec, targeted_therapy,
-          REDUCE(result = '', t IN [x IN tt_sorted WHERE x IS NOT NULL] |
-            result + CASE WHEN result = '' THEN t ELSE '|' + t END)              AS targeted_therapy_string
+          REDUCE(result = '', t IN tt_sorted |
+            CASE WHEN t IS NULL OR t = '' THEN result
+                 ELSE result + CASE WHEN result = '' THEN t ELSE '|' + t END
+            END)                                                                  AS targeted_therapy_string
 
         OPTIONAL MATCH (sub)<-[:of_participant]-(diag:diagnosis)
         OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
@@ -1012,9 +1016,8 @@ indices:
       optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
       optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
       optional MATCH (expose:exposure)-[:of_participant]->(sb)
-      WHERE target is not null
+      WHERE target IS NOT NULL AND target.targeted_therapy <> ''
       with expose,sb,target,diag,demo,file,spec,study,array
-      Where target.targeted_therapy <> ''
       RETURN DISTINCT
       'participants' as type,
       sb.participant_id as participant_id,
