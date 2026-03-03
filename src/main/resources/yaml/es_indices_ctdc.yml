@@ -941,7 +941,7 @@ indices:
     type: neo4j
     # type mapping for each property of the index
     mapping:
-      id_field: "data_file_uuid"
+      id_field: "autocomplete_list"
       mapping:
         keyword:
         - autocomplete_list
@@ -955,6 +955,102 @@ indices:
       RETURN distinct
       
       autocomplete_list
+      SKIP $skip LIMIT $limit
+    page_size: 10
+  - index_name: therapy_count
+    type: neo4j
+    # type mapping for each property of the index
+    mapping:
+      id_field: "participant_id"
+      mapping:
+        keyword:
+        - type
+        - study_short_name
+        - ctep_disease_term
+        - primary_diagnosis_disease_group
+        - snomed_disease_code
+        - tumor_grade
+        - stage_of_disease
+        - diagnosis_id
+        - sex
+        - race
+        - ethnicity
+        - carcinogen_exposure
+        - targeted_therapy
+        - targeted_therapy_string
+        - targeted_therapy_id
+        - anatomical_collection_site
+        - tissue_category
+        - assessment_timepoint
+        - specimen_id
+        - specimen_type
+        - data_file_uuid
+        - data_file_type
+        - data_file_format
+        - biospecimen_info.specimen_id
+        - biospecimen_info.anatomical_collection_site
+        - biospecimen_info.tissue_category
+        - biospecimen_info.assessment_timepoint
+        - file_info.data_file_uuid
+        - file_info.data_file_format
+        - file_info.data_file_type
+        - participant_id
+    initial_query: |
+      MATCH (study:study)<-[:belongs_to]-(sb:participant)
+      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+      WITH [x IN COLLECT(DISTINCT target.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] as array_raw,sb,study
+      UNWIND CASE WHEN size(array_raw) = 0 THEN [null] ELSE array_raw END AS array_item
+      WITH sb,study,array_item
+      ORDER BY array_item
+      WITH sb,study,COLLECT(array_item) AS array_sorted
+      WITH sb,study,
+        REDUCE(result = '', item IN [x IN array_sorted WHERE x IS NOT NULL | x] |
+          result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS array
+      optional MATCH (spec:specimen)-[:of_participant]->(sb)
+      optional MATCH (sb)<-[*..2]-(file:file)
+      optional MATCH (demo:demographic)-[:of_participant]->(sb)
+      optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
+      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+      optional MATCH (expose:exposure)-[:of_participant]->(sb)
+      WHERE target is not null
+      with expose,sb,target,diag,demo,file,spec,study,array
+      Where target.targeted_therapy <> ''
+      RETURN DISTINCT
+      'participants' as type,
+      sb.participant_id as participant_id,
+      COLLECT(DISTINCT study.study_short_name) as study_short_name,
+      COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
+      COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
+      COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
+      COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
+      COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
+      COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
+      COLLECT(DISTINCT demo.sex) as sex,
+      COLLECT(DISTINCT demo.race) as race,
+      COLLECT(DISTINCT demo.ethnicity) as ethnicity,
+      COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
+      COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
+      COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
+      array as targeted_therapy_string,
+      COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+      COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
+      COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
+      COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
+      COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
+      COLLECT(DISTINCT file.data_file_type) AS data_file_type,
+      COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
+      COLLECT(DISTINCT file.data_file_format) AS data_file_format,
+      COLLECT(DISTINCT{
+        specimen_id: spec.specimen_id,
+        anatomical_collection_site: spec.anatomical_collection_site,
+        tissue_category: spec.tissue_category,
+        assessment_timepoint: spec.assessment_timepoint
+      }) AS biospecimen_info,
+      COLLECT(DISTINCT{
+        data_file_uuid: file.data_file_uuid,
+        data_file_format: file.data_file_format,
+        data_file_type: file.data_file_type
+      }) AS file_info
       SKIP $skip LIMIT $limit
     page_size: 10
   # - index_name: clinical_data_tab
