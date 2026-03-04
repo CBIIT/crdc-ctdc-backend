@@ -839,7 +839,7 @@ indices:
             data_file_type:   f.data_file_type }] AS file_info
             SKIP $skip LIMIT $limit
       page_size: 1000
-  - index_name: biospecimen_data_file
+  - index_name: "biospecimen_data_file"
     id_field: "data_file_uuid"
     mapping:
       keyword:
@@ -957,7 +957,7 @@ indices:
         autocomplete_list
         SKIP $skip LIMIT $limit
     page_size: 10
-  - index_name: therapy_count
+  - index_name: "therapy_count"
     id_field: "participant_id"
     # type mapping for each property of the index
     mapping:
@@ -1056,7 +1056,7 @@ indices:
         }) AS file_info
         SKIP $skip LIMIT $limit
       page_size: 10
-  - index_name: clinical_data_tab
+  - index_name: "clinical_data_tab"
     id_field: "study_short_name"
     mapping:
       keyword:
@@ -1242,7 +1242,7 @@ indices:
           size(all_participant_ids)             AS specimenParticipantCount
         SKIP $skip LIMIT $limit
       page_size: 1000
-  - index_name: clinical_trial_data_tab
+  - index_name: "clinical_trial_data_tab"
     id_field: "study_short_name"
     mapping:
       keyword:
@@ -1455,7 +1455,7 @@ indices:
                 size(surg_participant_list)           AS surgeryParticipantCount
                     SKIP $skip LIMIT $limit
       page_size: 100
-  - index_name: study_node_counts
+  - index_name: "study_node_counts"
     id_field: "short_name"
     mapping:
       keyword:
@@ -1507,4 +1507,13 @@ indices:
           sum(node_count) AS total_node_count
         ORDER BY participant_count DESC
         SKIP $skip LIMIT $limit
+      page_size: 10
+  - index_name: "about_page"
+    id_field: "short_name"
+    mapping:
+      keyword:
+        - page
+        - title
+        - primaryContentImage
+        - content
       page_size: 10
