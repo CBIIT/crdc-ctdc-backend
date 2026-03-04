@@ -1454,7 +1454,7 @@ indices:
                 size(s_record_ids)                    AS surgeryNodeCount,
                 size(surg_participant_list)           AS surgeryParticipantCount
                     SKIP $skip LIMIT $limit
-      page_size: 10
+      page_size: 50
   - index_name: "study_node_counts"
     id_field: "short_name"
     mapping:
@@ -1507,13 +1507,39 @@ indices:
           sum(node_count) AS total_node_count
         ORDER BY participant_count DESC
         SKIP $skip LIMIT $limit
-      page_size: 10
+      page_size: 50
   - index_name: "about_page"
-    id_field: "short_name"
-    mapping:
-      keyword:
-        - page
-        - title
-        - primaryContentImage
-        - content
-      page_size: 10
+    type: "about_file"
+    # Optional: custom mapping using grouped format (if omitted, default mapping is used)
+    # mapping:
+    #   keyword:
+    #     - page
+    #   search_as_you_type:
+    #     - title
+    #   text:
+    #     - primaryContentImage
+    #   object:
+    #     - content  # Objects are implicit, but can be explicitly declared
+
+  # Model indices examples
+  # Requires model_files to be configured in config.yaml
+  # Mapping is optional - defaults are auto-generated based on subtype
+  - index_name: "model_nodes"
+    type: "model"
+    subtype: "node"
+    # Optional: custom mapping using grouped format (if omitted, default mapping for 'node' subtype is used)
+    # mapping:
+    #   search_as_you_type:
+    #     - node
+    #   keyword:
+    #     - node_kw
+
+  - index_name: "model_properties"
+    type: "model"
+    subtype: "property"
+    # Optional: custom mapping using grouped format (if omitted, default mapping for 'property' subtype is used)
+
+  - index_name: "model_values"
+    type: "model"
+    subtype: "value"
+    # Optional: custom mapping using grouped format (if omitted, default mapping for 'value' subtype is used)
