@@ -1454,7 +1454,7 @@ indices:
                 size(s_record_ids)                    AS surgeryNodeCount,
                 size(surg_participant_list)           AS surgeryParticipantCount
                     SKIP $skip LIMIT $limit
-      page_size: 1000
+      page_size: 100
   - index_name: study_node_counts
     id_field: "short_name"
     mapping:
@@ -1507,4 +1507,4 @@ indices:
           sum(node_count) AS total_node_count
         ORDER BY participant_count DESC
         SKIP $skip LIMIT $limit
-      page_size: 10000
+      page_size: 10
