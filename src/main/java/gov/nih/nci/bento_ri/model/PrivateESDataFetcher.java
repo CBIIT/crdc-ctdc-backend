@@ -349,8 +349,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         };
 
         Map<String, Object> filterParams = new HashMap<>();
-        filterParams.put("study_short_name", normalizeQueryValues(params.get("study_short_name")));
-        filterParams.put("study_id", normalizeQueryValues(params.get("study_id")));
+        List<String> studyShortNames = normalizeQueryValues(params.get("study_short_name"));
+        if (!studyShortNames.isEmpty()) {
+            filterParams.put("study_short_name", studyShortNames);
+        }
+        List<String> studyIds = normalizeQueryValues(params.get("study_id"));
+        if (!studyIds.isEmpty()) {
+            filterParams.put("study_id", studyIds);
+        }
 
         List<Map<String, Object>> studies = esService.collectPage(filterParams, STUDY_END_POINT, properties);
         List<Map<String, Object>> publications = new ArrayList<>();
@@ -386,14 +392,17 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             List<String> values = new ArrayList<>();
             for (Object item : list) {
                 if (item != null) {
-                    values.add(item.toString());
+                    String str = item.toString().trim();
+                    if (!str.isEmpty()) {
+                        values.add(str);
+                    }
                 }
             }
             if (!values.isEmpty()) {
                 return values;
             }
         }
-        return List.of("");
+        return List.of();
     }
 
 }
