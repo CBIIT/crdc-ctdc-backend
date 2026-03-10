@@ -941,4 +941,9 @@ type QueryType {
     study_short_name: [String] = []
     study_id: [String] = []
   ): [ClinicalTrialData]
+
+  publicationInfo(
+    study_short_name: [String] = []
+    study_id: [String] = []
+  ): [Publication]
 }
