@@ -65,6 +65,21 @@ Indices:
             type: keyword
           collection_access:
             type: keyword
+      publications:
+        type: nested
+        properties:
+          publication_title:
+            type: keyword
+          authorship:
+            type: keyword
+          year_of_publication:
+            type: keyword
+          journal_citation:
+            type: keyword
+          digital_object_id:
+            type: keyword
+          pubmed_id:
+            type: integer
 
 
 
@@ -73,6 +88,7 @@ Indices:
       MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
+      optional MATCH (p:publication)-[:of_study]->(s)
       optional MATCH (s)<-[:belongs_to]-(participant)
       optional MATCH (participant)<-[*..2]-(parent)<--(f:file)
       optional MATCH (s)<-[:associated_with]-(df:file)
@@ -99,6 +115,14 @@ Indices:
                     repository_name: ic.repository_name,
                     collection_access: ic.collection_access
                 }) AS image_collection,
+                COLLECT(DISTINCT{
+                  publication_title: p.publication_title,
+                  authorship: p.authorship,
+                  year_of_publication: p.year_of_publication,
+                  journal_citation: p.journal_citation,
+                  digital_object_id: p.digital_object_id,
+                  pubmed_id: CASE WHEN p.pubmed_id IS NULL THEN NULL ELSE toInteger(p.pubmed_id) END
+                }) AS publications,
                 COLLECT(DISTINCT{
                   biomarker_results_available: participant.biomarker_results_available,
                   histology_images_available: participant.histology_images_available,
@@ -203,6 +227,7 @@ Indices:
                 }) AS data_files,
          COLLECT(DISTINCT df.data_file_type) as list_type
       "
+
   # Name of the index to be created, existing index with same name will be deleted
   - index_name: study_specimen
     type: neo4j
