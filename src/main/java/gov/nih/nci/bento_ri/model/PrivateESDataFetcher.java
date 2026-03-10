@@ -25,6 +25,7 @@ import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 @Component
 public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private static final Logger logger = LogManager.getLogger(PrivateESDataFetcher.class);
+    private static final String STUDY_END_POINT = "/study/_search";
     private final YamlQueryFactory yamlQueryFactory;
     private final TypeMapperService typeMapper = new TypeMapperImpl();
 
@@ -60,6 +61,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         })
                         .dataFetcher("samplesForSubjectId", env ->
                                 samplesForSubjectId(createQueryParam(env)))
+                        .dataFetcher("publicationInfo", env -> publicationInfo(env.getArguments()))
                 )
                 .build();
     }
@@ -340,4 +342,58 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         private static final String SAMPLE_NESTED_FILE_INFO = "file_info";
         private static final String FILES = "files";
     }
+
+    private List<Map<String, Object>> publicationInfo(Map<String, Object> params) throws IOException {
+        String[][] properties = new String[][]{
+                new String[]{"publications", "publications"}
+        };
+
+        Map<String, Object> filterParams = new HashMap<>();
+        filterParams.put("study_short_name", normalizeQueryValues(params.get("study_short_name")));
+        filterParams.put("study_id", normalizeQueryValues(params.get("study_id")));
+
+        List<Map<String, Object>> studies = esService.collectPage(filterParams, STUDY_END_POINT, properties);
+        List<Map<String, Object>> publications = new ArrayList<>();
+
+        for (Map<String, Object> study : studies) {
+            Object publicationsField = study.get("publications");
+            if (!(publicationsField instanceof List<?> publicationList)) {
+                continue;
+            }
+            for (Object publicationObj : publicationList) {
+                if (!(publicationObj instanceof Map<?, ?> publicationMap)) {
+                    continue;
+                }
+                Map<String, Object> publication = new HashMap<>();
+                publication.put("publication_title", publicationMap.get("publication_title"));
+                publication.put("authorship", publicationMap.get("authorship"));
+                publication.put("year_of_publication", publicationMap.get("year_of_publication"));
+                publication.put("journal_citation", publicationMap.get("journal_citation"));
+                publication.put("digital_object_id", publicationMap.get("digital_object_id"));
+                publication.put("pubmed_id", publicationMap.get("pubmed_id"));
+
+                if (publication.values().stream().anyMatch(Objects::nonNull)) {
+                    publications.add(publication);
+                }
+            }
+        }
+
+        return publications;
+    }
+
+    private List<String> normalizeQueryValues(Object value) {
+        if (value instanceof List<?> list && !list.isEmpty()) {
+            List<String> values = new ArrayList<>();
+            for (Object item : list) {
+                if (item != null) {
+                    values.add(item.toString());
+                }
+            }
+            if (!values.isEmpty()) {
+                return values;
+            }
+        }
+        return List.of("");
+    }
+
 }
