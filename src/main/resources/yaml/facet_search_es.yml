@@ -297,173 +297,101 @@ queries:
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           selectedField: anatomical_collection_site
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: filterSpecimenCountByAnatomicalCollectionSite
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: anatomical_collection_site
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: specimenCountBySpecimenType
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           selectedField: specimen_type
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: filterSpecimenCountBySpecimenType
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: specimen_type
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: specimenCountByTissueCategory
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           selectedField: tissue_category
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: filterSpecimenCountByTissueCategory
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: tissue_category
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: participantCountByAssessmentTimepoint
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           selectedField: assessment_timepoint
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: filterParticipantCountByAssessmentTimepoint
         index:
           - tab_biospecimens
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: assessment_timepoint
-          nestedPath: biospecimen_info
-          nestedParameters:
-            - specimen_id
-            - anatomical_collection_site
-            - specimen_type
-            - tissue_category
-            - assessment_timepoint
         result:
-          type: nested_list
+          type: group_count
       - name: dataFileCountByDataFileType
         index:
           - tab_data_files
         filter:
-          type: nested
+          type: aggregation
           selectedField: data_file_type
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format,
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
       - name: filterDataFileCountByDataFileType
         index:
           - tab_data_files
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: data_file_type
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format,
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
       - name: dataFileCountByDataFileFormat
         index:
           - tab_data_files
         filter:
-          type: nested
+          type: aggregation
           selectedField: data_file_format
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
       - name: filterDataFileCountByDataFileFormat
         index:
           - tab_data_files
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: data_file_format
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count

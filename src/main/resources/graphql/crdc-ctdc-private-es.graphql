@@ -551,30 +551,199 @@ type ProgramArms {
   children: [ArmInfo]
 }
 
+type DiagnosisNodeData {
+  participant_ids: [String]
+  ctep_disease_term: String
+  date_of_diagnosis: String
+  date_of_diagnosis_original: String
+  date_of_diagnosis_unit: String
+  diagnosis_record_id: String
+  histological_subtype: String
+  histology: String
+  meddra_disease_code: String
+  primary_diagnosis_disease_group: String
+  primary_disease_site: String
+  snomed_disease_code: String
+  snomed_disease_term: String
+  UUID: String
+}
+
+type DemographicNodeData {
+  participant_ids: [String]
+  age_at_enrollment: String
+  age_at_enrollment_original: String
+  age_at_enrollment_original_unit: String
+  age_at_enrollment_unit: String
+  body_surface_area: String
+  body_surface_area_original: String
+  body_surface_area_original_unit: String
+  body_surface_area_unit: String
+  demographic_record_id: String
+  ethnicity: String
+  height: String
+  height_original: String
+  height_original_unit: String
+  height_unit: String
+  ncbi_taxonomy_id: String
+  ncbi_taxonomy_name: String
+  race: String
+  sex: String
+  uuid: String
+  weight: String
+  weight_original: String
+  weight_original_unit: String
+  weight_unit: String
+  occupation: String
+  income: String
+  highest_level_of_education: String
+}
+
+type ExposureNodeData {
+  participant_ids: [String]
+  carcinogen_exposure: String
+  exposure_record_id: String
+}
+
+type SpecimenNodeData {
+  participant_ids: [String]
+  anatomical_collection_site: String
+  assessment_timepoint: String
+  collection_date: String
+  collection_date_original: String
+  collection_date_original_unit: String
+  collection_date_unit: String
+  crdc_id: String
+  created: String
+  specimen_category: String
+  specimen_record_id: String
+  specimen_type_concept_code: String
+  tissue_category: String
+}
+
+type ParticipantStatusNodeData {
+  participant_ids: [String]
+  participant_status_record_id: String
+  survival_status: String
+  primary_cause_of_death: String
+  off_study: String
+  off_study_reason: String
+}
+
+type ClinicalDataTab {
+  study_short_name: String
+  unique_node_types: [String]
+  diagnosisNodeData: [DiagnosisNodeData]
+  diagnosisNodeCount: Int
+  diagnosisParticipantCount: Int
+  demographicNodeData: [DemographicNodeData]
+  demographicNodeCount: Int
+  demographicParticipantCount: Int
+  exposureNodeData: [ExposureNodeData]
+  exposureNodeCount: Int
+  exposureParticipantCount: Int
+  specimenNodeData: [SpecimenNodeData]
+  specimenNodeCount: Int
+  specimenParticipantCount: Int
+  participantStatusNodeData: [ParticipantStatusNodeData]
+  participantStatusNodeCount: Int
+  participantStatusParticipantCount: Int
+}
+
+type TargetedTherapyNodeData {
+  participant_ids: [String]
+  targeted_therapy: String
+  targeted_therapy_dose: String
+  targeted_therapy_frequency: String
+  targeted_therapy_record_id: String
+}
+
+type NonTargetedTherapyNodeData {
+  participant_ids: [String]
+  non_targeted_therapy_record_id: String
+  best_response_to_non_targeted_therapy: String
+  non_targeted_therapy: String
+  non_targeted_therapy_dose: String
+  non_targeted_therapy_frequency: String
+}
+
+type RadiotherapyNodeData {
+  participant_ids: [String]
+  radiation_dose: String
+  radiation_extent: String
+  radiation_frequency: String
+  radiological_procedure: String
+  radiological_procedure_anatomical_location: String
+  radiological_procedure_record_id: String
+  uuid: String
+}
+
+type SurgeryNodeData {
+  participant_ids: [String]
+  extent_of_residual_disease: String
+  surgical_procedure: String
+  surgical_procedure_anatomical_location: String
+  surgical_procedure_date: String
+  surgical_procedure_findings: String
+  surgical_procedure_record_id: String
+  surgical_procedure_therapeutic: String
+}
+
+type ClinicalTrialDataTab {
+  study_short_name: String
+  targetedTherapyNodeData: [TargetedTherapyNodeData]
+  targetedTherapyNodeCount: Int
+  targetedTherapyParticipantCount: Int
+  nonTargetedTherapyNodeData: [NonTargetedTherapyNodeData]
+  nonTargetedTherapyNodeCount: Int
+  nonTargetedTherapyParticipantCount: Int
+  radiotherapyNodeData: [RadiotherapyNodeData]
+  radiotherapyNodeCount: Int
+  radiotherapyParticipantCount: Int
+  surgeryNodeData: [SurgeryNodeData]
+  surgeryNodeCount: Int
+  surgeryParticipantCount: Int
+}
+
 schema {
   query: QueryType
 }
 
 type QueryType {
-  studyByStudyShortName(study_short_name: [String] = []): [Study]
+  studyByStudyShortName(
+    study_short_name: [String] = []
+    study_id: [String] = []
+  ): [Study]
 
   getAllStudies: [Study]
 
   studyDiagnosisByStudyShortName(
     study_short_name: [String] = []
+    study_id: [String] = []
   ): [StudyDiagnosis]
 
   StudySpecimenByStudyShortName(
     study_short_name: [String] = []
+    study_id: [String] = []
   ): [StudySpecimen]
 
   StudyDataFileByStudyShortName(
     study_short_name: [String] = []
+    study_id: [String] = []
   ): [StudyDataFile]
 
   getHomePage: [HomePage]
 
   getInteropData: [Interop]
+
+  clinicalData(
+    study_short_name: [String] = []
+    study_id: [String] = []
+  ): [ClinicalDataTab]
+
+  clinicalTrialData(
+    study_short_name: [String] = []
+    study_id: [String] = []
+  ): [ClinicalTrialDataTab]
 
   participantOverview(
     participant_id: [String] = []

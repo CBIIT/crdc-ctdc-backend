@@ -7,6 +7,7 @@ queries:
       caseInsensitive: false
       ignoreIfEmpty:
         - study_short_name
+        - study_id
     result:
       type: object_array
   - name: getAllStudies
@@ -25,6 +26,7 @@ queries:
       caseInsensitive: false
       ignoreIfEmpty:
         - study_short_name
+        - study_id
     result:
       type: object_array
   - name: StudySpecimenByStudyShortName
@@ -35,6 +37,7 @@ queries:
       caseInsensitive: false
       ignoreIfEmpty:
         - study_short_name
+        - study_id
     result:
       type: object_array
   - name: StudyDataFileByStudyShortName
@@ -45,6 +48,7 @@ queries:
       caseInsensitive: false
       ignoreIfEmpty:
         - study_short_name
+        - study_id
     result:
       type: object_array
   - name: getHomePage
@@ -52,6 +56,22 @@ queries:
       - home_page
     filter:
       type: default
+    result:
+      type: object_array
+  - name: clinicalData
+    index:
+      - clinical_data_tab
+    filter:
+      type: default
+      caseInsensitive: false
+    result:
+      type: object_array
+  - name: clinicalTrialData
+    index:
+      - clinical_trial_data_tab
+    filter:
+      type: default
+      caseInsensitive: false
     result:
       type: object_array
   - name: participantOverview
