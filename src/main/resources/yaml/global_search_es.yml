@@ -215,6 +215,7 @@ queries:
           - model_nodes
         filter:
           defaultSortField: node
+          secondSortField: property_name
           sortDirection: ASC
           type: global
           searches:
