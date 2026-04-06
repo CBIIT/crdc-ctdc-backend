@@ -58,6 +58,22 @@ queries:
       type: default
     result:
       type: object_array
+  - name: clinicalData
+    index:
+      - clinical_data_tab
+    filter:
+      type: default
+      caseInsensitive: false
+    result:
+      type: object_array
+  - name: clinicalTrialData
+    index:
+      - clinical_trial_data_tab
+    filter:
+      type: default
+      caseInsensitive: false
+    result:
+      type: object_array
   - name: participantOverview
     index:
       - tab_participants
