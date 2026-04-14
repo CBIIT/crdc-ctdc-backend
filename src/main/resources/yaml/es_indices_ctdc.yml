@@ -378,7 +378,7 @@ indices:
           OPTIONAL MATCH (spec_acs:specimen)-[:of_participant]->(sb)
           WHERE spec_acs.anatomical_collection_site IS NOT NULL AND spec_acs.anatomical_collection_site <> ''
           WITH sb, study, targeted_therapy, targeted_therapy_id, targeted_therapy_string,
-            COLLECT(DISTINCT toLower(spec_acs.anatomical_collection_site)) AS anatomical_collection_site
+            COLLECT(DISTINCT toLower(trim(COALESCE(spec_acs.anatomical_collection_site, '')))) AS anatomical_collection_site
           
           OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
           WHERE demo.race IS NOT NULL OR demo.sex IS NOT NULL OR demo.ethnicity IS NOT NULL
@@ -597,7 +597,7 @@ indices:
           OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
           OPTIONAL MATCH (sub)<-[*..2]-(df:file)
           WITH sub, spec, study, demo, exp, df,
-              toUpper(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
+              toLower(trim(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
 
           CALL {
             WITH sub
@@ -1119,6 +1119,11 @@ indices:
         - specimenNodeData.specimen_record_id
         - specimenNodeData.specimen_type_concept_code
         - specimenNodeData.tissue_category
+        - participantStatusNodeData.participant_ids
+        - participantStatusNodeData.off_study
+        - participantStatusNodeData.off_study_reason
+        - participantStatusNodeData.participant_status_record_id
+        - participantStatusNodeData.survival_status
       long:
         - diagnosisNodeCount
         - diagnosisParticipantCount
@@ -1128,32 +1133,46 @@ indices:
         - exposureParticipantCount
         - specimenNodeCount
         - specimenParticipantCount
+        - participantStatusNodeCount
+        - participantStatusParticipantCount
     initial_query:
       query: |
-        MATCH (study:study)<-[:belongs_to]-(p:participant)
-        WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
-        OPTIONAL MATCH (study)<-[:belongs_to]-(p_diag:participant)
-        OPTIONAL MATCH (p_diag)<-[:of_participant]-(diag:diagnosis)
-        WITH study, all_participant_ids,
-          COLLECT(DISTINCT diag) AS unique_diag
-        OPTIONAL MATCH (study)<-[:belongs_to]-(p_demo:participant)
-        OPTIONAL MATCH (p_demo)<-[:of_participant]-(demo:demographic)
-        WITH study, all_participant_ids, unique_diag,
-          COLLECT(DISTINCT demo) AS unique_demo
-        OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)
-        OPTIONAL MATCH (p_exp)<-[:of_participant]-(exp:exposure)
-        WITH study, all_participant_ids, unique_diag, unique_demo,
-          COLLECT(DISTINCT exp) AS unique_exp
-        OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)
-        OPTIONAL MATCH (p_spec)<-[:of_participant]-(spec:specimen)
-        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp,
-          COLLECT(DISTINCT spec) AS unique_spec
-        UNWIND CASE WHEN size(unique_diag) = 0 THEN [null] ELSE unique_diag END AS d
-        OPTIONAL MATCH (dp:participant)-[:of_participant]->(d2:diagnosis)
-        WHERE d2 = d
-        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
-          COLLECT({
-            participant_ids:                 all_participant_ids,
+        MATCH (study:study)
+        WITH DISTINCT study
+        ORDER BY study.study_short_name
+        RETURN DISTINCT
+          study.study_short_name AS study_short_name,
+          ['diagnosis','demographic','exposure','specimen','participant_status'] AS unique_node_types
+        SKIP $skip LIMIT $limit
+      page_size: 20
+    update_queries:
+      - name: "Diagnosis"
+        query: |
+          MATCH (study:study)
+          WITH DISTINCT study
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study)<-[:belongs_to]-(p_diag:participant)<-[:of_participant]-(diag:diagnosis)
+          WITH study, COLLECT({node: diag, participant_id: p_diag.participant_id}) AS diag_data
+
+          UNWIND diag_data AS diag_count_item
+          WITH study, diag_data,
+            COLLECT(DISTINCT CASE WHEN diag_count_item.node IS NOT NULL AND diag_count_item.participant_id IS NOT NULL THEN diag_count_item.participant_id ELSE NULL END) AS diag_participant_list
+
+          UNWIND diag_data AS diag_item
+          WITH study, diag_participant_list,
+            COLLECT(DISTINCT diag_item.node) AS unique_diag, diag_data
+
+          UNWIND unique_diag AS d
+          UNWIND diag_data AS diag_item
+          WITH study, d, diag_item, diag_participant_list
+          WHERE diag_item.node = d AND diag_item.participant_id IS NOT NULL
+          WITH study, d, COLLECT(diag_item.participant_id) AS diag_pids, diag_participant_list
+          WITH study, d, diag_participant_list,
+            REDUCE(result = '', item IN diag_pids |
+              result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS diag_participant_ids
+
+          WITH study, COLLECT({
+            participant_ids:                 diag_participant_ids,
             ctep_disease_term:               d.ctep_disease_term,
             date_of_diagnosis:               d.date_of_diagnosis,
             date_of_diagnosis_original:      d.date_of_diagnosis_original,
@@ -1167,11 +1186,45 @@ indices:
             snomed_disease_code:             d.snomed_disease_code,
             snomed_disease_term:             d.snomed_disease_term,
             UUID:                            d.uuid
-          }) AS diagnosisNodeData
-        UNWIND CASE WHEN size(unique_demo) = 0 THEN [null] ELSE unique_demo END AS dm
-        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec, diagnosisNodeData,
-          COLLECT({
-            participant_ids:                 all_participant_ids,
+          }) AS diagnosisNodeData, diag_participant_list
+
+          UNWIND diagnosisNodeData AS d_node_data
+          WITH study, diagnosisNodeData, diag_participant_list,
+            COLLECT(d_node_data.diagnosis_record_id) AS d_record_ids
+
+          RETURN DISTINCT
+            study.study_short_name AS study_short_name,
+            diagnosisNodeData,
+            size(d_record_ids) AS diagnosisNodeCount,
+            size(diag_participant_list) AS diagnosisParticipantCount
+        page_size: 10
+      - name: "Demographic"
+        query: |
+          MATCH (study:study)
+          WITH DISTINCT study
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study)<-[:belongs_to]-(p_demo:participant)<-[:of_participant]-(demo:demographic)
+          WITH study, COLLECT({node: demo, participant_id: p_demo.participant_id}) AS demo_data
+
+          UNWIND demo_data AS demo_count_item
+          WITH study, demo_data,
+            COLLECT(DISTINCT CASE WHEN demo_count_item.node IS NOT NULL AND demo_count_item.participant_id IS NOT NULL THEN demo_count_item.participant_id ELSE NULL END) AS demo_participant_list
+
+          UNWIND demo_data AS demo_item
+          WITH study, demo_participant_list,
+            COLLECT(DISTINCT demo_item.node) AS unique_demo, demo_data
+
+          UNWIND unique_demo AS dm
+          UNWIND demo_data AS demo_item
+          WITH study, dm, demo_item, demo_participant_list
+          WHERE demo_item.node = dm AND demo_item.participant_id IS NOT NULL
+          WITH study, dm, COLLECT(demo_item.participant_id) AS demo_pids, demo_participant_list
+          WITH study, dm, demo_participant_list,
+            REDUCE(result = '', item IN demo_pids |
+              result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS demo_participant_ids
+
+          WITH study, COLLECT({
+            participant_ids:                 demo_participant_ids,
             age_at_enrollment:               dm.age_at_enrollment,
             age_at_enrollment_original:      dm.age_at_enrollment_original,
             age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
@@ -1198,50 +1251,143 @@ indices:
             occupation:                      dm.occupation,
             income:                          dm.income,
             highest_level_of_education:      dm.highest_level_of_education
-          }) AS demographicNodeData
-        UNWIND CASE WHEN size(unique_exp) = 0 THEN [null] ELSE unique_exp END AS e
-        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
-          diagnosisNodeData, demographicNodeData,
-          COLLECT({
-            participant_ids:      all_participant_ids,
+          }) AS demographicNodeData, demo_participant_list
+
+          UNWIND demographicNodeData AS dm_node_data
+          WITH study, demographicNodeData, demo_participant_list,
+            COLLECT(dm_node_data.demographic_record_id) AS dm_record_ids
+
+          RETURN DISTINCT
+            study.study_short_name AS study_short_name,
+            demographicNodeData,
+            size(dm_record_ids) AS demographicNodeCount,
+            size(demo_participant_list) AS demographicParticipantCount
+        page_size: 10
+      - name: "Exposure"
+        query: |
+          MATCH (study:study)
+          WITH DISTINCT study
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study)<-[:belongs_to]-(p_exp:participant)<-[:of_participant]-(exp:exposure)
+          WITH study, COLLECT({node: exp, participant_id: p_exp.participant_id}) AS exp_data
+
+          UNWIND exp_data AS exp_count_item
+          WITH study, exp_data,
+            COLLECT(DISTINCT CASE WHEN exp_count_item.node IS NOT NULL AND exp_count_item.participant_id IS NOT NULL THEN exp_count_item.participant_id ELSE NULL END) AS exp_participant_list
+
+          UNWIND exp_data AS exp_item
+          WITH study, exp_participant_list,
+            COLLECT(DISTINCT exp_item.node) AS unique_exp, exp_data
+
+          UNWIND unique_exp AS e
+          UNWIND exp_data AS exp_item
+          WITH study, e, exp_item, exp_participant_list
+          WHERE exp_item.node = e AND exp_item.participant_id IS NOT NULL
+          WITH study, e, COLLECT(exp_item.participant_id) AS exp_pids, exp_participant_list
+          WITH study, e, exp_participant_list,
+            REDUCE(result = '', item IN exp_pids |
+              result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS exp_participant_ids
+
+          WITH study, COLLECT({
+            participant_ids:      exp_participant_ids,
             carcinogen_exposure:  e.carcinogen_exposure,
             exposure_record_id:   e.exposure_record_id
-          }) AS exposureNodeData
-        UNWIND CASE WHEN size(unique_spec) = 0 THEN [null] ELSE unique_spec END AS s
-        WITH study, all_participant_ids, unique_diag, unique_demo, unique_exp, unique_spec,
-          diagnosisNodeData, demographicNodeData, exposureNodeData,
-          COLLECT({
-            participant_ids:               all_participant_ids,
-            anatomical_collection_site:    s.anatomical_collection_site,
-            assessment_timepoint:          toString(s.assessment_timepoint),
-            collection_date:               toString(s.collection_date),
-            collection_date_original:      toString(s.collection_date_original),
-            collection_date_original_unit: s.collection_date_original_unit,
-            collection_date_unit:          toString(s.collection_date_unit),
-            crdc_id:                       s.crdc_id,
-            created:                       toString(s.created),
-            specimen_category:             s.specimen_category,
-            specimen_record_id:            s.specimen_record_id,
-            specimen_type_concept_code:    s.specimen_type_concept_code,
-            tissue_category:               s.tissue_category
-          }) AS specimenNodeData
-        RETURN
-          study.study_short_name                AS study_short_name,
-          ['diagnosis','demographic','exposure','specimen'] AS unique_node_types,
-          diagnosisNodeData,
-          size(diagnosisNodeData)               AS diagnosisNodeCount,
-          size(all_participant_ids)             AS diagnosisParticipantCount,
-          demographicNodeData,
-          size(demographicNodeData)             AS demographicNodeCount,
-          size(all_participant_ids)             AS demographicParticipantCount,
-          exposureNodeData,
-          size(exposureNodeData)                AS exposureNodeCount,
-          size(all_participant_ids)             AS exposureParticipantCount,
-          specimenNodeData,
-          size(specimenNodeData)                AS specimenNodeCount,
-          size(all_participant_ids)             AS specimenParticipantCount
-        SKIP $skip LIMIT $limit
-      page_size: 1000
+          }) AS exposureNodeData, exp_participant_list
+
+          UNWIND exposureNodeData AS e_node_data
+          WITH study, exposureNodeData, exp_participant_list,
+            COLLECT(e_node_data.exposure_record_id) AS e_record_ids
+
+          RETURN DISTINCT
+            study.study_short_name AS study_short_name,
+            exposureNodeData,
+            size(e_record_ids) AS exposureNodeCount,
+            size(exp_participant_list) AS exposureParticipantCount
+        page_size: 10
+      - name: "Specimen"
+        query: |
+          MATCH (study:study)
+          WITH DISTINCT study
+          SKIP $skip LIMIT $limit
+          CALL {
+            WITH study
+            OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)<-[:of_participant]-(spec:specimen)
+            WHERE spec IS NOT NULL AND p_spec.participant_id IS NOT NULL
+            RETURN COLLECT(DISTINCT p_spec.participant_id) AS spec_participant_list
+          }
+
+          CALL {
+            WITH study
+            OPTIONAL MATCH (study)<-[:belongs_to]-(p_spec:participant)<-[:of_participant]-(spec:specimen)
+            WHERE spec IS NOT NULL AND p_spec.participant_id IS NOT NULL
+            WITH study, spec, COLLECT(DISTINCT p_spec.participant_id) AS spec_pids
+            WITH study, COLLECT({
+              participant_ids:               REDUCE(result = '', item IN spec_pids |
+                                              result + CASE WHEN result = '' THEN item ELSE '|' + item END),
+              anatomical_collection_site:    spec.anatomical_collection_site,
+              assessment_timepoint:          toString(spec.assessment_timepoint),
+              collection_date:               toString(spec.collection_date),
+              collection_date_original:      toString(spec.collection_date_original),
+              collection_date_original_unit: spec.collection_date_original_unit,
+              collection_date_unit:          toString(spec.collection_date_unit),
+              crdc_id:                       spec.crdc_id,
+              created:                       toString(spec.created),
+              specimen_category:             spec.specimen_category,
+              specimen_record_id:            spec.specimen_record_id,
+              specimen_type_concept_code:    spec.specimen_type_concept_code,
+              tissue_category:               spec.tissue_category
+            }) AS specimenNodeData,
+            COLLECT(DISTINCT spec.specimen_record_id) AS s_record_ids
+            RETURN specimenNodeData, s_record_ids
+          }
+
+          RETURN DISTINCT
+            study.study_short_name AS study_short_name,
+            specimenNodeData,
+            size(s_record_ids) AS specimenNodeCount,
+            size(spec_participant_list) AS specimenParticipantCount
+        page_size: 10
+      - name: "Participant Status"
+        query: |
+          MATCH (study:study)
+          WITH DISTINCT study
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study)<-[:belongs_to]-(p_ps:participant)<-[:of_participant]-(ps:participant_status)
+          WITH study,
+            COLLECT({node: ps, participant_id: p_ps.participant_id}) AS ps_data,
+            COLLECT(DISTINCT CASE WHEN ps IS NOT NULL AND p_ps.participant_id IS NOT NULL THEN p_ps.participant_id ELSE NULL END) AS ps_participant_list
+
+          UNWIND ps_data AS ps_item
+          WITH study, ps_participant_list, ps_item
+          WHERE ps_item.node IS NOT NULL AND ps_item.participant_id IS NOT NULL
+
+          WITH study, ps_participant_list,
+            ps_item.node AS p,
+            COLLECT(ps_item.participant_id) AS ps_pids
+
+          WITH study, ps_participant_list, p,
+            REDUCE(result = '', item IN ps_pids |
+              result + CASE WHEN result = '' THEN item ELSE '|' + item END) AS ps_participant_ids
+
+          WITH study, ps_participant_list,
+            COLLECT({
+              participant_ids:              ps_participant_ids,
+              off_study:                    p.off_study,
+              off_study_reason:             p.off_study_reason,
+              participant_status_record_id: p.participant_status_record_id,
+              survival_status:              p.survival_status
+            }) AS participantStatusNodeData
+
+          UNWIND participantStatusNodeData AS ps_node_data
+          WITH study, participantStatusNodeData, ps_participant_list,
+            COLLECT(ps_node_data.participant_status_record_id) AS ps_record_ids
+
+          RETURN DISTINCT
+            study.study_short_name AS study_short_name,
+            participantStatusNodeData,
+            size(ps_record_ids) AS participantStatusNodeCount,
+            size(ps_participant_list) AS participantStatusParticipantCount
+        page_size: 10
   - index_name: "clinical_trial_data_tab"
     id_field: "study_short_name"
     mapping:
@@ -1532,15 +1678,14 @@ indices:
   - index_name: "about_page"
     type: "about_file"
     # Optional: custom mapping using grouped format (if omitted, default mapping is used)
-    # mapping:
-    #   keyword:
-    #     - page
-    #   search_as_you_type:
-    #     - title
-    #   text:
-    #     - primaryContentImage
-    #   object:
-    #     - content  # Objects are implicit, but can be explicitly declared
+    mapping:
+      keyword:
+        - page
+      search_as_you_type:
+        - title
+      text:
+        - primaryContentImage
+        - content.paragraph
 
   # Model indices examples
   # Requires model_files to be configured in config.yaml
@@ -1549,11 +1694,11 @@ indices:
     type: "model"
     subtype: "node"
     # Optional: custom mapping using grouped format (if omitted, default mapping for 'node' subtype is used)
-    # mapping:
-    #   search_as_you_type:
-    #     - node
-    #   keyword:
-    #     - node_kw
+    mapping:
+      search_as_you_type:
+        - node
+      keyword:
+        - node_kw
 
   - index_name: "model_properties"
     type: "model"

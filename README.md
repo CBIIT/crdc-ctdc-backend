@@ -1,3 +1,4 @@
+[![Coverage Status](https://coveralls.io/repos/github/CBIIT/crdc-ctdc-backend/badge.svg)](https://coveralls.io/github/CBIIT/crdc-ctdc-backend)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/197ca1f70b6a47618332548b6da480c1)](https://www.codacy.com/gh/CBIIT/bento-backend?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=CBIIT/bento-backend&amp;utm_campaign=Badge_Grade)
 # Clinical and Translational Data Commons backend 
 Clinical and Translational Data Commons backend is based on the  Bento Backend Framework.
