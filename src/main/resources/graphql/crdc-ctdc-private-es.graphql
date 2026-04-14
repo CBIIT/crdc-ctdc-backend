@@ -898,12 +898,12 @@ type QueryType {
 
   getInteropData: [Interop]
 
-  clinicalData(
+  clinicalDataTab(
     study_short_name: [String] = []
     study_id: [String] = []
   ): [ClinicalDataTab]
 
-  clinicalTrialData(
+  clinicalTrialDataTab(
     study_short_name: [String] = []
     study_id: [String] = []
   ): [ClinicalTrialDataTab]

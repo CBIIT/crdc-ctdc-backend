@@ -378,7 +378,7 @@ indices:
           OPTIONAL MATCH (spec_acs:specimen)-[:of_participant]->(sb)
           WHERE spec_acs.anatomical_collection_site IS NOT NULL AND spec_acs.anatomical_collection_site <> ''
           WITH sb, study, targeted_therapy, targeted_therapy_id, targeted_therapy_string,
-            COLLECT(DISTINCT toLower(spec_acs.anatomical_collection_site)) AS anatomical_collection_site
+            COLLECT(DISTINCT toLower(trim(COALESCE(spec_acs.anatomical_collection_site, '')))) AS anatomical_collection_site
           
           OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
           WHERE demo.race IS NOT NULL OR demo.sex IS NOT NULL OR demo.ethnicity IS NOT NULL
@@ -597,7 +597,7 @@ indices:
           OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
           OPTIONAL MATCH (sub)<-[*..2]-(df:file)
           WITH sub, spec, study, demo, exp, df,
-              toUpper(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
+              toLower(trim(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
 
           CALL {
             WITH sub
@@ -1678,15 +1678,14 @@ indices:
   - index_name: "about_page"
     type: "about_file"
     # Optional: custom mapping using grouped format (if omitted, default mapping is used)
-    # mapping:
-    #   keyword:
-    #     - page
-    #   search_as_you_type:
-    #     - title
-    #   text:
-    #     - primaryContentImage
-    #   object:
-    #     - content  # Objects are implicit, but can be explicitly declared
+    mapping:
+      keyword:
+        - page
+      search_as_you_type:
+        - title
+      text:
+        - primaryContentImage
+        - content.paragraph
 
   # Model indices examples
   # Requires model_files to be configured in config.yaml
@@ -1695,11 +1694,11 @@ indices:
     type: "model"
     subtype: "node"
     # Optional: custom mapping using grouped format (if omitted, default mapping for 'node' subtype is used)
-    # mapping:
-    #   search_as_you_type:
-    #     - node
-    #   keyword:
-    #     - node_kw
+    mapping:
+      search_as_you_type:
+        - node
+      keyword:
+        - node_kw
 
   - index_name: "model_properties"
     type: "model"
