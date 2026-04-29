@@ -547,6 +547,7 @@ type BiospecimenOverview {
   specimen_type: String
   sex: String
   race: String
+  specimen_category: String
   tumor_grade: String
   targeted_therapy: String
   surgical_procedure: String

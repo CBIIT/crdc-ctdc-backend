@@ -773,9 +773,13 @@ Indices:
             THEN [t IN dedup WHERE t <> 'Not Reported']
           ELSE dedup
         END AS cleaned_tt,
-        best_responses
+        CASE
+          WHEN size(best_responses) > 1 AND size([r IN best_responses WHERE r <> 'Not Reported']) > 0
+            THEN [r IN best_responses WHERE r <> 'Not Reported']
+          ELSE best_responses
+        END AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
-          best_responses AS best_response_to_targeted_therapy,
+          apoc.text.join(apoc.coll.sort(cleaned_responses), '|') AS best_response_to_targeted_therapy,
               apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
