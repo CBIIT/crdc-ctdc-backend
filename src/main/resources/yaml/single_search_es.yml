@@ -51,6 +51,18 @@ queries:
         - study_id
     result:
       type: object_array
+  - name: StudyZipFileQuery
+    index:
+      - study_zip_file
+    filter:
+      type: default
+      caseInsensitive: false
+      ignoreIfEmpty:
+        - study_short_name
+        - study_id
+        - data_file_type
+    result:
+      type: object_array
   - name: getHomePage
     index:
       - home_page
