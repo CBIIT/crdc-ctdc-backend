@@ -238,7 +238,7 @@ Indices:
             type: keyword
     cypher_query: "
       MATCH (s:study)
-      MATCH (s)<-[:associated_with]-(study_file:file)
+      OPTIONAL MATCH (s)<-[:associated_with]-(study_file:file)
       WHERE toLower(coalesce(study_file.data_file_format, '')) = 'zip'
       WITH
         s,
@@ -779,7 +779,7 @@ Indices:
           ELSE best_responses
         END AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
-          apoc.coll.sort(cleaned_responses) AS best_response_to_targeted_therapy,
+          cleaned_responses AS best_response_to_targeted_therapy,
               apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
@@ -918,9 +918,9 @@ Indices:
         properties:
           specimen_record_id:
             type: keyword
-          specimen_category:
-            type: keyword
           anatomical_collection_site:
+            type: keyword
+          specimen_category:
             type: keyword
           specimen_type:
             type: keyword
