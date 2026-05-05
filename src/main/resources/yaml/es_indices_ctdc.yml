@@ -238,7 +238,7 @@ Indices:
             type: keyword
     cypher_query: "
       MATCH (s:study)
-      OPTIONAL MATCH (s)<-[:associated_with]-(study_file:file)
+      MATCH (s)<-[:associated_with]-(study_file:file)
       WHERE toLower(coalesce(study_file.data_file_format, '')) = 'zip'
       WITH
         s,
