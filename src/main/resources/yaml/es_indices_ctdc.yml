@@ -779,7 +779,7 @@ Indices:
           ELSE best_responses
         END AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
-          apoc.text.join(apoc.coll.sort(cleaned_responses), '|') AS best_response_to_targeted_therapy,
+          apoc.coll.sort(cleaned_responses) AS best_response_to_targeted_therapy,
               apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
