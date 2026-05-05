@@ -918,6 +918,8 @@ Indices:
         properties:
           specimen_record_id:
             type: keyword
+          specimen_category:
+            type: keyword
           anatomical_collection_site:
             type: keyword
           specimen_type:
