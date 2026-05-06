@@ -243,10 +243,7 @@ Indices:
       WITH
         s,
         study_file,
-        CASE
-          WHEN study_file.data_file_type IS NULL OR toString(study_file.data_file_type) = '' THEN 'Not Reported'
-          ELSE study_file.data_file_type
-        END AS data_file_type
+        study_file.data_file_type AS data_file_type
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
         s.study_id AS study_id,
@@ -537,8 +534,6 @@ Indices:
             type: keyword
           data_file_format:
             type: keyword
-      participant_id:
-        type: keyword
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
@@ -768,19 +763,9 @@ Indices:
           | apoc.text.capitalizeAll(toLower(toString(r)))
         ] AS responses
         WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
-        WITH CASE
-          WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0
-            THEN [t IN dedup WHERE t <> 'Not Reported']
-          ELSE dedup
-        END AS cleaned_tt,
-        CASE
-          WHEN size(best_responses) > 1 AND size([r IN best_responses WHERE r <> 'Not Reported']) > 0
-            THEN [r IN best_responses WHERE r <> 'Not Reported']
-          ELSE best_responses
-        END AS cleaned_responses
-        RETURN cleaned_tt AS targeted_therapy,
-          cleaned_responses AS best_response_to_targeted_therapy,
-              apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
+        RETURN dedup AS targeted_therapy,
+          best_responses AS best_response_to_targeted_therapy,
+          apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
       }
 
       CALL {
