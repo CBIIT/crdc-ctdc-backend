@@ -744,7 +744,7 @@ type QueryType {
     study_id: [String] = []
   ): [StudyDataFile]
 
-  StudyZipFileQuery(
+  studyZipFileQuery(
     study_short_name: [String] = [],
     study_id: [String] = [],
     data_file_type: [String] = []
@@ -760,7 +760,6 @@ type QueryType {
     study_id: [String] = []
     study_name: [String] = []
     study_type: [String] = []
-    dates_of_conduct: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -771,15 +770,8 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
-    best_response_to_targeted_therapy: [String] = []
     targeted_therapy_string: [String] = []
 
-    surgical_procedure: [String] = []
-    surgical_procedure_anatomical_location: [String] = []
-    surgical_procedure_date: [String] = []
-    surgical_procedure_findings: [String] = []
-    surgical_procedure_id: [String] = []
-    surgical_procedure_therapeutic: [String] = []
     extent_of_residual_disease: [String] = []
 
     anatomical_collection_site: [String] = []

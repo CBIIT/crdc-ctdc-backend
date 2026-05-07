@@ -51,7 +51,7 @@ queries:
         - study_id
     result:
       type: object_array
-  - name: StudyZipFileQuery
+  - name: studyZipFileQuery
     index:
       - study_zip_file
     filter:
