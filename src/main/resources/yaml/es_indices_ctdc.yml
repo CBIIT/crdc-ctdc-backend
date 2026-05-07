@@ -537,8 +537,6 @@ Indices:
             type: keyword
           data_file_format:
             type: keyword
-      participant_id:
-        type: keyword
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
@@ -773,11 +771,7 @@ Indices:
             THEN [t IN dedup WHERE t <> 'Not Reported']
           ELSE dedup
         END AS cleaned_tt,
-        CASE
-          WHEN size(best_responses) > 1 AND size([r IN best_responses WHERE r <> 'Not Reported']) > 0
-            THEN [r IN best_responses WHERE r <> 'Not Reported']
-          ELSE best_responses
-        END AS cleaned_responses
+        best_responses AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
           cleaned_responses AS best_response_to_targeted_therapy,
               apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
