@@ -2,6 +2,14 @@
 ARG ECR_REPO
 FROM maven:3.8.5-openjdk-17 as build
 WORKDIR /usr/src/app
+
+# Copy only git related files first
+COPY .gitmodules .
+COPY .git ./.git
+
+# Initialize and update submodules
+RUN git submodule update --init --recursive
+
 COPY . .
 RUN mvn package -DskipTests
 
