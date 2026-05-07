@@ -548,7 +548,8 @@ Indices:
           WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
             WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items,
             [r IN COLLECT(tt.best_response_to_targeted_therapy)
-          WHERE r IS NOT NULL AND r <> ''
+          WHERE r IS NOT NULL AND toString(r) <> ''
+          | toString(r)
             ] AS responses
           WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items, responses
           WITH apoc.map.groupBy(normalized_items, 'name') AS byName, responses
@@ -561,7 +562,7 @@ Indices:
             names AS targeted_therapy,
             [e IN grouped | e.id] AS targeted_therapy_id,
         apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string,
-        apoc.coll.toSet([r IN responses | apoc.text.capitalizeAll(toLower(toString(r)))]) AS best_response_to_targeted_therapy
+        apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
       }
 
       CALL {
@@ -763,7 +764,7 @@ Indices:
         ] AS ts,
         [r IN COLLECT(tt.best_response_to_targeted_therapy)
           WHERE r IS NOT NULL AND toString(r) <> ''
-          | apoc.text.capitalizeAll(toLower(toString(r)))
+          | toString(r)
         ] AS responses
         WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
         WITH CASE
