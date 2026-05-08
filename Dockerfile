@@ -2,6 +2,14 @@
 ARG ECR_REPO
 FROM maven:3.8.5-openjdk-17 as build
 WORKDIR /usr/src/app
+
+# Copy only git related files first
+COPY .gitmodules .
+COPY .git ./.git
+
+# Initialize and update submodules
+RUN git submodule update --init --recursive
+
 COPY . .
 RUN mvn package -DskipTests
 
@@ -13,7 +21,7 @@ RUN mvn package -DskipTests
 # RUN rm -rf /usr/local/tomcat/webapps.dist
 # RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-FROM tomcat:10.1.17-jdk17 AS fnl_base_image
+FROM tomcat:10.1.54-jdk17 AS fnl_base_image
 
 RUN apt-get update && apt-get -y upgrade
 
