@@ -204,8 +204,71 @@ Indices:
          COLLECT(DISTINCT df.data_file_type) as list_type
       "
   # Name of the index to be created, existing index with same name will be deleted
+  - index_name: study_zip_file
+    type: neo4j
+    mapping:
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      data_file_type:
+        type: keyword
+      zip_files:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_name:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_description:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_size:
+            type: double
+          data_file_checksum_value:
+            type: keyword
+          data_file_checksum_type:
+            type: keyword
+          data_file_compression_status:
+            type: keyword
+          data_file_location:
+            type: keyword
+    cypher_query: "
+      MATCH (s:study)
+      OPTIONAL MATCH (s)<-[:associated_with]-(study_file:file)
+      WHERE toLower(coalesce(study_file.data_file_format, '')) = 'zip'
+      WITH
+        s,
+        study_file,
+        CASE
+          WHEN study_file.data_file_type IS NULL OR toString(study_file.data_file_type) = '' THEN 'Not Reported'
+          ELSE study_file.data_file_type
+        END AS data_file_type
+      RETURN DISTINCT
+        s.study_short_name AS study_short_name,
+        s.study_id AS study_id,
+        data_file_type AS data_file_type,
+        COLLECT(DISTINCT {
+          data_file_uuid: study_file.data_file_uuid,
+          data_file_name: study_file.data_file_name,
+          data_file_type: study_file.data_file_type,
+          data_file_description: study_file.data_file_description,
+          data_file_format: study_file.data_file_format,
+          data_file_size: study_file.data_file_size,
+          data_file_checksum_value: study_file.data_file_checksum_value,
+          data_file_checksum_type: study_file.data_file_checksum_type,
+          data_file_compression_status: study_file.data_file_compression_status,
+          data_file_location: study_file.data_file_location
+        }) AS zip_files
+      ORDER BY study_short_name, data_file_type
+      "
+
   - index_name: study_specimen
     type: neo4j
+
     # type mapping for each property of the index
     mapping:
       study_short_name:
@@ -436,6 +499,8 @@ Indices:
         type: keyword
       targeted_therapy_string:
         type: keyword
+      best_response_to_targeted_therapy:
+        type: keyword
       anatomical_collection_site:
         type: keyword
       tissue_category:
@@ -472,8 +537,6 @@ Indices:
             type: keyword
           data_file_format:
             type: keyword
-      participant_id:
-        type: keyword
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
@@ -483,17 +546,23 @@ Indices:
           WITH sb
           OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
           WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
-                WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items
-          WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items
-          WITH apoc.map.groupBy(normalized_items, 'name') AS byName
+            WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items,
+            [r IN COLLECT(tt.best_response_to_targeted_therapy)
+          WHERE r IS NOT NULL AND toString(r) <> ''
+          | toString(r)
+            ] AS responses
+          WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items, responses
+          WITH apoc.map.groupBy(normalized_items, 'name') AS byName, responses
           WITH [k IN keys(byName) |
-                {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped
+            {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses
           WITH grouped,
-                [e IN grouped | apoc.text.capitalizeAll(e.name)] AS names
+            [e IN grouped | apoc.text.capitalizeAll(e.name)] AS names,
+            responses
           RETURN
             names AS targeted_therapy,
             [e IN grouped | e.id] AS targeted_therapy_id,
-            apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string
+        apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string,
+        apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
       }
 
       CALL {
@@ -540,6 +609,7 @@ Indices:
       targeted_therapy,
       targeted_therapy_id,
       targeted_therapy_string,
+      best_response_to_targeted_therapy,
       anatomical_collection_site,
       COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
@@ -603,6 +673,8 @@ Indices:
       targeted_therapy:
         type: keyword
       targeted_therapy_string:
+        type: keyword
+      best_response_to_targeted_therapy:
         type: keyword
       data_files:
         type: nested
@@ -689,14 +761,20 @@ Indices:
         WITH [t IN COLLECT(tt.targeted_therapy)
               WHERE t IS NOT NULL AND toString(t) <> ''
               | apoc.text.capitalizeAll(toLower(toString(t)))
-        ] AS ts
-        WITH apoc.coll.toSet(ts) AS dedup
+        ] AS ts,
+        [r IN COLLECT(tt.best_response_to_targeted_therapy)
+          WHERE r IS NOT NULL AND toString(r) <> ''
+          | toString(r)
+        ] AS responses
+        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
         WITH CASE
           WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0
             THEN [t IN dedup WHERE t <> 'Not Reported']
           ELSE dedup
-        END AS cleaned_tt
+        END AS cleaned_tt,
+        best_responses AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
+          cleaned_responses AS best_response_to_targeted_therapy,
               apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
       }
 
@@ -749,6 +827,7 @@ Indices:
         COLLECT(DISTINCT df.data_file_format)            AS data_file_format,
 
         targeted_therapy,
+        best_response_to_targeted_therapy,
         targeted_therapy_string,
 
 
@@ -798,6 +877,8 @@ Indices:
         type: keyword
       specimen_type:
         type: keyword
+      specimen_category:
+        type: keyword
       anatomical_collection_site:
         type: keyword
       tissue_category:
@@ -833,6 +914,8 @@ Indices:
           specimen_record_id:
             type: keyword
           anatomical_collection_site:
+            type: keyword
+          specimen_category:
             type: keyword
           specimen_type:
             type: keyword
@@ -906,6 +989,7 @@ Indices:
       primary_diagnosis_disease_group,
       spec.specimen_record_id AS specimen_record_id,
       spec.specimen_type AS specimen_type,
+      spec.specimen_category AS specimen_category,
       acs_norm AS anatomical_collection_site,
       spec.tissue_category AS tissue_category,
       spec.assessment_timepoint AS assessment_timepoint,
@@ -924,6 +1008,7 @@ Indices:
       }) AS data_files,
       COLLECT(DISTINCT {
       specimen_record_id: spec.specimen_record_id,
+      specimen_category: spec.specimen_category,
       anatomical_collection_site: acs_norm,
       specimen_type: spec.specimen_type,
       tissue_category: spec.tissue_category,
@@ -1322,6 +1407,8 @@ Indices:
         type: keyword
       targeted_therapy_string:
         type: keyword
+      best_response_to_targeted_therapy:
+        type: keyword
       anatomical_collection_site:
         type: keyword
       tissue_category:
@@ -1392,6 +1479,7 @@ Indices:
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
       COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
       COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
+      COLLECT(DISTINCT target.best_response_to_targeted_therapy) as best_response_to_targeted_therapy,
       array as targeted_therapy_string,
       COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
       COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
