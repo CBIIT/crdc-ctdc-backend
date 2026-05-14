@@ -203,6 +203,84 @@ Indices:
                 }) AS data_files,
          COLLECT(DISTINCT df.data_file_type) as list_type
       "
+
+  - index_name: study_data_file_assoc
+    type: neo4j
+    mapping:
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      study_data_files:
+        type: nested
+        properties: {}
+      data_files:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_name:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_description:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_size:
+            type: double
+          data_file_checksum_value:
+            type: keyword
+          data_file_checksum_type:
+            type: keyword
+          data_file_compression_status:
+            type: keyword
+          data_file_location:
+            type: keyword
+          association:
+            type: keyword
+      list_type:
+        type: keyword
+
+    cypher_query: "
+      MATCH (s:study)<-[:belongs_to]-(sb:participant)
+      OPTIONAL MATCH (sb)<-[*..2]-(df:file)
+
+      OPTIONAL MATCH (sb)<-[p_rel:associated_with]-(df)
+      OPTIONAL MATCH (df)-[b_rel:associated_with]->(:specimen)-[:of_participant]->(sb)
+
+      WITH s, sb, df, p_rel, b_rel
+      WITH s, sb, df,
+      [a IN [
+      CASE WHEN p_rel IS NOT NULL THEN 'participant' END,
+      CASE WHEN b_rel IS NOT NULL THEN 'biospecimen' END
+      ] WHERE a IS NOT NULL] AS associations
+
+      RETURN DISTINCT
+      s.study_short_name AS study_short_name,
+      s.study_id AS study_id,
+      [] AS study_data_files,
+      [x IN COLLECT(DISTINCT
+      CASE
+      WHEN df IS NULL THEN NULL
+      ELSE {
+      data_file_uuid: df.data_file_uuid,
+      data_file_name: df.data_file_name,
+      data_file_type: df.data_file_type,
+      data_file_description: df.data_file_description,
+      data_file_format: df.data_file_format,
+      data_file_size: df.data_file_size,
+      data_file_checksum_value: df.data_file_checksum_value,
+      data_file_checksum_type: df.data_file_checksum_type,
+      data_file_compression_status: df.data_file_compression_status,
+      data_file_location: df.data_file_location,
+      association: associations
+      }
+      END
+      ) WHERE x IS NOT NULL] AS data_files,
+      [t IN COLLECT(DISTINCT df.data_file_type) WHERE t IS NOT NULL] AS list_type
+      "
+
   # Name of the index to be created, existing index with same name will be deleted
   - index_name: study_zip_file
     type: neo4j
