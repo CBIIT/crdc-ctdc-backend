@@ -270,6 +270,28 @@ type StudyDataFile {
   data_files: [DataFile]
 }
 
+type StudyFileTabInfo {
+  data_file_name: String
+  data_file_uuid: String
+  data_file_format: String
+  data_file_type: String
+  data_file_size: Float
+  description: String
+  study_accession: String
+  assoication: String
+}
+
+type StudyFileTab {
+  type: String
+  study_short_name: String
+  study_id: String
+  study_accession: String
+  study_data_file_count: Int
+  data_file_type: [String]
+  data_file_format: [String]
+  file_info: [StudyFileTabInfo]
+}
+
 type StudyZipFile {
   study_short_name: String
   study_id: String
@@ -640,6 +662,8 @@ type SearchResult {
   participantCountByAssessmentTimepoint: [GroupCount]
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
+  studyFileTabCountByDataFileType: [GroupCount]
+  studyFileTabCountByDataFileFormat: [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
   
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
@@ -660,6 +684,8 @@ type SearchResult {
   filterParticipantCountByStageOfDisease: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
+  filterStudyFileTabCountByDataFileType: [GroupCount]
+  filterStudyFileTabCountByDataFileFormat: [GroupCount]
 }
 
 type ArmInfo {
@@ -743,6 +769,13 @@ type QueryType {
     study_short_name: [String] = [],
     study_id: [String] = []
   ): [StudyDataFile]
+
+  StudyFileTabByStudyShortName(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    data_file_type: [String] = [],
+    data_file_format: [String] = []
+  ): [StudyFileTab]
 
   studyZipFileQuery(
     study_short_name: [String] = [],

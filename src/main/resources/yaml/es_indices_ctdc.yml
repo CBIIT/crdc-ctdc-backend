@@ -1355,6 +1355,67 @@ Indices:
         spec.tissue_category                        AS tissue_category,
         spec.assessment_timepoint                   AS assessment_timepoint
       "
+  
+  # File Table Data for Study-Associated Files
+  - index_name: study_file_tab
+    type: neo4j
+    # type mapping for each property of the index
+    mapping:
+      type:
+        type: keyword
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      study_accession:
+        type: keyword
+      study_data_file_count:
+        type: long
+      data_file_type:
+        type: keyword
+      data_file_format:
+        type: keyword
+      file_info:
+        type: nested
+        properties:
+          data_file_name:
+            type: keyword
+          data_file_uuid:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_size:
+            type: double
+          description:
+            type: keyword
+          study_accession:
+            type: keyword
+          assoication:
+            type: keyword
+    cypher_query: "
+      MATCH (study:study)-[:associated_with]-(f:file)
+      RETURN
+        'data file' AS type,
+        study.study_short_name AS study_short_name,
+        study.study_id AS study_id,
+        study.study_accession AS study_accession,
+        count(f.data_file_uuid) AS study_data_file_count,
+        collect(DISTINCT f.data_file_type) AS data_file_type,
+        collect(DISTINCT f.data_file_format) AS data_file_format,
+        collect({
+          data_file_name: f.data_file_name,
+          data_file_uuid: f.data_file_uuid,
+          data_file_format: f.data_file_format,
+          data_file_type: f.data_file_type,
+          data_file_size: f.data_file_size,
+          description: f.data_file_description,
+          study_accession: study.study_accession,
+          assoication: 'study'
+        }) AS file_info
+      "
+    
     #lists for GS hashmap
   - index_name: gs_list
     type: neo4j

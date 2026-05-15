@@ -467,3 +467,53 @@ queries:
             - data_file_type
         result:
           type: nested_list
+      - name: studyFileTabCountByDataFileType
+        index:
+          - study_file_tab
+        filter:
+          type: nested
+          selectedField: data_file_type
+          nestedPath: file_info
+          nestedParameters:
+            - data_file_format
+            - data_file_type
+        result:
+          type: nested_list
+      - name: filterStudyFileTabCountByDataFileType
+        index:
+          - study_file_tab
+        filter:
+          type: nested
+          ignoreSelectedField: true
+          selectedField: data_file_type
+          nestedPath: file_info
+          nestedParameters:
+            - data_file_format
+            - data_file_type
+        result:
+          type: nested_list
+      - name: studyFileTabCountByDataFileFormat
+        index:
+          - study_file_tab
+        filter:
+          type: nested
+          selectedField: data_file_format
+          nestedPath: file_info
+          nestedParameters:
+            - data_file_format
+            - data_file_type
+        result:
+          type: nested_list
+      - name: filterStudyFileTabCountByDataFileFormat
+        index:
+          - study_file_tab
+        filter:
+          type: nested
+          ignoreSelectedField: true
+          selectedField: data_file_format
+          nestedPath: file_info
+          nestedParameters:
+            - data_file_format
+            - data_file_type
+        result:
+          type: nested_list
