@@ -63,7 +63,7 @@ queries:
         - data_file_type
         - data_file_format
     result:
-      type: object_array
+        type: object_array
   - name: studyZipFileQuery
     index:
       - study_zip_file

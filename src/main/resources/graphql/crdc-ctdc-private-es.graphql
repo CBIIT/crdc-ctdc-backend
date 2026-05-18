@@ -289,7 +289,18 @@ type StudyFileTab {
   study_data_file_count: Int
   data_file_type: [String]
   data_file_format: [String]
-  file_info: [StudyFileTabInfo]
+  file_info: [StudyFileTabFileInfo]
+}
+
+type StudyFileTabFileInfo {
+  data_file_name: String
+  data_file_uuid: String
+  data_file_format: String
+  data_file_type: String
+  data_file_size: Float
+  description: String
+  study_accession: String
+  assoication: String
 }
 
 type StudyZipFile {

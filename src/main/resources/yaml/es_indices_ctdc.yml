@@ -1396,6 +1396,7 @@ Indices:
             type: keyword
     cypher_query: "
       MATCH (study:study)-[:associated_with]-(f:file)
+      WHERE size((f)--()) = 1
       RETURN
         'data file' AS type,
         study.study_short_name AS study_short_name,
