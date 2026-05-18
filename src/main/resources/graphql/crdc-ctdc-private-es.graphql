@@ -744,6 +744,11 @@ type QueryType {
     study_id: [String] = []
   ): [StudyDataFile]
 
+  study_data_file_assoc(
+    study_short_name: [String] = [],
+    study_id: [String] = []
+  ): [StudyDataFile]
+
   studyZipFileQuery(
     study_short_name: [String] = [],
     study_id: [String] = [],
