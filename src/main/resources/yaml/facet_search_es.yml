@@ -89,6 +89,15 @@ queries:
         result:
           type: int
           method: count_bucket_keys
+      - name: numberOfStudyFiles
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          selectedField: data_file_uuid
+        result:
+          type: int
+          method: count_bucket_keys
       - name: participantCountByCtepDiseaseTerm
         index:
           - widgets_facets_counts
