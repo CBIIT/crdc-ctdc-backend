@@ -263,11 +263,31 @@ type DataFile {
   data_file_location: String
 }
 
+type AssocDataFile {
+  data_file_uuid: String
+  data_file_name: String
+  data_file_type: String
+  data_file_description: String
+  data_file_format: String
+  data_file_size: Float
+  data_file_checksum_value: String
+  data_file_checksum_type: String
+  data_file_compression_status: String
+  data_file_location: String
+  association: String
+}
+
 type StudyDataFile {
   study_short_name: String
   list_type: [String]
   study_data_files: [DataFile]
   data_files: [DataFile]
+}
+
+type StudyDataFileAssoc {
+  study_short_name: String
+  list_type: [String]
+  data_files: [AssocDataFile]
 }
 
 type StudyZipFile {
@@ -747,7 +767,7 @@ type QueryType {
   study_data_file_assoc(
     study_short_name: [String] = [],
     study_id: [String] = []
-  ): [StudyDataFile]
+  ): [StudyDataFileAssoc]
 
   studyZipFileQuery(
     study_short_name: [String] = [],
