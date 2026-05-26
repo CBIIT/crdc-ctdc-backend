@@ -211,9 +211,6 @@ Indices:
         type: keyword
       study_id:
         type: keyword
-      study_data_files:
-        type: nested
-        properties: {}
       data_files:
         type: nested
         properties:
