@@ -274,7 +274,7 @@ type AssocDataFile {
   data_file_checksum_type: String
   data_file_compression_status: String
   data_file_location: String
-  association: String
+  association: [String]
 }
 
 type StudyDataFile {
