@@ -82,6 +82,7 @@ public class StudyFileTabGraphQLTest {
         ResponseEntity<String> response = controller.getPrivateGraphQLResponse(httpEntity);
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertTrue(response.getBody().contains("disabled"));
         verify(graphQL, never()).execute(any(ExecutionInput.class));
     }
