@@ -284,7 +284,7 @@ type StudyDataFile {
   data_files: [DataFile]
 }
 
-type StudyDataFileAssoc {
+type ParticipantAndBiospecimenFilesByStudyId {
   study_short_name: String
   list_type: [String]
   data_files: [AssocDataFile]
@@ -764,10 +764,10 @@ type QueryType {
     study_id: [String] = []
   ): [StudyDataFile]
 
-  study_data_file_assoc(
+  participantAndBiospecimenFilesByStudyId(
     study_short_name: [String] = [],
     study_id: [String] = []
-  ): [StudyDataFileAssoc]
+  ): [ParticipantAndBiospecimenFilesByStudyId]
 
   studyZipFileQuery(
     study_short_name: [String] = [],
