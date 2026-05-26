@@ -145,6 +145,7 @@
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
             <version>${tomcat.version}</version>
+            <scope>provided</scope>
         </dependency>
         <!-- JUnit -->
         <dependency>
