@@ -288,6 +288,7 @@ type ParticipantAndBiospecimenFilesByStudyId {
   study_short_name: String
   list_type: [String]
   data_files: [AssocDataFile]
+}
 type StudyFileTabInfo {
   type: String
   study_short_name: String
@@ -827,6 +828,8 @@ type QueryType {
     study_short_name: [String] = [],
     study_id: [String] = []
   ): [ParticipantAndBiospecimenFilesByStudyId]
+
+  
   StudyFileTabByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = [],
