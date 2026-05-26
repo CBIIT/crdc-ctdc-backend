@@ -311,17 +311,6 @@ type StudyFileTabInfo {
   file_info: [StudyFileTabFileInfo]
 }
 
-type StudyFileTab {
-  type: String
-  study_short_name: String
-  study_id: String
-  study_accession: String
-  study_data_file_count: Int
-  data_file_type: [String]
-  data_file_format: [String]
-  file_info: [StudyFileTabFileInfo]
-}
-
 type StudyFileTabFileInfo {
   data_file_uuid: String
   data_file_format: String
