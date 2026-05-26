@@ -89,6 +89,15 @@ queries:
         result:
           type: int
           method: count_bucket_keys
+      - name: numberOfStudyFiles
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          selectedField: data_file_uuid
+        result:
+          type: int
+          method: count_bucket_keys
       - name: participantCountByCtepDiseaseTerm
         index:
           - widgets_facets_counts
@@ -467,3 +476,37 @@ queries:
             - data_file_type
         result:
           type: nested_list
+      - name: studyFileTabCountByDataFileType
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          selectedField: data_file_type
+        result:
+          type: group_count
+      - name: filterStudyFileTabCountByDataFileType
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          ignoreSelectedField: true
+          selectedField: data_file_type
+        result:
+          type: group_count
+      - name: studyFileTabCountByDataFileFormat
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          selectedField: data_file_format
+        result:
+          type: group_count
+      - name: filterStudyFileTabCountByDataFileFormat
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          ignoreSelectedField: true
+          selectedField: data_file_format
+        result:
+          type: group_count
