@@ -764,7 +764,7 @@ type QueryType {
     study_id: [String] = []
   ): [StudyDataFile]
 
-  study_data_file_assoc(
+  StudyDataFileAssocByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = []
   ): [StudyDataFileAssoc]

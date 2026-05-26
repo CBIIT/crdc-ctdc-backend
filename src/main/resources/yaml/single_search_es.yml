@@ -51,7 +51,7 @@ queries:
         - study_id
     result:
       type: object_array
-  - name: study_data_file_assoc
+  - name: StudyDataFileAssocByStudyShortName
     index:
       - study_data_file_assoc
     filter:
