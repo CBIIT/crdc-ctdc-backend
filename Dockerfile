@@ -22,7 +22,7 @@ RUN mvn package -DskipTests
 # RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
 FROM tomcat:10.1.55-jdk21-temurin AS fnl_base_image
-ENV JAVA_OPTS="-Xmx4096m"
+ENV JAVA_OPTS="-XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0"
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends unzip \
