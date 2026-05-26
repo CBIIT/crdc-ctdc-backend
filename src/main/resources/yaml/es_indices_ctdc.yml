@@ -256,7 +256,6 @@ Indices:
       RETURN DISTINCT
       s.study_short_name AS study_short_name,
       s.study_id AS study_id,
-      [] AS study_data_files,
       [x IN COLLECT(DISTINCT
       CASE
       WHEN df IS NULL THEN NULL
