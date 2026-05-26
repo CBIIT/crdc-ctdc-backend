@@ -24,8 +24,8 @@ RUN mvn package -DskipTests
 FROM tomcat:10.1.55-jdk21-temurin AS fnl_base_image
 ENV JAVA_OPTS="-Xmx4096m"
 
-RUN apt-get update && apt-get -y upgrade \
-	&& apt-get install -y unzip \
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends unzip \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& rm -rf /usr/local/tomcat/webapps.dist \
 	&& rm -rf /usr/local/tomcat/webapps/ROOT
