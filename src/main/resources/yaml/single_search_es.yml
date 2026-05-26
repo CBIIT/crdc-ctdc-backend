@@ -54,12 +54,17 @@ queries:
   - name: participantAndBiospecimenFilesByStudyId
     index:
       - study_data_file_assoc
+  - name: StudyFileTabByStudyShortName
+    index:
+      - study_file_tab
     filter:
       type: default
       caseInsensitive: false
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - data_file_type
+        - data_file_format
     result:
       type: object_array
   - name: studyZipFileQuery
