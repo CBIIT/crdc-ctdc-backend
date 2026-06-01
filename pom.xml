@@ -31,7 +31,7 @@
         <spring-framework.version>6.2.18</spring-framework.version>
         <spring.restdocs.version>3.0.1</spring.restdocs.version>
 	    <snakeyaml.version>2.0</snakeyaml.version>
-        <netty.version>4.1.133.Final</netty.version>
+        <netty.version>4.2.14.Final</netty.version>
     </properties>
 
     <dependencies>
@@ -317,7 +317,7 @@
                 <artifactId>commons-logging</artifactId>
                 <version>1.2</version>
             </dependency>
-            <!-- Force Netty 4.1.133.Final to remediate CVE-2026-42583 -->
+            <!-- Force Netty 4.2.14.Final to remediate CVE-2026-42582/CVE-2026-42583 -->
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
