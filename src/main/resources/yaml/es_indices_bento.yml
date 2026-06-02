@@ -191,30 +191,48 @@ indices:
         - specimen_count
     initial_query:
       query: |
-        MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
-        WITH COUNT(sp) AS specimen_count
-        MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
-        WITH DISTINCT sp.specimen_type AS specimen_type, COUNT(sp) AS count1, specimen_count
-        MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
-        WITH DISTINCT sp.assessment_timepoint AS assessment_timepoint, COUNT(sp) AS count2, specimen_type, count1, specimen_count
-        MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
-        WITH specimen_count, specimen_type, count1, assessment_timepoint, count2, s, sp
-        SKIP $skip LIMIT $limit
-        RETURN DISTINCT
+        MATCH (s:study)
+
+        CALL {
+          WITH s
+          MATCH (s)<-[:belongs_to]-(:participant)<-[:of_participant]-(sp:specimen)
+          RETURN
+            COUNT(sp) AS specimen_count,
+            COLLECT(DISTINCT {
+              specimen_record_id: sp.specimen_record_id,
+              specimen_type: sp.specimen_type,
+              specimen_category: sp.specimen_category,
+              anatomical_collection_site: toLower(trim(COALESCE(sp.anatomical_collection_site, ''))),
+              tissue_category: sp.tissue_category,
+              assessment_timepoint: sp.assessment_timepoint,
+              collection_date: toString(COALESCE(sp.collection_date, ''))
+            }) AS specimen
+        }
+
+        CALL {
+          WITH s
+          MATCH (s)<-[:belongs_to]-(:participant)<-[:of_participant]-(sp:specimen)
+          WITH toLower(trim(COALESCE(sp.specimen_type, ''))) AS specimen_type, COUNT(sp) AS count1
+          WHERE specimen_type <> ''
+          RETURN COLLECT({ group: specimen_type, count: toString(count1) }) AS specimen_types
+        }
+
+        CALL {
+          WITH s
+          MATCH (s)<-[:belongs_to]-(:participant)<-[:of_participant]-(sp:specimen)
+          WITH toLower(trim(COALESCE(sp.assessment_timepoint, ''))) AS assessment_timepoint, COUNT(sp) AS count2
+          WHERE assessment_timepoint <> ''
+          RETURN COLLECT({ group: assessment_timepoint, count: toString(count2) }) AS specimen_timepoints
+        }
+
+        RETURN
           s.study_short_name AS study_short_name,
-          COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
-          COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
-          COLLECT(DISTINCT{
-            specimen_record_id: sp.specimen_record_id,
-            specimen_type: sp.specimen_type,
-            specimen_category: sp.specimen_category,
-            anatomical_collection_site: sp.anatomical_collection_site,
-            tissue_category: sp.tissue_category,
-            assessment_timepoint: sp.assessment_timepoint,
-            collection_date: toFloat(sp.collection_date)
-          }) as specimen,
+          specimen_timepoints,
+          specimen_types,
+          specimen,
           specimen_count
-          SKIP $skip LIMIT $limit
+        SKIP $skip LIMIT $limit
+
       page_size: 1000
   - index_name: "study_diagnosis"
     id_field: "study_short_name"
@@ -378,7 +396,7 @@ indices:
           OPTIONAL MATCH (spec_acs:specimen)-[:of_participant]->(sb)
           WHERE spec_acs.anatomical_collection_site IS NOT NULL AND spec_acs.anatomical_collection_site <> ''
           WITH sb, study, targeted_therapy, targeted_therapy_id, targeted_therapy_string,
-            COLLECT(DISTINCT toLower(spec_acs.anatomical_collection_site)) AS anatomical_collection_site
+                        COLLECT(DISTINCT toLower(trim(COALESCE(spec_acs.anatomical_collection_site, '')))) AS anatomical_collection_site
           
           OPTIONAL MATCH (demo:demographic)-[:of_participant]->(sb)
           WHERE demo.race IS NOT NULL OR demo.sex IS NOT NULL OR demo.ethnicity IS NOT NULL
@@ -423,7 +441,7 @@ indices:
           COLLECT(DISTINCT file.data_file_format) AS data_file_format,
           COLLECT(DISTINCT{
             specimen_record_id: spec.specimen_record_id,
-            anatomical_collection_site: spec.anatomical_collection_site,
+            anatomical_collection_site: toLower(trim(COALESCE(spec.anatomical_collection_site, ''))),
             tissue_category: spec.tissue_category,
             assessment_timepoint: spec.assessment_timepoint
           }) AS biospecimen_info,
@@ -485,7 +503,7 @@ indices:
     initial_query:
       query: |
               MATCH (study:study)<-[:belongs_to]-(sb:participant)
-              OPTIONAL MATCH (sb:participant)<-[*..2]-(df:file)
+              OPTIONAL MATCH (sb)<-[*..2]-(df:file)
               OPTIONAL MATCH (sb)<-[:of_participant]-(diag:diagnosis)
               OPTIONAL MATCH (sb)<-[:of_participant]-(spec:specimen)
               OPTIONAL MATCH (sb)<-[:of_participant]-(demo:demographic)
@@ -535,7 +553,7 @@ indices:
               COLLECT(DISTINCT surgery.surgical_procedure_therapeutic) AS surgical_procedure_therapeutic,
               COLLECT(DISTINCT surgery.extent_of_residual_disease) AS extent_of_residual_disease,
               COLLECT(DISTINCT spec.specimen_record_id) AS specimen_record_id,
-              COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+              COLLECT(DISTINCT toLower(trim(COALESCE(spec.anatomical_collection_site, '')))) AS anatomical_collection_site,
               COLLECT(DISTINCT spec.specimen_type) AS specimen_type,
               COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
               COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
@@ -597,7 +615,7 @@ indices:
           OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
           OPTIONAL MATCH (sub)<-[*..2]-(df:file)
           WITH sub, spec, study, demo, exp, df,
-              toUpper(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
+                  toLower(trim(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
 
           CALL {
             WITH sub
@@ -715,7 +733,7 @@ indices:
         - ethnicity
         - carcinogen_exposure
         - targeted_therapy
-        # - targeted_therapy_string
+        - targeted_therapy_string
         - biospecimen_info.specimen_record_id
         - biospecimen_info.anatomical_collection_site
         - biospecimen_info.specimen_type
@@ -793,7 +811,7 @@ indices:
           specs[0] AS first_spec,
           COLLECT({
             specimen_record_id:         spec.specimen_record_id,
-            anatomical_collection_site: spec.anatomical_collection_site,
+            anatomical_collection_site: toLower(trim(COALESCE(spec.anatomical_collection_site, ''))),
             specimen_type:              spec.specimen_type,
             tissue_category:            spec.tissue_category,
             assessment_timepoint:       spec.assessment_timepoint
@@ -802,7 +820,7 @@ indices:
           'data file'                                        AS type,
           study_short_names[0]                               AS study_short_name,
           study_accession_ids[0]                             AS study_accession_id,
-          first_spec.anatomical_collection_site              AS anatomical_collection_site,
+          toLower(trim(COALESCE(first_spec.anatomical_collection_site, ''))) AS anatomical_collection_site,
           first_spec.specimen_type                           AS specimen_type,
           first_spec.tissue_category                        AS tissue_category,
           first_spec.assessment_timepoint                   AS assessment_timepoint,
@@ -1035,7 +1053,7 @@ indices:
         COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
         COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
         array as targeted_therapy_string,
-        COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+        COLLECT(DISTINCT toLower(trim(COALESCE(spec.anatomical_collection_site, '')))) AS anatomical_collection_site,
         COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
         COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
         COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
@@ -1678,15 +1696,14 @@ indices:
   - index_name: "about_page"
     type: "about_file"
     # Optional: custom mapping using grouped format (if omitted, default mapping is used)
-    # mapping:
-    #   keyword:
-    #     - page
-    #   search_as_you_type:
-    #     - title
-    #   text:
-    #     - primaryContentImage
-    #   object:
-    #     - content  # Objects are implicit, but can be explicitly declared
+    mapping:
+      keyword:
+        - page
+      search_as_you_type:
+        - title
+      text:
+        - primaryContentImage
+        - content.paragraph
 
   # Model indices examples
   # Requires model_files to be configured in config.yaml
@@ -1695,11 +1712,11 @@ indices:
     type: "model"
     subtype: "node"
     # Optional: custom mapping using grouped format (if omitted, default mapping for 'node' subtype is used)
-    # mapping:
-    #   search_as_you_type:
-    #     - node
-    #   keyword:
-    #     - node_kw
+    mapping:
+      search_as_you_type:
+        - node
+      keyword:
+        - node_kw
 
   - index_name: "model_properties"
     type: "model"
