@@ -926,6 +926,7 @@ type QueryType {
     specimen_type: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
+    association: [String] = [] 
     specimen_record_id: [String] = []
     specimen_id: [String] = []
 

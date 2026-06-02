@@ -1192,6 +1192,9 @@ Indices:
         UNION
         MATCH (sub:participant)<-[:associated_with]-(f:file)
         RETURN f.data_file_uuid AS uuid, 'participant' AS association
+        UNION
+        MATCH (f:file)-[:associated_with]-(:study)
+        RETURN f.data_file_uuid AS uuid, 'study' AS association
 
       }
       WITH uuid, COLLECT(DISTINCT association) AS associations
@@ -1200,18 +1203,26 @@ Indices:
 
       OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
        OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+      OPTIONAL MATCH (f)-[:associated_with]->(study_direct:study)
       WITH
         f,
         associations,
+        COLLECT(DISTINCT study_direct)                                                AS direct_studies,
         apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS subs,
         apoc.coll.toSet([x IN COLLECT(spec1) WHERE x IS NOT NULL])                  AS specs
 
       OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
       WHERE sPart IN subs
       WITH
-        f, associations, subs, specs,
-        COLLECT(DISTINCT study.study_short_name)              AS study_short_names,
-        COllect(distinct study.study_accession)           AS study_accessions
+        f, associations, subs, specs, direct_studies,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT study.study_short_name) +
+          [s IN direct_studies | s.study_short_name]
+        )                                                     AS study_short_names,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT study.study_accession) +
+          [s IN direct_studies | s.study_accession]
+        )                                                     AS study_accessions
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
       WHERE dPart IN subs
