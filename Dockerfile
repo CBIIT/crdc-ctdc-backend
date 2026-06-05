@@ -25,6 +25,7 @@ FROM tomcat:10.1.55-jdk21-temurin AS fnl_base_image
 ENV JAVA_OPTS="-XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0"
 
 RUN apt-get update \
+	&& DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
 	&& apt-get install -y --no-install-recommends unzip \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& rm -rf /usr/local/tomcat/webapps.dist \
