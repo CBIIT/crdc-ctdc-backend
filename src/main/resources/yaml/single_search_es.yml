@@ -110,8 +110,6 @@ queries:
     filter:
       type: pagination
       defaultSortField: data_file_name
-      ignoreIfEmpty:
-        - association
       alternativeSortField:
         specimen_record_id: specimen_record_id
         participant_id: participant_id

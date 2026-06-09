@@ -1132,9 +1132,9 @@ Indices:
 
       MATCH (f:file {data_file_uuid: uuid})
 
-      OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
-       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
-      OPTIONAL MATCH (f)-[:associated_with]->(study_direct:study)
+      OPTIONAL MATCH (f)-[:associated_with]-(spec1:specimen)-[:of_participant]->(sub1:participant)
+       OPTIONAL MATCH (f)-[:associated_with]-(sub2:participant)
+      OPTIONAL MATCH (f)-[:associated_with]-(study_direct:study)
       WITH
         f,
         associations,
