@@ -31,7 +31,7 @@
         <spring-framework.version>6.2.18</spring-framework.version>
         <spring.restdocs.version>3.0.1</spring.restdocs.version>
 	    <snakeyaml.version>2.0</snakeyaml.version>
-        <netty.version>4.2.14.Final</netty.version>
+        <netty.version>4.2.15.Final</netty.version>
     </properties>
 
     <dependencies>
