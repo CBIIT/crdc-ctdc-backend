@@ -21,11 +21,13 @@ RUN mvn package -DskipTests
 # RUN rm -rf /usr/local/tomcat/webapps.dist
 # RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-FROM tomcat:10.1.55-jdk21-temurin AS fnl_base_image
+FROM tomcat:10.1-jdk21-temurin AS fnl_base_image
 ENV JAVA_OPTS="-XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0"
 
 RUN apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade util-linux tar libgcrypt20 libc-bin libc6 locales libexpat1 binutils xz-utils liblzma5 \
+	&& if apt-cache show libgnutls30t64 >/dev/null 2>&1; then DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade libgnutls30t64; else DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade libgnutls30; fi \
 	&& apt-get install -y --no-install-recommends unzip \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& rm -rf /usr/local/tomcat/webapps.dist \
