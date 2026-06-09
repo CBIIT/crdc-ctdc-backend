@@ -1112,12 +1112,20 @@ Indices:
       study_accession:
         type: keyword
     cypher_query: "
+      MATCH (f:file)
+
       CALL {
-        MATCH (sub:participant)<-[*..2]-(parent)<--(f:file)
-        RETURN f.data_file_uuid AS uuid, 'biospecimen' AS association
+        WITH f
+        MATCH (f)-[:associated_with]-(s:study)
+        RETURN f.data_file_uuid AS uuid, 'study' AS association
         UNION
-        MATCH (sub:participant)<-[:associated_with]-(f:file)
+        WITH f
+        MATCH (f)-[:associated_with]-(:participant)
         RETURN f.data_file_uuid AS uuid, 'participant' AS association
+        UNION
+        WITH f
+        MATCH (f)-[:associated_with]-(:specimen)-[:of_participant]->(:participant)
+        RETURN f.data_file_uuid AS uuid, 'biospecimen' AS association
 
       }
       WITH uuid, COLLECT(DISTINCT association) AS associations
@@ -1126,18 +1134,26 @@ Indices:
 
       OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
        OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+      OPTIONAL MATCH (f)-[:associated_with]->(study_direct:study)
       WITH
         f,
         associations,
+        COLLECT(DISTINCT study_direct)                                                AS direct_studies,
         apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS subs,
         apoc.coll.toSet([x IN COLLECT(spec1) WHERE x IS NOT NULL])                  AS specs
 
       OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
       WHERE sPart IN subs
       WITH
-        f, associations, subs, specs,
-        COLLECT(DISTINCT study.study_short_name)              AS study_short_names,
-        COllect(distinct study.study_accession)           AS study_accessions
+        f, associations, subs, specs, direct_studies,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT study.study_short_name) +
+          [s IN direct_studies | s.study_short_name]
+        )                                                     AS study_short_names,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT study.study_accession) +
+          [s IN direct_studies | s.study_accession]
+        )                                                     AS study_accessions
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
       WHERE dPart IN subs
@@ -1205,7 +1221,13 @@ Indices:
         f.data_file_location                                  AS data_file_location,
         f.data_file_compression_status                        AS data_file_compression_status,
 
-        associations                                          AS association,
+        CASE
+          WHEN 'study' IN associations
+            AND NOT 'participant' IN associations
+            AND NOT 'biospecimen' IN associations
+          THEN ['study', 'study_only']
+          ELSE associations
+        END                                                   AS association,
 
         head([x IN subs  WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
 
@@ -1542,7 +1564,7 @@ Indices:
         f.data_file_checksum_type AS data_file_checksum_type,
         f.data_file_location AS data_file_location,
         f.data_file_compression_status AS data_file_compression_status,
-        'study' AS association,
+        associations AS association,
         sb.participant_id AS participant_id,
         diag.ctep_disease_term AS ctep_disease_term,
         diag.primary_diagnosis_disease_group AS primary_diagnosis_disease_group,

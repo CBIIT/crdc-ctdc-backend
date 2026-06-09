@@ -809,6 +809,7 @@ type QueryType {
     study_short_name: [String] = [],
     study_id: [String] = [],
     data_file_type: [String] = [],
+    association: [String] = [],
     data_file_format: [String] = []
   ): [StudyFileTabInfo]
 
@@ -901,6 +902,7 @@ type QueryType {
     specimen_type: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
+    association: [String] = []
     specimen_record_id: [String] = []
     specimen_id: [String] = []
 
