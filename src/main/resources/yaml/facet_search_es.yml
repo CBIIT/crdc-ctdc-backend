@@ -89,6 +89,15 @@ queries:
         result:
           type: int
           method: count_bucket_keys
+      - name: numberOfStudyFiles
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          selectedField: data_file_uuid
+        result:
+          type: int
+          method: count_bucket_keys
       - name: participantCountByCtepDiseaseTerm
         index:
           - widgets_facets_counts
@@ -471,49 +480,50 @@ queries:
         index:
           - study_file_tab
         filter:
-          type: nested
+          type: aggregation
           selectedField: data_file_type
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
       - name: filterStudyFileTabCountByDataFileType
         index:
           - study_file_tab
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: data_file_type
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
       - name: studyFileTabCountByDataFileFormat
         index:
           - study_file_tab
         filter:
-          type: nested
+          type: aggregation
           selectedField: data_file_format
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
       - name: filterStudyFileTabCountByDataFileFormat
         index:
           - study_file_tab
         filter:
-          type: nested
+          type: aggregation
           ignoreSelectedField: true
           selectedField: data_file_format
-          nestedPath: file_info
-          nestedParameters:
-            - data_file_format
-            - data_file_type
         result:
-          type: nested_list
+          type: group_count
+      - name: studyFileTabCountByStudyID
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          selectedField: study_id
+        result:
+          type: group_count
+      - name: filterStudyFileTabCountByStudyID
+        index:
+          - study_file_tab
+        filter:
+          type: aggregation
+          ignoreSelectedField: true
+          selectedField: study_id
+        result:
+          type: group_count

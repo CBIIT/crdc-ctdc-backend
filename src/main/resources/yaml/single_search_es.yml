@@ -62,6 +62,7 @@ queries:
         - study_id
         - data_file_type
         - data_file_format
+        - data_file_uuid
     result:
       type: object_array
   - name: studyZipFileQuery

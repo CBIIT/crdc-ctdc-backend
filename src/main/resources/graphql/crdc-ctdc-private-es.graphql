@@ -644,6 +644,7 @@ type SearchResult {
   numberOfTargetedTherapies: Int
   numberOfSpecimens: Int
   numberOfFiles: Int
+  numberOfStudyFiles: Int
   participantCountByCtepDiseaseTerm: [GroupCount]
   participantCountBySnomedDiseaseCode: [GroupCount]
   participantCountByDiagnosis: [GroupCount]
@@ -664,6 +665,7 @@ type SearchResult {
   dataFileCountByDataFileFormat: [GroupCount]
   studyFileTabCountByDataFileType: [GroupCount]
   studyFileTabCountByDataFileFormat: [GroupCount]
+  studyFileTabCountByStudyID: [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
   
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
@@ -686,6 +688,7 @@ type SearchResult {
   filterDataFileCountByDataFileFormat: [GroupCount]
   filterStudyFileTabCountByDataFileType: [GroupCount]
   filterStudyFileTabCountByDataFileFormat: [GroupCount]
+  filterStudyFileTabCountByStudyID: [GroupCount]
 }
 
 type ArmInfo {
@@ -774,7 +777,8 @@ type QueryType {
     study_short_name: [String] = [],
     study_id: [String] = [],
     data_file_type: [String] = [],
-    data_file_format: [String] = []
+    data_file_format: [String] = [],
+    data_file_uuid: [String] = []
   ): [StudyFileTab]
 
   studyZipFileQuery(
