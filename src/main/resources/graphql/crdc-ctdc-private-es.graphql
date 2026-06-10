@@ -1008,6 +1008,7 @@ type QueryType {
 
   filesInList(
     data_file_uuid: [String]
+    association: [String] = []
     order_by: String = ""
     sort_direction: String = "ASC"
     first: Int = 10
