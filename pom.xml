@@ -28,10 +28,10 @@
         <tomcat.version>10.1.55</tomcat.version>
         <lombok.version>1.18.34</lombok.version>
         <log4j2.version>2.25.4</log4j2.version>
-        <spring-framework.version>6.2.18</spring-framework.version>
+        <spring-framework.version>6.2.19</spring-framework.version>
         <spring.restdocs.version>3.0.1</spring.restdocs.version>
 	    <snakeyaml.version>2.0</snakeyaml.version>
-        <netty.version>4.2.14.Final</netty.version>
+        <netty.version>4.2.15.Final</netty.version>
     </properties>
 
     <dependencies>
