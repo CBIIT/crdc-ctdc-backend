@@ -115,7 +115,7 @@ queries:
       type: object_array
   - name: filesInList # Support Cart Table
     index:
-      - tab_data_files
+      - cart_data_files
     filter:
       type: pagination
       defaultSortField: data_file_name
@@ -125,7 +125,7 @@ queries:
       type: object_array
   - name: fileIDsFromList # Support adding selected files into Cart
     index:
-      - tab_data_files
+      - cart_data_files
     filter:
       type: default
       # caseInsensitive: true

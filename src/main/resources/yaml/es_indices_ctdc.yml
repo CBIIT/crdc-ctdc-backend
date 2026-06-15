@@ -944,9 +944,6 @@ Indices:
       data_file_format:
         type: keyword
       
-    # Cypher query for biospecimen listing
-    # TODO: Remove Collection over exposure property once 1:1
-    # TODO: Make sure diagnosis is 1:1 with participant
     cypher_query: "
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       OPTIONAL MATCH (study:study)<-[:belongs_to]-(sub)
@@ -1026,9 +1023,219 @@ Indices:
       COLLECT(DISTINCT df.data_file_format) AS data_file_format
       ORDER BY COALESCE(spec.specimen_record_id, '') ASC
       "
-  
-  # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
   - index_name: tab_data_files
+    type: neo4j
+    # type mapping for each property of the index
+    mapping:
+      type:
+        type: keyword
+      data_file_name:
+        type: keyword
+      data_file_format:
+        type: keyword
+      data_file_type:
+        type: keyword
+      data_file_size:
+        type: double
+      data_file_description:
+        type: keyword
+      data_file_checksum_value:
+        type: keyword
+      data_file_checksum_type:
+        type: keyword
+      data_file_location:
+        type: keyword
+      data_file_compression_status:
+        type: keyword
+      association:
+        type: keyword
+      participant_id:
+        type: keyword
+      ctep_disease_term:
+        type: keyword
+      primary_diagnosis_disease_group:
+        type: keyword
+      meddra_disease_code:
+        type: keyword
+      histology:
+        type: keyword
+      data_file_uuid: 
+        type: keyword
+      drs_uri:
+        type: keyword
+      stage_of_disease:
+        type: keyword
+      tumor_grade:
+        type: keyword
+      sex:
+        type: keyword
+      race:
+        type: keyword
+      ethnicity:
+        type: keyword
+      age_at_enrollment:
+        type: keyword
+      carcinogen_exposure:
+        type: keyword
+      targeted_therapy:
+        type: keyword
+      anatomical_collection_site:
+        type: keyword
+      specimen_type:
+        type: keyword
+      tissue_category:
+        type: keyword
+      assessment_timepoint:
+        type: keyword
+      targeted_therapy_string:
+        type: keyword
+      file_info:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_format:
+            type: keyword
+      specimen_record_id:
+        type: keyword
+      primary_disease_site:
+        type: keyword
+      study_short_name:
+        type: keyword
+      study_accession:
+        type: keyword
+    cypher_query: "
+      CALL {
+        MATCH (sub:participant)<-[*..2]-(parent)<--(f:file)
+        RETURN f.data_file_uuid AS uuid, 'biospecimen' AS association
+        UNION
+        MATCH (sub:participant)<-[:associated_with]-(f:file)
+        RETURN f.data_file_uuid AS uuid, 'participant' AS association
+
+      }
+      WITH uuid, COLLECT(DISTINCT association) AS associations
+
+      MATCH (f:file {data_file_uuid: uuid})
+
+      OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
+       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+      WITH
+        f,
+        associations,
+        apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS subs,
+        apoc.coll.toSet([x IN COLLECT(spec1) WHERE x IS NOT NULL])                  AS specs
+
+      OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
+      WHERE sPart IN subs
+      WITH
+        f, associations, subs, specs,
+        COLLECT(DISTINCT study.study_short_name)              AS study_short_names,
+        COllect(distinct study.study_accession)           AS study_accessions
+
+      OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
+      WHERE dPart IN subs
+      WITH
+        f, associations, subs, specs, study_short_names, study_accessions,
+        COLLECT(DISTINCT diag.ctep_disease_term)              AS ctep_terms,
+        COLLECT(DISTINCT diag.primary_diagnosis_disease_group) AS pdg_list,
+        COLLECT(DISTINCT diag.stage_of_disease)               AS stage_list,
+        COLLECT(DISTINCT diag.tumor_grade)                    AS tumor_grades,
+        COLLECT(DISTINCT diag.primary_disease_site)           AS primary_sites,
+        COLLECT(DISTINCT diag.meddra_disease_code)            AS meddra_codes,
+        COLLECT(DISTINCT diag.histology)                      AS histologies
+
+      OPTIONAL MATCH (dmPart:participant)<-[:of_participant]-(demo:demographic)
+      WHERE dmPart IN subs
+      WITH
+        f, associations, subs, specs, study_short_names, study_accessions,
+        ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
+        COLLECT(DISTINCT demo.sex)                            AS sex_list,
+        COLLECT(DISTINCT demo.race)                           AS race_list,
+        COLLECT(DISTINCT demo.ethnicity)                      AS ethnicity_list,
+        COLLECT(DISTINCT demo.age_at_enrollment)              AS ages
+
+      OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
+      WHERE exPart IN subs
+      WITH
+        f, associations, subs, specs, study_short_names, study_accessions,
+        ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
+        sex_list, race_list, ethnicity_list, ages,
+        apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
+
+       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
+      WHERE ttPart IN subs
+      WITH
+        f, associations, subs, specs, study_short_names,study_accessions,
+        ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
+        sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
+        apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
+        apoc.text.join(
+          apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
+          '|'
+        )                                                     AS targeted_therapy_string
+
+      RETURN
+        'data file' AS type,
+        head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
+        
+        head([s IN study_accessions WHERE s IS NOT NULL]) AS study_accession,
+
+        COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]), '') AS anatomical_collection_site,
+        COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,
+        COALESCE(head([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]), '') AS tissue_category,
+        COALESCE(head([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]), '') AS assessment_timepoint,
+        COALESCE(head([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]), '') AS specimen_record_id,
+
+        f.data_file_name                                      AS data_file_name,
+        f.data_file_format                                    AS data_file_format,
+        f.data_file_type                                      AS data_file_type,
+        f.data_file_size                                      AS data_file_size,
+        f.data_file_uuid                                      AS data_file_uuid,
+        'drs://nci-crdc.datacommons.io/' + f.data_file_uuid   AS drs_uri,
+        f.data_file_description                               AS data_file_description,
+        f.data_file_checksum_value                            AS data_file_checksum_value,
+        f.data_file_checksum_type                             AS data_file_checksum_type,
+        f.data_file_location                                  AS data_file_location,
+        f.data_file_compression_status                        AS data_file_compression_status,
+
+        associations                                          AS association,
+
+        head([x IN subs  WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
+
+        head([x IN ctep_terms   WHERE x IS NOT NULL])          AS ctep_disease_term,
+        head([x IN pdg_list     WHERE x IS NOT NULL])          AS primary_diagnosis_disease_group,
+        head([x IN stage_list   WHERE x IS NOT NULL])          AS stage_of_disease,
+        head([x IN tumor_grades WHERE x IS NOT NULL])          AS tumor_grade,
+        head([x IN primary_sites WHERE x IS NOT NULL])         AS primary_disease_site,
+        head([x IN meddra_codes  WHERE x IS NOT NULL])         AS meddra_disease_code,
+        head([x IN histologies   WHERE x IS NOT NULL])         AS histology,
+
+        head([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
+        head([x IN race_list      WHERE x IS NOT NULL])        AS race,
+        head([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
+        head([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
+
+        carcinogen_exposure,
+        targeted_therapy_raw                                   AS targeted_therapy,
+        targeted_therapy_string                                AS targeted_therapy_string,
+
+        [x IN specs | {
+          specimen_record_id:          x.specimen_record_id,
+          specimen_id:                 x.specimen_id,
+          anatomical_collection_site:  apoc.text.capitalizeAll(toLower(x.anatomical_collection_site)),
+          specimen_type:               x.specimen_type,
+          tissue_category:             x.tissue_category,
+          assessment_timepoint:        x.assessment_timepoint
+        }]                                                     AS biospecimen_info,
+
+        [{ data_file_uuid: f.data_file_uuid,
+          data_file_format: f.data_file_format,
+          data_file_type:   f.data_file_type }]               AS file_info
+      "
+  # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
+  - index_name: cart_data_files
     type: neo4j
     # type mapping for each property of the index
     mapping:
