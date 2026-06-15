@@ -32,6 +32,9 @@ jobs:
       with:
           submodules: true
 
+    - name: Update submodules
+      run: git submodule update --init --recursive --remote
+
     - name: Set Image Tag
       env:
         BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
