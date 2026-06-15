@@ -802,12 +802,14 @@ type QueryType {
 
   StudyDataFileByStudyShortName(
     study_short_name: [String] = [],
-    study_id: [String] = []
+    study_id: [String] = [],
+    data_file_uuid: [String] = []
   ): [StudyDataFile]
 
   StudyFileTabByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = [],
+    data_file_uuid: [String] = [],
     data_file_type: [String] = [],
     association: [String] = [],
     data_file_format: [String] = []
