@@ -612,6 +612,8 @@ type ClinicalTrialData {
 
 type BiospecimenOverview {
   participant_id: String
+  study_short_name: String
+  study_id: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
   stage_of_disease: String
@@ -669,12 +671,15 @@ type FileOverview {
   assessment_timepoint: String
   primary_disease_site: String
   drs_uri: String
+  study_id: String
   study_short_name: String
   study_accession: String
 }
 
 type FileParticipant {
   participant_id: String
+  study_short_name: String
+  study_id: String
   data_file_name: String
   data_file_format: String
   data_file_type: String
@@ -883,6 +888,8 @@ type QueryType {
 
   biospecimenOverview(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     specimen_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
@@ -912,6 +919,8 @@ type QueryType {
 
   fileOverview(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -942,6 +951,8 @@ type QueryType {
 
   participant_data_files(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -972,6 +983,8 @@ type QueryType {
  
   biospecimen_data_files(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     specimen_id: [String] = []
     specimen_record_id: [String] = []
     ctep_disease_term: [String] = []
@@ -1008,6 +1021,7 @@ type QueryType {
     race: [String] = []
     ethnicity: [String] = []
     study_short_name: [String] = []
+    study_id: [String] = []
     primary_diagnosis_disease_group: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
