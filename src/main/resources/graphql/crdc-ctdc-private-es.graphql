@@ -289,7 +289,7 @@ type ParticipantAndBiospecimenFilesByStudyId {
   list_type: [String]
   data_files: [AssocDataFile]
 }
-type StudyFileTabInfo {
+type StudyFileOverviewInfo {
   type: String
   study_short_name: String
   study_id: String
@@ -326,17 +326,17 @@ type StudyFileTabInfo {
   carcinogen_exposure: [String]
   targeted_therapy: [String]
   targeted_therapy_string: String
-  biospecimen_info: [StudyFileTabBiospecimenInfo]
-  file_info: [StudyFileTabFileInfo]
+  biospecimen_info: [StudyFileOverviewBiospecimenInfo]
+  file_info: [StudyFileOverviewFileInfo]
 }
 
-type StudyFileTabFileInfo {
+type StudyFileOverviewFileInfo {
   data_file_uuid: String
   data_file_format: String
   data_file_type: String
 }
 
-type StudyFileTabBiospecimenInfo {
+type StudyFileOverviewBiospecimenInfo {
   specimen_record_id: String
   specimen_id: String
   anatomical_collection_site: String
@@ -721,8 +721,8 @@ type SearchResult {
   participantCountByAssessmentTimepoint: [GroupCount]
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
-  studyFileTabCountByDataFileType: [GroupCount]
-  studyFileTabCountByDataFileFormat: [GroupCount]
+  studyFileOverviewCountByDataFileType: [GroupCount]
+  studyFileOverviewCountByDataFileFormat: [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
   
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
@@ -743,8 +743,8 @@ type SearchResult {
   filterParticipantCountByStageOfDisease: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
-  filterStudyFileTabCountByDataFileType: [GroupCount]
-  filterStudyFileTabCountByDataFileFormat: [GroupCount]
+  filterStudyFileOverviewCountByDataFileType: [GroupCount]
+  filterStudyFileOverviewCountByDataFileFormat: [GroupCount]
 }
 
 type ArmInfo {
@@ -836,14 +836,27 @@ type QueryType {
   ): [ParticipantAndBiospecimenFilesByStudyId]
 
   
-  StudyFileTabByStudyShortName(
+  StudyFileOverviewByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = [],
     data_file_uuid: [String] = [],
     data_file_type: [String] = [],
     association: [String] = [],
     data_file_format: [String] = []
-  ): [StudyFileTabInfo]
+  ): [StudyFileOverviewInfo]
+
+  studyFileOverview(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = [],
+    data_file_type: [String] = [],
+    data_file_format: [String] = [],
+    data_file_uuid: [String] = [],
+    first: Int,
+    offset: Int = 0,
+    order_by: String = "data_file_uuid",
+    sort_direction: String = "asc"
+  ): [StudyFileOverviewInfo]
 
   studyZipFileQuery(
     study_short_name: [String] = [],

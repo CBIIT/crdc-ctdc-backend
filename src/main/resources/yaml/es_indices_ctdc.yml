@@ -1680,7 +1680,7 @@ Indices:
       "
   
   # File Table Data for Study-Associated Files
-  - index_name: study_file_tab
+  - index_name: study_file_overview
     type: neo4j
     # type mapping for each property of the index
     mapping:

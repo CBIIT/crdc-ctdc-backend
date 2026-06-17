@@ -62,9 +62,9 @@ queries:
         - study_id
     result:
       type: object_array
-  - name: StudyFileTabByStudyShortName
+  - name: StudyFileOverviewByStudyShortName
     index:
-      - study_file_tab
+      - study_file_overview
     filter:
       type: default
       caseInsensitive: false
@@ -72,6 +72,19 @@ queries:
         - study_short_name
         - study_id
         - data_file_uuid
+    result:
+      type: object_array
+  - name: studyFileOverview
+    index:
+      - study_file_overview
+    filter:
+      type: pagination
+      defaultSortField: data_file_uuid
+      alternativeSortField:
+        data_file_uuid: data_file_uuid
+        study_short_name: study_short_name
+        study_id: study_id
+        study_accession: study_accession
     result:
       type: object_array
   - name: studyZipFileQuery
