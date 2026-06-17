@@ -721,8 +721,16 @@ type SearchResult {
   participantCountByAssessmentTimepoint: [GroupCount]
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
-  studyFileOverviewCountByDataFileType: [GroupCount]
-  studyFileOverviewCountByDataFileFormat: [GroupCount]
+  studyFileOverviewCountByDataFileType(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
+  studyFileOverviewCountByDataFileFormat(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
   
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
@@ -743,8 +751,16 @@ type SearchResult {
   filterParticipantCountByStageOfDisease: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
-  filterStudyFileOverviewCountByDataFileType: [GroupCount]
-  filterStudyFileOverviewCountByDataFileFormat: [GroupCount]
+  filterStudyFileOverviewCountByDataFileType(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
+  filterStudyFileOverviewCountByDataFileFormat(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
 }
 
 type ArmInfo {
@@ -839,6 +855,7 @@ type QueryType {
   StudyFileOverviewByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = [],
+    study_accession: [String] = [],
     data_file_uuid: [String] = [],
     data_file_type: [String] = [],
     association: [String] = [],

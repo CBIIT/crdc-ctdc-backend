@@ -68,10 +68,6 @@ queries:
     filter:
       type: default
       caseInsensitive: false
-      ignoreIfEmpty:
-        - study_short_name
-        - study_id
-        - data_file_uuid
     result:
       type: object_array
   - name: studyFileOverview
@@ -84,7 +80,6 @@ queries:
         data_file_uuid: data_file_uuid
         study_short_name: study_short_name
         study_id: study_id
-        study_accession: study_accession
     result:
       type: object_array
   - name: studyZipFileQuery
