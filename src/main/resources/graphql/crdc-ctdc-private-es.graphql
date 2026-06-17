@@ -826,7 +826,8 @@ type QueryType {
 
   StudyDataFileByStudyShortName(
     study_short_name: [String] = [],
-    study_id: [String] = []
+    study_id: [String] = [],
+    data_file_uuid: [String] = []
   ): [StudyDataFile]
 
   participantAndBiospecimenFilesByStudyId(
@@ -838,7 +839,9 @@ type QueryType {
   StudyFileTabByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = [],
+    data_file_uuid: [String] = [],
     data_file_type: [String] = [],
+    association: [String] = [],
     data_file_format: [String] = []
   ): [StudyFileTabInfo]
 
@@ -935,6 +938,7 @@ type QueryType {
     specimen_type: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
+    association: [String] = []
     specimen_record_id: [String] = []
     specimen_id: [String] = []
 
@@ -1045,6 +1049,7 @@ type QueryType {
 
   filesInList(
     data_file_uuid: [String]
+    association: [String] = []
     order_by: String = ""
     sort_direction: String = "ASC"
     first: Int = 10

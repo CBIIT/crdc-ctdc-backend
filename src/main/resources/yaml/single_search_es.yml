@@ -71,8 +71,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
-        - data_file_type
-        - data_file_format
+        - data_file_uuid
     result:
       type: object_array
   - name: studyZipFileQuery
@@ -127,7 +126,7 @@ queries:
       type: object_array
   - name: filesInList # Support Cart Table
     index:
-      - tab_data_files
+      - cart_data_files
     filter:
       type: pagination
       defaultSortField: data_file_name
@@ -137,7 +136,7 @@ queries:
       type: object_array
   - name: fileIDsFromList # Support adding selected files into Cart
     index:
-      - tab_data_files
+      - cart_data_files
     filter:
       type: default
       # caseInsensitive: true
