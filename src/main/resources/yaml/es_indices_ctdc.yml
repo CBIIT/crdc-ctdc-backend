@@ -1360,6 +1360,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       specimen_id:
         type: keyword
       specimen_record_id:
@@ -1439,6 +1441,7 @@ Indices:
         sub.participant_id                          AS participant_id,
         study.study_short_name                      AS study_short_name,
         toString(study.study_id)                    AS study_id,
+        study.study_accession                       AS study_accession,
 
         diag.ctep_disease_term                      AS ctep_disease_term,
         diag.primary_diagnosis_disease_group        AS primary_diagnosis_disease_group,
