@@ -31,6 +31,15 @@ ENV PORT=8080
 
 # expose ports
 EXPOSE 8080
+
+# IMPORTANT: For ECS deployment, configure the target group health check to use /health
+# Health check path: /health
+# Expected status: 200 OK
+# Interval: 30 seconds
+# Timeout: 5 seconds
+# Healthy threshold: 2
+# Unhealthy threshold: 3
+
 COPY --from=build /usr/src/app/target/Bento-0.0.1.war /usr/local/tomcat/webapps/ROOT.war
 
 CMD ["sh", "-c", "export CATALINA_OPTS=\"$CATALINA_OPTS -Dport.http=${PORT:-8080}\"; catalina.sh run"]
