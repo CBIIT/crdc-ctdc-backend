@@ -62,17 +62,24 @@ queries:
         - study_id
     result:
       type: object_array
-  - name: StudyFileTabByStudyShortName
+  - name: StudyFileOverviewByStudyShortName
     index:
-      - study_file_tab
+      - study_file_overview
     filter:
       type: default
       caseInsensitive: false
-      ignoreIfEmpty:
-        - study_short_name
-        - study_id
-        - data_file_type
-        - data_file_format
+    result:
+      type: object_array
+  - name: studyFileOverview
+    index:
+      - study_file_overview
+    filter:
+      type: pagination
+      defaultSortField: data_file_uuid
+      alternativeSortField:
+        data_file_uuid: data_file_uuid
+        study_short_name: study_short_name
+        study_id: study_id
     result:
       type: object_array
   - name: studyZipFileQuery
@@ -127,7 +134,7 @@ queries:
       type: object_array
   - name: filesInList # Support Cart Table
     index:
-      - tab_data_files
+      - cart_data_files
     filter:
       type: pagination
       defaultSortField: data_file_name
@@ -137,7 +144,7 @@ queries:
       type: object_array
   - name: fileIDsFromList # Support adding selected files into Cart
     index:
-      - tab_data_files
+      - cart_data_files
     filter:
       type: default
       # caseInsensitive: true
