@@ -2425,6 +2425,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       targetedTherapyNodeData:
         type: nested
         properties:
@@ -2578,6 +2580,7 @@ Indices:
       RETURN
         study.study_short_name AS study_short_name,
         toString(study.study_id) AS study_id,
+        study.study_accession AS study_accession,
         targetedTherapyNodeData,
         size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
         targetedTherapyParticipantCount,
