@@ -1032,7 +1032,6 @@ Indices:
         type: keyword
       
     cypher_query: "
-     
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       OPTIONAL MATCH (study:study)<-[:belongs_to]-(sub)
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
