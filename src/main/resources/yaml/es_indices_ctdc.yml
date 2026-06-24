@@ -349,6 +349,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       specimen_types:
         type: nested
         properties:
@@ -395,6 +397,7 @@ Indices:
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
         toString(s.study_id) AS study_id,
+        s.study_accession AS study_accession,
         COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
         COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
         COLLECT(DISTINCT{
