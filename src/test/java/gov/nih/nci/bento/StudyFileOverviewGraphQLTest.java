@@ -24,10 +24,10 @@ import static org.mockito.Mockito.*;
 
 /**
  * Tests for GraphQL queries added in CTDC-2034:
- * StudyFileTabByStudyShortName, numberOfStudyFiles, and related count queries.
+ * StudyFileOverviewByStudyShortName, numberOfStudyFiles, and related count queries.
  */
 @ExtendWith(MockitoExtension.class)
-public class StudyFileTabGraphQLTest {
+public class StudyFileOverviewGraphQLTest {
 
     @Mock
     private ConfigurationDAO config;
@@ -48,18 +48,18 @@ public class StudyFileTabGraphQLTest {
         controller = new GraphQLController(config, bentoGraphQL);
     }
 
-    // --- StudyFileTabByStudyShortName ---
+    // --- StudyFileOverviewByStudyShortName ---
 
     @Test
-    public void studyFileTabByStudyShortName_validQuery_returnsOk() {
-        String requestBody = "{\"query\": \"{ StudyFileTabByStudyShortName(study_short_name: \\\"TEST\\\") { study_id data_file_name } }\", \"variables\": {}}";
+    public void studyFileOverviewByStudyShortName_validQuery_returnsOk() {
+        String requestBody = "{\"query\": \"{ StudyFileOverviewByStudyShortName(study_short_name: \\\"TEST\\\") { study_id data_file_name } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("StudyFileTabByStudyShortName", List.of(
+                "data", Map.of("StudyFileOverviewByStudyShortName", List.of(
                         Map.of("study_id", "S001", "data_file_name", "file1.csv")
                 ))
         ));
@@ -72,8 +72,8 @@ public class StudyFileTabGraphQLTest {
     }
 
     @Test
-    public void studyFileTabByStudyShortName_queriesDisabled_returnsForbidden() {
-        String requestBody = "{\"query\": \"{ StudyFileTabByStudyShortName(study_short_name: \\\"TEST\\\") { study_id } }\", \"variables\": {}}";
+    public void studyFileOverviewByStudyShortName_queriesDisabled_returnsForbidden() {
+        String requestBody = "{\"query\": \"{ StudyFileOverviewByStudyShortName(study_short_name: \\\"TEST\\\") { study_id } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
@@ -88,15 +88,15 @@ public class StudyFileTabGraphQLTest {
     }
 
     @Test
-    public void studyFileTabByStudyShortName_returnsFileInfoNestedFields() {
-        String requestBody = "{\"query\": \"{ StudyFileTabByStudyShortName(study_short_name: \\\"TEST\\\") { file_info { data_file_uuid data_file_format } } }\", \"variables\": {}}";
+    public void studyFileOverviewByStudyShortName_returnsFileInfoNestedFields() {
+        String requestBody = "{\"query\": \"{ StudyFileOverviewByStudyShortName(study_short_name: \\\"TEST\\\") { file_info { data_file_uuid data_file_format } } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("StudyFileTabByStudyShortName", List.of(
+                "data", Map.of("StudyFileOverviewByStudyShortName", List.of(
                         Map.of("file_info", List.of(
                                 Map.of("data_file_uuid", "uuid-001", "data_file_format", "CSV")
                         ))
@@ -111,15 +111,15 @@ public class StudyFileTabGraphQLTest {
     }
 
     @Test
-    public void studyFileTabByStudyShortName_returnsBiospecimenInfoNestedFields() {
-        String requestBody = "{\"query\": \"{ StudyFileTabByStudyShortName(study_short_name: \\\"TEST\\\") { biospecimen_info { specimen_record_id } } }\", \"variables\": {}}";
+    public void studyFileOverviewByStudyShortName_returnsBiospecimenInfoNestedFields() {
+        String requestBody = "{\"query\": \"{ StudyFileOverviewByStudyShortName(study_short_name: \\\"TEST\\\") { biospecimen_info { specimen_record_id } } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("StudyFileTabByStudyShortName", List.of(
+                "data", Map.of("StudyFileOverviewByStudyShortName", List.of(
                         Map.of("biospecimen_info", List.of(
                                 Map.of("specimen_record_id", "spec-001")
                         ))
@@ -154,18 +154,18 @@ public class StudyFileTabGraphQLTest {
         verify(graphQL).execute(any(ExecutionInput.class));
     }
 
-    // --- studyFileTabCountByDataFileType / Format ---
+    // --- studyFileOverviewCountByDataFileType / Format ---
 
     @Test
-    public void studyFileTabCountByDataFileType_validQuery_returnsGroupCounts() {
-        String requestBody = "{\"query\": \"{ studyFileTabCountByDataFileType { group count } }\", \"variables\": {}}";
+    public void studyFileOverviewCountByDataFileType_validQuery_returnsGroupCounts() {
+        String requestBody = "{\"query\": \"{ studyFileOverviewCountByDataFileType { group count } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("studyFileTabCountByDataFileType", List.of(
+                "data", Map.of("studyFileOverviewCountByDataFileType", List.of(
                         Map.of("group", "Clinical", "count", 10),
                         Map.of("group", "Genomic", "count", 5)
                 ))
@@ -179,15 +179,15 @@ public class StudyFileTabGraphQLTest {
     }
 
     @Test
-    public void studyFileTabCountByDataFileFormat_validQuery_returnsGroupCounts() {
-        String requestBody = "{\"query\": \"{ studyFileTabCountByDataFileFormat { group count } }\", \"variables\": {}}";
+    public void studyFileOverviewCountByDataFileFormat_validQuery_returnsGroupCounts() {
+        String requestBody = "{\"query\": \"{ studyFileOverviewCountByDataFileFormat { group count } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("studyFileTabCountByDataFileFormat", List.of(
+                "data", Map.of("studyFileOverviewCountByDataFileFormat", List.of(
                         Map.of("group", "CSV", "count", 8),
                         Map.of("group", "TSV", "count", 3)
                 ))
@@ -200,18 +200,18 @@ public class StudyFileTabGraphQLTest {
         verify(graphQL).execute(any(ExecutionInput.class));
     }
 
-    // --- filterStudyFileTabCountByDataFileType / Format ---
+    // --- filterStudyFileOverviewCountByDataFileType / Format ---
 
     @Test
-    public void filterStudyFileTabCountByDataFileType_validQuery_returnsFilteredGroupCounts() {
-        String requestBody = "{\"query\": \"{ filterStudyFileTabCountByDataFileType { group count } }\", \"variables\": {}}";
+    public void filterStudyFileOverviewCountByDataFileType_validQuery_returnsFilteredGroupCounts() {
+        String requestBody = "{\"query\": \"{ filterStudyFileOverviewCountByDataFileType { group count } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("filterStudyFileTabCountByDataFileType", List.of(
+                "data", Map.of("filterStudyFileOverviewCountByDataFileType", List.of(
                         Map.of("group", "Clinical", "count", 4)
                 ))
         ));
@@ -224,15 +224,15 @@ public class StudyFileTabGraphQLTest {
     }
 
     @Test
-    public void filterStudyFileTabCountByDataFileFormat_validQuery_returnsFilteredGroupCounts() {
-        String requestBody = "{\"query\": \"{ filterStudyFileTabCountByDataFileFormat { group count } }\", \"variables\": {}}";
+    public void filterStudyFileOverviewCountByDataFileFormat_validQuery_returnsFilteredGroupCounts() {
+        String requestBody = "{\"query\": \"{ filterStudyFileOverviewCountByDataFileFormat { group count } }\", \"variables\": {}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(graphQL.execute(any(ExecutionInput.class))).thenReturn(executionResult);
         when(executionResult.toSpecification()).thenReturn(Map.of(
-                "data", Map.of("filterStudyFileTabCountByDataFileFormat", List.of(
+                "data", Map.of("filterStudyFileOverviewCountByDataFileFormat", List.of(
                         Map.of("group", "CSV", "count", 2)
                 ))
         ));
@@ -247,13 +247,13 @@ public class StudyFileTabGraphQLTest {
     // --- Parameter limit guard ---
 
     @Test
-    public void studyFileTabByStudyShortName_parameterListExceedsLimit_returnsBadRequest() {
+    public void studyFileOverviewByStudyShortName_parameterListExceedsLimit_returnsBadRequest() {
         java.util.List<String> largeList = new java.util.ArrayList<>();
         for (int i = 0; i < 1001; i++) {
             largeList.add("item" + i);
         }
         String largeListJson = largeList.toString().replace("[", "[\"").replace(", ", "\", \"").replace("]", "\"]");
-        String requestBody = "{\"query\": \"{ StudyFileTabByStudyShortName(study_short_name: \\\"TEST\\\") { study_id } }\", \"variables\": {\"ids\": " + largeListJson + "}}";
+        String requestBody = "{\"query\": \"{ StudyFileOverviewByStudyShortName(study_short_name: \\\"TEST\\\") { study_id } }\", \"variables\": {\"ids\": " + largeListJson + "}}";
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody);
 
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(graphQL);
