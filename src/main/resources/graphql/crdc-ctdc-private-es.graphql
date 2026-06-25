@@ -263,11 +263,93 @@ type DataFile {
   data_file_location: String
 }
 
+type AssocDataFile {
+  data_file_uuid: String
+  data_file_name: String
+  data_file_type: String
+  data_file_description: String
+  data_file_format: String
+  data_file_size: Float
+  data_file_checksum_value: String
+  data_file_checksum_type: String
+  data_file_compression_status: String
+  data_file_location: String
+  association: [String]
+}
+
 type StudyDataFile {
   study_short_name: String
   list_type: [String]
   study_data_files: [DataFile]
   data_files: [DataFile]
+}
+
+type ParticipantAndBiospecimenFilesByStudyId {
+  study_short_name: String
+  list_type: [String]
+  data_files: [AssocDataFile]
+}
+type StudyFileOverviewInfo {
+  type: String
+  study_short_name: String
+  study_id: String
+  study_accession: String
+  anatomical_collection_site: String
+  specimen_type: String
+  tissue_category: String
+  assessment_timepoint: String
+  specimen_record_id: String
+  data_file_name: String
+  data_file_format: String
+  data_file_type: String
+  data_file_size: Float
+  data_file_uuid: String
+  drs_uri: String
+  data_file_description: String
+  data_file_checksum_value: String
+  data_file_checksum_type: String
+  data_file_location: String
+  data_file_compression_status: String
+  association: String
+  participant_id: String
+  ctep_disease_term: String
+  primary_diagnosis_disease_group: String
+  stage_of_disease: String
+  tumor_grade: String
+  primary_disease_site: String
+  meddra_disease_code: String
+  histology: String
+  sex: String
+  race: String
+  ethnicity: String
+  age_at_enrollment: String
+  carcinogen_exposure: [String]
+  targeted_therapy: [String]
+  targeted_therapy_string: String
+  biospecimen_info: [StudyFileOverviewBiospecimenInfo]
+  file_info: [StudyFileOverviewFileInfo]
+}
+
+type StudyFileOverviewFileInfo {
+  data_file_uuid: String
+  data_file_format: String
+  data_file_type: String
+}
+
+type StudyFileOverviewBiospecimenInfo {
+  specimen_record_id: String
+  specimen_id: String
+  anatomical_collection_site: String
+  specimen_type: String
+  tissue_category: String
+  assessment_timepoint: String
+}
+
+type StudyZipFile {
+  study_short_name: String
+  study_id: String
+  data_file_type: String
+  zip_files: [DataFile]
 }
 
 type SpecimenType {
@@ -341,6 +423,7 @@ type ParticipantOverview {
   study_name: String
   study_type: String
   study_description: String
+  best_response_to_targeted_therapy: String
   surgical_procedure: String
   surgical_procedure_anatomical_location: String
   surgical_procedure_date: String
@@ -529,6 +612,8 @@ type ClinicalTrialData {
 
 type BiospecimenOverview {
   participant_id: String
+  study_short_name: String
+  study_id: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
   stage_of_disease: String
@@ -539,6 +624,7 @@ type BiospecimenOverview {
   specimen_type: String
   sex: String
   race: String
+  specimen_category: String
   tumor_grade: String
   targeted_therapy: String
   surgical_procedure: String
@@ -585,12 +671,15 @@ type FileOverview {
   assessment_timepoint: String
   primary_disease_site: String
   drs_uri: String
+  study_id: String
   study_short_name: String
   study_accession: String
 }
 
 type FileParticipant {
   participant_id: String
+  study_short_name: String
+  study_id: String
   data_file_name: String
   data_file_format: String
   data_file_type: String
@@ -613,6 +702,7 @@ type SearchResult {
   numberOfTargetedTherapies: Int
   numberOfSpecimens: Int
   numberOfFiles: Int
+  numberOfStudyFiles: Int
   participantCountByCtepDiseaseTerm: [GroupCount]
   participantCountBySnomedDiseaseCode: [GroupCount]
   participantCountByDiagnosis: [GroupCount]
@@ -631,6 +721,16 @@ type SearchResult {
   participantCountByAssessmentTimepoint: [GroupCount]
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
+  studyFileOverviewCountByDataFileType(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
+  studyFileOverviewCountByDataFileFormat(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
   participantCountByStageOfDisease: [GroupCount]
   
   filterParticipantCountByCtepDiseaseTerm: [GroupCount]
@@ -651,6 +751,16 @@ type SearchResult {
   filterParticipantCountByStageOfDisease: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
+  filterStudyFileOverviewCountByDataFileType(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
+  filterStudyFileOverviewCountByDataFileFormat(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = []
+  ): [GroupCount]
 }
 
 type ArmInfo {
@@ -732,8 +842,44 @@ type QueryType {
 
   StudyDataFileByStudyShortName(
     study_short_name: [String] = [],
-    study_id: [String] = []
+    study_id: [String] = [],
+    data_file_uuid: [String] = []
   ): [StudyDataFile]
+
+  participantAndBiospecimenFilesByStudyId(
+    study_short_name: [String] = [],
+    study_id: [String] = []
+  ): [ParticipantAndBiospecimenFilesByStudyId]
+
+  
+  StudyFileOverviewByStudyShortName(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = [],
+    data_file_uuid: [String] = [],
+    data_file_type: [String] = [],
+    association: [String] = [],
+    data_file_format: [String] = []
+  ): [StudyFileOverviewInfo]
+
+  studyFileOverview(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    study_accession: [String] = [],
+    data_file_type: [String] = [],
+    data_file_format: [String] = [],
+    data_file_uuid: [String] = [],
+    first: Int,
+    offset: Int = 0,
+    order_by: String = "data_file_uuid",
+    sort_direction: String = "asc"
+  ): [StudyFileOverviewInfo]
+
+  studyZipFileQuery(
+    study_short_name: [String] = [],
+    study_id: [String] = [],
+    data_file_type: [String] = []
+  ): [StudyZipFile]
 
   getHomePage: [HomePage]
 
@@ -741,6 +887,10 @@ type QueryType {
 
   participantOverview(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
+    study_name: [String] = []
+    study_type: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -752,6 +902,8 @@ type QueryType {
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
     targeted_therapy_string: [String] = []
+
+    extent_of_residual_disease: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -769,6 +921,8 @@ type QueryType {
 
   biospecimenOverview(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     specimen_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
@@ -798,6 +952,8 @@ type QueryType {
 
   fileOverview(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -812,6 +968,7 @@ type QueryType {
     specimen_type: [String] = []
     tissue_category: [String] = []
     assessment_timepoint: [String] = []
+    association: [String] = []
     specimen_record_id: [String] = []
     specimen_id: [String] = []
 
@@ -828,6 +985,8 @@ type QueryType {
 
   participant_data_files(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
@@ -858,6 +1017,8 @@ type QueryType {
  
   biospecimen_data_files(
     participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
     specimen_id: [String] = []
     specimen_record_id: [String] = []
     ctep_disease_term: [String] = []
@@ -894,6 +1055,7 @@ type QueryType {
     race: [String] = []
     ethnicity: [String] = []
     study_short_name: [String] = []
+    study_id: [String] = []
     primary_diagnosis_disease_group: [String] = []
     carcinogen_exposure: [String] = []
     targeted_therapy: [String] = []
@@ -917,6 +1079,7 @@ type QueryType {
 
   filesInList(
     data_file_uuid: [String]
+    association: [String] = []
     order_by: String = ""
     sort_direction: String = "ASC"
     first: Int = 10
