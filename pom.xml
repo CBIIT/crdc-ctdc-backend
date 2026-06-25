@@ -22,7 +22,7 @@
 
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <jackson.version>2.18.7</jackson.version>
         <kotlin.version>1.9.25</kotlin.version>
         <tomcat.version>10.1.55</tomcat.version>
