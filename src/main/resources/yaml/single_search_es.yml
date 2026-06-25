@@ -51,17 +51,6 @@ queries:
         - study_id
     result:
       type: object_array
-  - name: participantAndBiospecimenFilesByStudyId
-    index:
-      - study_data_file_assoc
-    filter:
-      type: default
-      caseInsensitive: false
-      ignoreIfEmpty:
-        - study_short_name
-        - study_id
-    result:
-      type: object_array
   - name: StudyFileOverviewByStudyShortName
     index:
       - study_file_overview
