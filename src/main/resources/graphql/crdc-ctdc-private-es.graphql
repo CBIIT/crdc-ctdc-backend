@@ -284,7 +284,11 @@ type StudyDataFile {
   data_files: [DataFile]
 }
 
-
+type ParticipantAndBiospecimenFilesByStudyId {
+  study_short_name: String
+  list_type: [String]
+  data_files: [AssocDataFile]
+}
 type StudyFileOverviewInfo {
   type: String
   study_short_name: String
@@ -842,6 +846,10 @@ type QueryType {
     data_file_uuid: [String] = []
   ): [StudyDataFile]
 
+  participantAndBiospecimenFilesByStudyId(
+    study_short_name: [String] = [],
+    study_id: [String] = []
+  ): [ParticipantAndBiospecimenFilesByStudyId]
 
   
   StudyFileOverviewByStudyShortName(
