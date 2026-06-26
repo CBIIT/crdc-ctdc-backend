@@ -6,7 +6,7 @@ COPY . .
 RUN mvn package -DskipTests
 
 # Production stage
-# FROM ${ECR_REPO}/base-images:backend-jdk17
+# FROM ${ECR_REPO}/base-images:backend-jdk21
 
 # FROM tomcat:10.1.13-jdk21
 # RUN apt-get update && apt-get install unzip
