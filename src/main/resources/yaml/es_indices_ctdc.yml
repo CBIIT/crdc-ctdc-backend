@@ -65,21 +65,6 @@ Indices:
             type: keyword
           collection_access:
             type: keyword
-      publications:
-        type: nested
-        properties:
-          publication_title:
-            type: keyword
-          authorship:
-            type: keyword
-          year_of_publication:
-            type: keyword
-          journal_citation:
-            type: keyword
-          digital_object_id:
-            type: keyword
-          pubmed_id:
-            type: integer
 
 
 
@@ -88,7 +73,6 @@ Indices:
       MATCH (s:study)
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (p:publication)-[:of_study]->(s)
       optional MATCH (s)<-[:belongs_to]-(participant)
       optional MATCH (participant)<-[*..2]-(parent)<--(f:file)
       optional MATCH (s)<-[:associated_with]-(df:file)
@@ -115,14 +99,6 @@ Indices:
                     repository_name: ic.repository_name,
                     collection_access: ic.collection_access
                 }) AS image_collection,
-                COLLECT(DISTINCT{
-                  publication_title: p.publication_title,
-                  authorship: p.authorship,
-                  year_of_publication: p.year_of_publication,
-                  journal_citation: p.journal_citation,
-                  digital_object_id: p.digital_object_id,
-                  pubmed_id: CASE WHEN p.pubmed_id IS NULL THEN NULL ELSE toInteger(p.pubmed_id) END
-                }) AS publications,
                 COLLECT(DISTINCT{
                   biomarker_results_available: participant.biomarker_results_available,
                   histology_images_available: participant.histology_images_available,
@@ -226,6 +202,79 @@ Indices:
                     data_file_location: df.data_file_location
                 }) AS data_files,
          COLLECT(DISTINCT df.data_file_type) as list_type
+      "
+
+  - index_name: study_data_file_assoc
+    type: neo4j
+    mapping:
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      data_files:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_name:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_description:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_size:
+            type: double
+          data_file_checksum_value:
+            type: keyword
+          data_file_checksum_type:
+            type: keyword
+          data_file_compression_status:
+            type: keyword
+          data_file_location:
+            type: keyword
+          association:
+            type: keyword
+      list_type:
+        type: keyword
+
+    cypher_query: "
+      MATCH (s:study)<-[:belongs_to]-(sb:participant)
+      OPTIONAL MATCH (sb)<-[*..2]-(df:file)
+
+      OPTIONAL MATCH (sb)<-[p_rel:associated_with]-(df)
+      OPTIONAL MATCH (df)-[b_rel:associated_with]->(:specimen)-[:of_participant]->(sb)
+
+      WITH s, sb, df, p_rel, b_rel
+      WITH s, sb, df,
+      [a IN [
+      CASE WHEN p_rel IS NOT NULL THEN 'participant' END,
+      CASE WHEN b_rel IS NOT NULL THEN 'biospecimen' END
+      ] WHERE a IS NOT NULL] AS associations
+
+      RETURN DISTINCT
+      s.study_short_name AS study_short_name,
+      toString(s.study_id) AS study_id,
+      [x IN COLLECT(DISTINCT
+      CASE
+      WHEN df IS NULL THEN NULL
+      ELSE {
+      data_file_uuid: df.data_file_uuid,
+      data_file_name: df.data_file_name,
+      data_file_type: df.data_file_type,
+      data_file_description: df.data_file_description,
+      data_file_format: df.data_file_format,
+      data_file_size: df.data_file_size,
+      data_file_checksum_value: df.data_file_checksum_value,
+      data_file_checksum_type: df.data_file_checksum_type,
+      data_file_compression_status: df.data_file_compression_status,
+      data_file_location: df.data_file_location,
+      association: associations
+      }
+      END
+      ) WHERE x IS NOT NULL] AS data_files,
+      [t IN COLLECT(DISTINCT df.data_file_type) WHERE t IS NOT NULL] AS list_type
       "
 
   # Name of the index to be created, existing index with same name will be deleted
