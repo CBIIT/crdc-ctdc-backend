@@ -25,11 +25,7 @@ RUN rm -rf /usr/local/tomcat/webapps/ROOT
 # Modify the server.xml file to block error reportiing
 RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve"\n               showReport="false"\n               showServerInfo="false" />\n\n      </Host>|' conf/server.xml 
 
-# Allow deployment platforms to inject a runtime port (for example via PORT env var).
-RUN sed -i 's/Connector port="8080"/Connector port="${port.http}"/' conf/server.xml
-ENV PORT=8080
-
-# expose ports
+# Expose fixed port 8080 (ECS task definition maps this port on the target group)
 EXPOSE 8080
 
 # IMPORTANT: For ECS deployment, configure the target group health check to use /health
@@ -42,4 +38,4 @@ EXPOSE 8080
 
 COPY --from=build /usr/src/app/target/Bento-0.0.1.war /usr/local/tomcat/webapps/ROOT.war
 
-CMD ["sh", "-c", "export CATALINA_OPTS=\"$CATALINA_OPTS -Dport.http=${PORT:-8080}\"; catalina.sh run"]
+CMD ["catalina.sh", "run"]
