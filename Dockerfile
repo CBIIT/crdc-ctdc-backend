@@ -2,40 +2,49 @@
 ARG ECR_REPO
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /usr/src/app
+
+# Refresh trust store in build image so Maven can resolve dependencies reliably.
+RUN apt-get update \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates git \
+	&& update-ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Copy only git related files first
+COPY .gitmodules .
+COPY .git ./.git
+
+# Initialize and update submodules
+RUN git submodule update --init --recursive
+
 COPY . .
 RUN mvn package -DskipTests
 
 # Production stage
-# FROM ${ECR_REPO}/base-images:backend-jdk21
+# FROM ${ECR_REPO}/base-images:backend-jdk17
 
-# FROM tomcat:10.1.13-jdk21
+# FROM tomcat:10.1.13-jdk17
 # RUN apt-get update && apt-get install unzip
 # RUN rm -rf /usr/local/tomcat/webapps.dist
 # RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
 FROM tomcat:10.1.56-jdk21 AS fnl_base_image
+ENV JAVA_OPTS="-XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0"
 
-RUN apt-get update && apt-get -y upgrade
-
-# install dependencies and clean up unused files
-RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
-RUN rm -rf /usr/local/tomcat/webapps.dist
-RUN rm -rf /usr/local/tomcat/webapps/ROOT
+RUN apt-get update \
+	&& DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade util-linux tar libgcrypt20 libc-bin libc6 locales libexpat1 binutils xz-utils liblzma5 \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade ca-certificates \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade openssl \
+	&& if apt-cache show libssl3t64 >/dev/null 2>&1; then DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade libssl3t64; else DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade libssl3; fi \
+	&& if apt-cache show libgnutls30t64 >/dev/null 2>&1; then DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade libgnutls30t64; else DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --only-upgrade libgnutls30; fi \
+	&& apt-get install -y --no-install-recommends unzip \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& rm -rf /usr/local/tomcat/webapps.dist \
+	&& rm -rf /usr/local/tomcat/webapps/ROOT
 
 # Modify the server.xml file to block error reportiing
 RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve"\n               showReport="false"\n               showServerInfo="false" />\n\n      </Host>|' conf/server.xml 
 
-# Expose fixed port 8080 (ECS task definition maps this port on the target group)
+# expose ports
 EXPOSE 8080
-
-# IMPORTANT: For ECS deployment, configure the target group health check to use /health
-# Health check path: /health
-# Expected status: 200 OK
-# Interval: 30 seconds
-# Timeout: 5 seconds
-# Healthy threshold: 2
-# Unhealthy threshold: 3
-
 COPY --from=build /usr/src/app/target/Bento-0.0.1.war /usr/local/tomcat/webapps/ROOT.war
-
-CMD ["catalina.sh", "run"]
