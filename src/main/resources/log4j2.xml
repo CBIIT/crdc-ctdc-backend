@@ -59,8 +59,6 @@
 			<AppenderRef ref="LogToConsole" />
 			<AppenderRef ref="AsyncInfo" />
 		</Logger>
-		<!-- Suppress all New Relic agent output regardless of license key validity -->
-		<Logger name="com.newrelic" level="OFF" additivity="false" />
 
 		<Root level="error">
 			<AppenderRef ref="AsyncErr" />
