@@ -11,7 +11,7 @@ ARG CA_CERTIFICATES_VERSION=20260601~24.04.1
 ARG GIT_VERSION=1:2.43.0-1ubuntu7.3
 
 # Ensure git is available for the existing submodule update step.
-
+RUN git submodule update --init --recursive
 RUN apt-get update \
 	## list upgradable packages in build log, useful for patching
 	&& apt list --upgradable \
