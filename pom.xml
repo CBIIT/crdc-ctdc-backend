@@ -23,7 +23,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <jackson.version>2.18.7</jackson.version>
+        <jackson.version>2.18.8</jackson.version>
         <kotlin.version>1.9.25</kotlin.version>
         <tomcat.version>10.1.55</tomcat.version>
         <lombok.version>1.18.34</lombok.version>
@@ -35,13 +35,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-    <groupId>javax.servlet</groupId>
-    <artifactId>javax.servlet-api</artifactId>
-    <version>4.0.1</version> <!-- or the version you need -->
-    <scope>provided</scope>
-</dependency>
-
         <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -298,7 +291,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.18.7</version>
+                <version>${jackson.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

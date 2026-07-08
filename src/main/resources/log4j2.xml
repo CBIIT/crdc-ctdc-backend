@@ -59,6 +59,7 @@
 			<AppenderRef ref="LogToConsole" />
 			<AppenderRef ref="AsyncInfo" />
 		</Logger>
+
 		<Root level="error">
 			<AppenderRef ref="AsyncErr" />
 			<AppenderRef ref="LogToConsole" />
