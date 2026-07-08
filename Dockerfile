@@ -12,9 +12,9 @@ COPY . .
 RUN mvn package -DskipTests
 
 # Production stage
-# FROM ${ECR_REPO}/base-images:backend-jdk17
+# FROM ${ECR_REPO}/base-images:backend-jdk21
 
-# FROM tomcat:10.1.13-jdk17
+# FROM tomcat:10.1.13-jdk21
 # RUN apt-get update && apt-get install unzip
 # RUN rm -rf /usr/local/tomcat/webapps.dist
 # RUN rm -rf /usr/local/tomcat/webapps/ROOT
@@ -27,6 +27,10 @@ RUN apt-get update && apt-get -y upgrade
 RUN apt-get update && apt-get install unzip
 RUN rm -rf /usr/local/tomcat/webapps.dist
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
+
+# Ensure the JVM always disables New Relic agent reporting if injected by platform config.
+RUN printf '%s\n' '#!/bin/sh' 'export CATALINA_OPTS="$CATALINA_OPTS -Dnewrelic.config.agent_enabled=false"' > /usr/local/tomcat/bin/setenv.sh \
+	&& chmod +x /usr/local/tomcat/bin/setenv.sh
 
 # Modify the server.xml file to block error reportiing
 RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve"\n               showReport="false"\n               showServerInfo="false" />\n\n      </Host>|' conf/server.xml 
