@@ -8,6 +8,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
   - name: getAllStudies
@@ -27,6 +28,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
   - name: StudySpecimenByStudyShortName
@@ -38,6 +40,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
   - name: StudyDataFileByStudyShortName
@@ -49,6 +52,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
   - name: participantAndBiospecimenFilesByStudyId
@@ -60,6 +64,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
   - name: StudyFileOverviewByStudyShortName
@@ -91,6 +96,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
         - data_file_type
     result:
       type: object_array
@@ -116,9 +122,10 @@ queries:
       - tab_biospecimens
     filter:
       type: pagination
-      defaultSortField: specimen_id
+      defaultSortField: specimen_record_id
       alternativeSortField:
-        participant_id: specimen_id
+        participant_id: participant_id
+        specimen_id: specimen_record_id
     result:
       type: object_array
   - name: fileOverview
@@ -193,6 +200,7 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
   - name: clinicalTrialData
@@ -204,5 +212,6 @@ queries:
       ignoreIfEmpty:
         - study_short_name
         - study_id
+        - study_accession
     result:
       type: object_array
