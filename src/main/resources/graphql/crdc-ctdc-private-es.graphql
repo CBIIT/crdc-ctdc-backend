@@ -442,6 +442,7 @@ type ParticipantOverview {
   primary_disease_site: String
   stage_of_disease: String
   tumor_grade: String
+  survival_status: String
   age_at_enrollment: Float
   sex: String
   race: String

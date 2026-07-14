@@ -696,6 +696,8 @@ Indices:
         type: keyword
       tumor_grade:
         type: keyword
+      survival_status:
+        type: keyword
       age_at_enrollment:
         type: integer
       sex:
@@ -832,6 +834,14 @@ Indices:
         RETURN head(collect(dm)) AS demo_latest
       }
 
+      CALL {
+        WITH sb
+        OPTIONAL MATCH (sb)<-[:of_participant]-(ps:participant_status)
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(collect(ps)) AS ps_latest
+      }
+
       RETURN DISTINCT
         'participants'                                  AS type,
         sb.participant_id                               AS participant_id,
@@ -848,6 +858,7 @@ Indices:
         d_latest.primary_diagnosis_disease_group         AS primary_diagnosis_disease_group,
         d_latest.stage_of_disease                        AS stage_of_disease,
         d_latest.tumor_grade                             AS tumor_grade,
+        ps_latest.survival_status                        AS survival_status,
 
         demo_latest.age_at_enrollment                    AS age_at_enrollment,
         demo_latest.sex                                  AS sex,
