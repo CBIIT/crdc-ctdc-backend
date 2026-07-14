@@ -40,7 +40,7 @@ jobs:
         # --no-recurse-submodules prevents git from trying to fetch submodule SHAs
         # referenced by old tagged commits (avoids "not our ref" errors for deleted/orphaned SHAs)
         git fetch --no-recurse-submodules --tags --force --quiet
-        tag=$(git tag -l $BRANCH_NAME* | sort -V | tail -1)
+        tag=$(git tag -l $BRANCH_NAME.* | sort -V | tail -1)
         if  [ ! -z "$tag" ];
         then
           # Increment the build number if a tag is found
