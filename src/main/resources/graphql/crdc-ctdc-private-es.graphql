@@ -880,10 +880,12 @@ type QueryType {
   studyFileOverview(
     study_short_name: [String] = [],
     study_id: [String] = [],
+    association: [String] = [],
     study_accession: [String] = [],
     data_file_type: [String] = [],
     data_file_format: [String] = [],
     data_file_uuid: [String] = [],
+    ctep_disease_term: [String] = [],
     first: Int,
     offset: Int = 0,
     order_by: String = "data_file_uuid",

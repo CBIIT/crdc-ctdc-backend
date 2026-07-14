@@ -91,7 +91,7 @@ queries:
           method: count_bucket_keys
       - name: numberOfStudyFiles
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           selectedField: data_file_uuid
@@ -478,7 +478,7 @@ queries:
           type: nested_list
       - name: studyFileOverviewCountByDataFileType
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           selectedField: data_file_type
@@ -486,7 +486,7 @@ queries:
           type: group_count
       - name: filterStudyFileOverviewCountByDataFileType
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           ignoreSelectedField: true
@@ -495,7 +495,7 @@ queries:
           type: group_count
       - name: studyFileOverviewCountByDataFileFormat
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           selectedField: data_file_format
@@ -503,7 +503,7 @@ queries:
           type: group_count
       - name: filterStudyFileOverviewCountByDataFileFormat
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           ignoreSelectedField: true
