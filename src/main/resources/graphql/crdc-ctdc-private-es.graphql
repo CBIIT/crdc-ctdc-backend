@@ -730,6 +730,7 @@ type SearchResult {
   participantCountByAssessmentTimepoint: [GroupCount]
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
+  participantCountByStudyShortName: [GroupCount]
   studyFileOverviewCountByDataFileType(
     study_short_name: [String] = [],
     study_id: [String] = [],
@@ -760,6 +761,7 @@ type SearchResult {
   filterParticipantCountByStageOfDisease: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
+  filterParticipantCountByStudyShortName: [GroupCount]
   filterStudyFileOverviewCountByDataFileType(
     study_short_name: [String] = [],
     study_id: [String] = [],

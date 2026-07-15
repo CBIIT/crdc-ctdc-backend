@@ -293,6 +293,23 @@ queries:
           selectedField: targeted_therapy_string
         result:
           type: group_count
+      - name: participantCountByStudyShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: study_short_name
+        result:
+          type: group_count
+      - name: filterParticipantCountByStudyShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: study_short_name
+          ignoreSelectedField: true
+        result:
+          type: group_count
       - name: filterParticipantCountBySingleTargetedTherapyCombinationForFacet
         index:
           - widgets_facets_counts
@@ -510,3 +527,4 @@ queries:
           selectedField: data_file_format
         result:
           type: group_count
+      
