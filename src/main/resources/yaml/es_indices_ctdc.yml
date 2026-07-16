@@ -1278,9 +1278,9 @@ Indices:
         head([x IN meddra_codes  WHERE x IS NOT NULL])         AS meddra_disease_code,
         head([x IN histologies   WHERE x IS NOT NULL])         AS histology,
 
-        head([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
-        head([x IN race_list      WHERE x IS NOT NULL])        AS race,
-        head([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
+        apoc.coll.toSet([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
+        apoc.coll.toSet([x IN race_list      WHERE x IS NOT NULL])        AS race,
+        apoc.coll.toSet([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
         head([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
 
         carcinogen_exposure,
