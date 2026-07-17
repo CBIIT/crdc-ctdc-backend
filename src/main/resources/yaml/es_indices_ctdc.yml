@@ -1320,9 +1320,9 @@ Indices:
 
       RETURN
         'data file' AS type,
-        apoc.coll.toSet([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
-        apoc.coll.toSet([s IN study_ids WHERE s IS NOT NULL])            AS study_id,
-        apoc.coll.toSet([s IN study_accessions WHERE s IS NOT NULL])     AS study_accession,
+        head([s IN study_short_names WHERE s IS NOT NULL])               AS study_short_name,
+        head([s IN study_ids WHERE s IS NOT NULL])                        AS study_id,
+        head([s IN study_accessions WHERE s IS NOT NULL])                 AS study_accession,
 
         apoc.coll.toSet([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]) AS anatomical_collection_site,
         apoc.coll.toSet([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]) AS specimen_type,
