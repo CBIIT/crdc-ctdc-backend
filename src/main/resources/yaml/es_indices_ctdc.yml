@@ -1331,9 +1331,9 @@ Indices:
         COLLECT(DISTINCT demo.age_at_enrollment)              AS ages
 
       CALL {
-        WITH subs
+        WITH effective_subs
         OPTIONAL MATCH (psPart:participant)<-[:of_participant]-(ps:participant_status)
-        WHERE psPart IN subs
+        WHERE psPart IN effective_subs
         WITH ps
         ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
         RETURN head(collect(ps)) AS ps_latest
