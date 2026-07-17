@@ -300,8 +300,6 @@ Indices:
         type: keyword
       study_id:
         type: keyword
-      study_accession:
-        type: keyword
       specimen_types:
         type: nested
         properties:
@@ -348,7 +346,6 @@ Indices:
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
         toString(s.study_id) AS study_id,
-        s.study_accession AS study_accession,
         COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
         COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
         COLLECT(DISTINCT{
@@ -503,8 +500,6 @@ Indices:
         type: keyword
       study_id:
         type: keyword
-      study_accession:
-        type: keyword
       ctep_disease_term:
         type: keyword
       snomed_disease_code:
@@ -625,12 +620,17 @@ Indices:
       OPTIONAL MATCH (expose:exposure)-[:of_participant]->(sb)
       OPTIONAL MATCH (ps:participant_status)-[:of_participant]->(sb)
 
+      OPTIONAL MATCH (study)<-[:associated_with]-(study_zip_file:file)
+      WHERE toLower(coalesce(study_zip_file.data_file_format, '')) = 'zip'
+        AND NOT (study_zip_file)--(:participant)
+        AND NOT (study_zip_file)-[:associated_with]->(:specimen)
+
+
       RETURN DISTINCT
       'participant' as type,
       sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
       COLLECT(DISTINCT toString(study.study_id)) as study_id,
-      COLLECT(DISTINCT study.study_accession) as study_accession,
 
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
@@ -653,20 +653,34 @@ Indices:
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
       COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
       COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
-      COLLECT(DISTINCT file.data_file_type) AS data_file_type,
-      COLLECT(DISTINCT file.data_file_uuid) AS data_file_uuid,
-      COLLECT(DISTINCT file.data_file_format) AS data_file_format,
+      apoc.coll.toSet(
+        [x IN COLLECT(DISTINCT file.data_file_type) WHERE x IS NOT NULL] +
+        [x IN COLLECT(DISTINCT study_zip_file.data_file_type) WHERE x IS NOT NULL]
+      ) AS data_file_type,
+      apoc.coll.toSet(
+        [x IN COLLECT(DISTINCT file.data_file_uuid) WHERE x IS NOT NULL] +
+        [x IN COLLECT(DISTINCT study_zip_file.data_file_uuid) WHERE x IS NOT NULL]
+      ) AS data_file_uuid,
+      apoc.coll.toSet(
+        [x IN COLLECT(DISTINCT file.data_file_format) WHERE x IS NOT NULL] +
+        [x IN COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL]
+      ) AS data_file_format,
       COLLECT(DISTINCT{
         specimen_id: spec.specimen_id,
         anatomical_collection_site: spec.anatomical_collection_site,
         tissue_category: spec.tissue_category,
         assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
-      COLLECT(DISTINCT{
+      [x IN COLLECT(DISTINCT{
         data_file_uuid: file.data_file_uuid,
         data_file_format: file.data_file_format,
         data_file_type: file.data_file_type
-      }) AS file_info
+      }) WHERE x.data_file_uuid IS NOT NULL] +
+      [x IN COLLECT(DISTINCT{
+        data_file_uuid: study_zip_file.data_file_uuid,
+        data_file_format: study_zip_file.data_file_format,
+        data_file_type: study_zip_file.data_file_type
+      }) WHERE x.data_file_uuid IS NOT NULL] AS file_info
       " 
 
   # Participant Table Data
@@ -681,8 +695,6 @@ Indices:
       study_short_name:
         type: keyword
       study_id:
-        type: keyword
-      study_accession:
         type: keyword
       study_type:
         type: keyword
@@ -779,7 +791,11 @@ Indices:
       OPTIONAL MATCH (sb)<-[*..2]-(df:file)
       OPTIONAL MATCH (sb)<-[:of_participant]-(spec:specimen)
       OPTIONAL MATCH (sb)<-[:of_participant]-(surgery:surgery)
-      WITH sb, study, spec, df, surgery
+      OPTIONAL MATCH (study)<-[:associated_with]-(study_zip_file:file)
+      WHERE toLower(coalesce(study_zip_file.data_file_format, '')) = 'zip'
+        AND NOT (study_zip_file)--(:participant)
+        AND NOT (study_zip_file)-[:associated_with]->(:specimen)
+      WITH sb, study, spec, df, surgery, study_zip_file
 
       CALL {
         WITH sb
@@ -852,7 +868,6 @@ Indices:
 
         study.study_short_name                           AS study_short_name,
         study.study_id                                   AS study_id,
-        study.study_accession                            AS study_accession,
         study.study_name                                 AS study_name,
         study.study_type                                 AS study_type,
         study.study_description                          AS study_description,
@@ -869,14 +884,23 @@ Indices:
         demo_latest.race                                 AS race,
         demo_latest.ethnicity                            AS ethnicity,
 
-        COLLECT(DISTINCT df.data_file_uuid)              AS data_file_uuid,
+        apoc.coll.toSet(
+          [x IN COLLECT(DISTINCT df.data_file_uuid) WHERE x IS NOT NULL] +
+          [x IN COLLECT(DISTINCT study_zip_file.data_file_uuid) WHERE x IS NOT NULL]
+        )                                                AS data_file_uuid,
         COLLECT(DISTINCT spec.specimen_id)               AS specimen_id,
         anatomical_collection_site,
         COLLECT(DISTINCT spec.specimen_type)             AS specimen_type,
         COLLECT(DISTINCT spec.tissue_category)           AS tissue_category,
         COLLECT(DISTINCT spec.assessment_timepoint)      AS assessment_timepoint,
-        COLLECT(DISTINCT df.data_file_type)              AS data_file_type,
-        COLLECT(DISTINCT df.data_file_format)            AS data_file_format,
+        apoc.coll.toSet(
+          [x IN COLLECT(DISTINCT df.data_file_type) WHERE x IS NOT NULL] +
+          [x IN COLLECT(DISTINCT study_zip_file.data_file_type) WHERE x IS NOT NULL]
+        )                                                AS data_file_type,
+        apoc.coll.toSet(
+          [x IN COLLECT(DISTINCT df.data_file_format) WHERE x IS NOT NULL] +
+          [x IN COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL]
+        )                                                AS data_file_format,
 
         targeted_therapy,
         best_response_to_targeted_therapy,
@@ -885,7 +909,7 @@ Indices:
 
         coalesce(e_latest.carcinogen_exposure, '')       AS carcinogen_exposure,
 
-        COLLECT(DISTINCT {
+        [x IN COLLECT(DISTINCT {
           data_file_uuid: df.data_file_uuid,
           data_file_name: df.data_file_name,
           data_file_type: df.data_file_type,
@@ -896,7 +920,19 @@ Indices:
           data_file_checksum_type: df.data_file_checksum_type,
           data_file_compression_status: df.data_file_compression_status,
           data_file_location: df.data_file_location
-        })                                              AS data_files,
+        }) WHERE x.data_file_uuid IS NOT NULL] +
+        [x IN COLLECT(DISTINCT {
+          data_file_uuid: study_zip_file.data_file_uuid,
+          data_file_name: study_zip_file.data_file_name,
+          data_file_type: study_zip_file.data_file_type,
+          data_file_description: study_zip_file.data_file_description,
+          data_file_format: study_zip_file.data_file_format,
+          data_file_size: study_zip_file.data_file_size,
+          data_file_checksum_value: study_zip_file.data_file_checksum_value,
+          data_file_checksum_type: study_zip_file.data_file_checksum_type,
+          data_file_compression_status: study_zip_file.data_file_compression_status,
+          data_file_location: study_zip_file.data_file_location
+        }) WHERE x.data_file_uuid IS NOT NULL]          AS data_files,
         COLLECT(DISTINCT surgery.surgical_procedure)                     AS surgical_procedure,
         COLLECT(DISTINCT surgery.surgical_procedure_anatomical_location) AS surgical_procedure_anatomical_location,
         COLLECT(DISTINCT surgery.surgical_procedure_date)                AS surgical_procedure_date,
@@ -907,7 +943,7 @@ Indices:
         ORDER BY coalesce(sb.participant_id, '') ASC
       "
 
-  # Biospecimen Table Data
+  # # Biospecimen Table Data
   - index_name: tab_biospecimens
     type: neo4j
     mapping:
@@ -918,8 +954,6 @@ Indices:
       study_short_name:
         type: keyword
       study_id:
-        type: keyword
-      study_accession:
         type: keyword
       ctep_disease_term:
         type: keyword
@@ -1003,12 +1037,17 @@ Indices:
         type: keyword
       
     cypher_query: "
+     
       MATCH (spec:specimen)-[:of_participant]->(sub:participant)
       OPTIONAL MATCH (study:study)<-[:belongs_to]-(sub)
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       OPTIONAL MATCH (sub)<-[*..2]-(df:file)
-      WITH sub, spec, study, demo, exp, df,
+      OPTIONAL MATCH (study)<-[:associated_with]-(study_zip_file:file)
+      WHERE toLower(coalesce(study_zip_file.data_file_format, '')) = 'zip'
+        AND NOT (study_zip_file)--(:participant)
+        AND NOT (study_zip_file)-[:associated_with]->(:specimen)
+      WITH sub, spec, study, demo, exp, df, study_zip_file,
           apoc.text.capitalizeAll(toLower(COALESCE(spec.anatomical_collection_site, ''))) AS acs_norm
 
       CALL {
@@ -1058,8 +1097,7 @@ Indices:
       spec.assessment_timepoint AS assessment_timepoint,
       study.study_short_name AS study_short_name,
       toString(study.study_id) AS study_id,
-      study.study_accession AS study_accession,
-      COLLECT(DISTINCT {
+      [x IN COLLECT(DISTINCT {
       data_file_uuid: df.data_file_uuid,
       data_file_name: df.data_file_name,
       data_file_type: df.data_file_type,
@@ -1070,7 +1108,19 @@ Indices:
       data_file_checksum_type: df.data_file_checksum_type,
       data_file_compression_status: df.data_file_compression_status,
       data_file_location: df.data_file_location
-      }) AS data_files,
+      }) WHERE x.data_file_uuid IS NOT NULL] +
+      [x IN COLLECT(DISTINCT {
+      data_file_uuid: study_zip_file.data_file_uuid,
+      data_file_name: study_zip_file.data_file_name,
+      data_file_type: study_zip_file.data_file_type,
+      data_file_description: study_zip_file.data_file_description,
+      data_file_format: study_zip_file.data_file_format,
+      data_file_size: study_zip_file.data_file_size,
+      data_file_checksum_value: study_zip_file.data_file_checksum_value,
+      data_file_checksum_type: study_zip_file.data_file_checksum_type,
+      data_file_compression_status: study_zip_file.data_file_compression_status,
+      data_file_location: study_zip_file.data_file_location
+      }) WHERE x.data_file_uuid IS NOT NULL] AS data_files,
       COLLECT(DISTINCT {
       specimen_record_id: spec.specimen_record_id,
       specimen_category: spec.specimen_category,
@@ -1079,7 +1129,10 @@ Indices:
       tissue_category: spec.tissue_category,
       assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
-      COLLECT(DISTINCT df.data_file_uuid) AS data_file_uuid,
+      apoc.coll.toSet(
+      [x IN COLLECT(DISTINCT df.data_file_uuid) WHERE x IS NOT NULL] +
+      [x IN COLLECT(DISTINCT study_zip_file.data_file_uuid) WHERE x IS NOT NULL]
+      ) AS data_file_uuid,
       tumor_grade,
       ps_latest.survival_status AS survival_status,
       demo.sex AS sex,
@@ -1088,8 +1141,14 @@ Indices:
       COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
       targeted_therapy,
       targeted_therapy_string,
-      COLLECT(DISTINCT df.data_file_type) AS data_file_type,
-      COLLECT(DISTINCT df.data_file_format) AS data_file_format
+      apoc.coll.toSet(
+      [x IN COLLECT(DISTINCT df.data_file_type) WHERE x IS NOT NULL] +
+      [x IN COLLECT(DISTINCT study_zip_file.data_file_type) WHERE x IS NOT NULL]
+      ) AS data_file_type,
+      apoc.coll.toSet(
+      [x IN COLLECT(DISTINCT df.data_file_format) WHERE x IS NOT NULL] +
+      [x IN COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL]
+      ) AS data_file_format
       ORDER BY COALESCE(spec.specimen_record_id, '') ASC
       "
   - index_name: tab_data_files
@@ -1180,38 +1239,79 @@ Indices:
       study_accession:
         type: keyword
     cypher_query: "
-      CALL {
-        MATCH (sub:participant)<-[*..2]-(parent)<--(f:file)
-        RETURN f.data_file_uuid AS uuid, 'biospecimen' AS association
-        UNION
-        MATCH (sub:participant)<-[:associated_with]-(f:file)
-        RETURN f.data_file_uuid AS uuid, 'participant' AS association
+      MATCH (f:file)-[:associated_with]-(s:study)
 
+      CALL {
+        WITH f
+        MATCH (f)-[:associated_with]-(s:study)
+        WHERE NOT (f)-[:associated_with]-(:participant)
+          AND NOT (f)-[:associated_with]-(:specimen)
+        RETURN f.data_file_uuid AS uuid, 'study' AS association
+        UNION
+        WITH f
+        MATCH (f)-[:associated_with]-(:participant)
+        WHERE NOT (f)-[:associated_with]-(:specimen)
+        RETURN f.data_file_uuid AS uuid, 'participant' AS association
+        UNION
+        WITH f
+        MATCH (s)-[:associated_with]-(f)-[:associated_with]-(:specimen)-[:of_participant]->(:participant)
+        RETURN f.data_file_uuid AS uuid, 'biospecimen' AS association
       }
       WITH uuid, COLLECT(DISTINCT association) AS associations
 
       MATCH (f:file {data_file_uuid: uuid})
 
       OPTIONAL MATCH (f)-[:associated_with]->(spec1:specimen)-[:of_participant]->(sub1:participant)
-       OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+      OPTIONAL MATCH (f)-[:associated_with]->(sub2:participant)
+      OPTIONAL MATCH (f)-[:associated_with]-(study_direct:study)
       WITH
         f,
         associations,
-        apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS subs,
+        COLLECT(DISTINCT study_direct)                                                AS direct_studies,
+        apoc.coll.toSet([x IN (COLLECT(sub1) + COLLECT(sub2)) WHERE x IS NOT NULL]) AS file_subs,
         apoc.coll.toSet([x IN COLLECT(spec1) WHERE x IS NOT NULL])                  AS specs
 
-      OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
-      WHERE sPart IN subs
+      OPTIONAL MATCH (study_part:participant)-[:belongs_to]->(study_expand:study)
+      WHERE study_expand IN direct_studies
+        AND size(associations) = 1 AND 'study' IN associations
       WITH
-        f, associations, subs, specs,
-        COLLECT(DISTINCT study.study_short_name)              AS study_short_names,
-        COLLECT(DISTINCT toString(study.study_id))            AS study_ids,
-        COllect(distinct study.study_accession)           AS study_accessions
+        f, associations, direct_studies, file_subs, specs,
+        apoc.coll.toSet(
+          file_subs +
+          [x IN COLLECT(DISTINCT study_part) WHERE x IS NOT NULL]
+        )                                                     AS effective_subs
+
+      OPTIONAL MATCH (expand_spec:specimen)-[:of_participant]->(expand_spec_part:participant)
+      WHERE expand_spec_part IN effective_subs
+        AND size(associations) = 1 AND 'study' IN associations
+      WITH
+        f, associations, effective_subs, direct_studies,
+        apoc.coll.toSet(
+          specs +
+          [x IN COLLECT(DISTINCT expand_spec) WHERE x IS NOT NULL]
+        )                                                     AS specs
+
+      OPTIONAL MATCH (sPart:participant)-[:belongs_to]->(study:study)
+      WHERE sPart IN effective_subs
+      WITH
+        f, associations, effective_subs, specs, direct_studies,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT study.study_short_name) +
+          [s IN direct_studies WHERE s IS NOT NULL | s.study_short_name]
+        )                                                     AS study_short_names,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT toString(study.study_id)) +
+          [s IN direct_studies WHERE s IS NOT NULL | toString(s.study_id)]
+        )                                                     AS study_ids,
+        apoc.coll.toSet(
+          COLLECT(DISTINCT study.study_accession) +
+          [s IN direct_studies WHERE s IS NOT NULL | s.study_accession]
+        )                                                     AS study_accessions
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
-      WHERE dPart IN subs
+      WHERE dPart IN effective_subs
       WITH
-        f, associations, subs, specs, study_short_names, study_ids, study_accessions,
+        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions,
         COLLECT(DISTINCT diag.ctep_disease_term)              AS ctep_terms,
         COLLECT(DISTINCT diag.primary_diagnosis_disease_group) AS pdg_list,
         COLLECT(DISTINCT diag.stage_of_disease)               AS stage_list,
@@ -1221,9 +1321,9 @@ Indices:
         COLLECT(DISTINCT diag.histology)                      AS histologies
 
       OPTIONAL MATCH (dmPart:participant)<-[:of_participant]-(demo:demographic)
-      WHERE dmPart IN subs
+      WHERE dmPart IN effective_subs
       WITH
-        f, associations, subs, specs, study_short_names, study_ids, study_accessions,
+        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         COLLECT(DISTINCT demo.sex)                            AS sex_list,
         COLLECT(DISTINCT demo.race)                           AS race_list,
@@ -1240,43 +1340,44 @@ Indices:
       }
 
       OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
-      WHERE exPart IN subs
+      WHERE exPart IN effective_subs
       WITH
-        f, associations, subs, specs, study_short_names, study_ids, study_accessions, ps_latest,
+
+        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions, ps_latest,
+
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
 
-       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
-      WHERE ttPart IN subs
+      OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
+      WHERE ttPart IN effective_subs
       WITH
-        f, associations, subs, specs, study_short_names, study_ids, study_accessions, ps_latest,
+
+        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions,ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
-        apoc.text.join(
-          apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
-          '|'
-        )                                                     AS targeted_therapy_string
+        apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''])
+                                                                AS targeted_therapy_string
 
       RETURN
         'data file' AS type,
-        head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
-        head([s IN study_ids WHERE s IS NOT NULL])            AS study_id,
-        
-        head([s IN study_accessions WHERE s IS NOT NULL]) AS study_accession,
+        head([s IN study_short_names WHERE s IS NOT NULL])               AS study_short_name,
+        head([s IN study_ids WHERE s IS NOT NULL])                        AS study_id,
+        head([s IN study_accessions WHERE s IS NOT NULL])                 AS study_accession,
 
-        COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]), '') AS anatomical_collection_site,
-        COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,
-        COALESCE(head([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]), '') AS tissue_category,
-        COALESCE(head([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]), '') AS assessment_timepoint,
-        COALESCE(head([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]), '') AS specimen_record_id,
+        apoc.coll.toSet([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]) AS anatomical_collection_site,
+        apoc.coll.toSet([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]) AS specimen_type,
+        apoc.coll.toSet([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]) AS tissue_category,
+        apoc.coll.toSet([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]) AS assessment_timepoint,
+        apoc.coll.toSet([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]) AS specimen_record_id,
 
         f.data_file_name                                      AS data_file_name,
         f.data_file_format                                    AS data_file_format,
         f.data_file_type                                      AS data_file_type,
         f.data_file_size                                      AS data_file_size,
         f.data_file_uuid                                      AS data_file_uuid,
+        f.data_file_uuid                                      AS data_file_uuid_study,
         'drs://nci-crdc.datacommons.io/' + f.data_file_uuid   AS drs_uri,
         f.data_file_description                               AS data_file_description,
         f.data_file_checksum_value                            AS data_file_checksum_value,
@@ -1286,21 +1387,22 @@ Indices:
 
         associations                                          AS association,
 
-        head([x IN subs  WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
+        apoc.coll.toSet([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
 
-        head([x IN ctep_terms   WHERE x IS NOT NULL])          AS ctep_disease_term,
-        head([x IN pdg_list     WHERE x IS NOT NULL])          AS primary_diagnosis_disease_group,
-        head([x IN stage_list   WHERE x IS NOT NULL])          AS stage_of_disease,
-        head([x IN tumor_grades WHERE x IS NOT NULL])          AS tumor_grade,
+
+        apoc.coll.toSet([x IN ctep_terms     WHERE x IS NOT NULL])        AS ctep_disease_term,
+        apoc.coll.toSet([x IN pdg_list       WHERE x IS NOT NULL])        AS primary_diagnosis_disease_group,
+        apoc.coll.toSet([x IN stage_list     WHERE x IS NOT NULL])        AS stage_of_disease,
+        apoc.coll.toSet([x IN tumor_grades   WHERE x IS NOT NULL])        AS tumor_grade,
+        apoc.coll.toSet([x IN primary_sites  WHERE x IS NOT NULL])        AS primary_disease_site,
+        apoc.coll.toSet([x IN meddra_codes   WHERE x IS NOT NULL])        AS meddra_disease_code,
+        apoc.coll.toSet([x IN histologies    WHERE x IS NOT NULL])        AS histology,
         ps_latest.survival_status                              AS survival_status,
-        head([x IN primary_sites WHERE x IS NOT NULL])         AS primary_disease_site,
-        head([x IN meddra_codes  WHERE x IS NOT NULL])         AS meddra_disease_code,
-        head([x IN histologies   WHERE x IS NOT NULL])         AS histology,
 
-        head([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
-        head([x IN race_list      WHERE x IS NOT NULL])        AS race,
-        head([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
-        head([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
+        apoc.coll.toSet([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
+        apoc.coll.toSet([x IN race_list      WHERE x IS NOT NULL])        AS race,
+        apoc.coll.toSet([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
+        apoc.coll.toSet([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
 
         carcinogen_exposure,
         targeted_therapy_raw                                   AS targeted_therapy,
@@ -1319,6 +1421,7 @@ Indices:
           data_file_format: f.data_file_format,
           data_file_type:   f.data_file_type }]               AS file_info
       "
+      
   # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
   - index_name: cart_data_files
     type: neo4j
@@ -1592,8 +1695,6 @@ Indices:
         type: keyword
       study_id:
         type: keyword
-      study_accession:
-        type: keyword
       specimen_id:
         type: keyword
       specimen_record_id:
@@ -1683,7 +1784,6 @@ Indices:
         sub.participant_id                          AS participant_id,
         study.study_short_name                      AS study_short_name,
         toString(study.study_id)                    AS study_id,
-        study.study_accession                       AS study_accession,
 
         diag.ctep_disease_term                      AS ctep_disease_term,
         diag.primary_diagnosis_disease_group        AS primary_diagnosis_disease_group,
@@ -1814,10 +1914,13 @@ Indices:
       CALL {
         WITH f
         MATCH (f)-[:associated_with]-(s:study)
+        WHERE NOT (f)-[:associated_with]-(:participant)
+          AND NOT (f)-[:associated_with]-(:specimen)
         RETURN f.data_file_uuid AS uuid, 'study' AS association
         UNION
         WITH f
         MATCH (f)-[:associated_with]-(:participant)
+        WHERE NOT (f)-[:associated_with]-(:specimen)
         RETURN f.data_file_uuid AS uuid, 'participant' AS association
         UNION
         WITH f
@@ -1825,10 +1928,16 @@ Indices:
         RETURN f.data_file_uuid AS uuid, 'biospecimen' AS association
       }
 
-      WITH f, apoc.coll.toSet(COLLECT(DISTINCT association)) AS associations
-      WHERE 'study' IN associations
-        AND NOT 'participant' IN associations
-        AND NOT 'biospecimen' IN associations
+      WITH f, apoc.coll.toSet(COLLECT(DISTINCT association)) AS raw_associations
+      WITH f,
+        CASE
+          WHEN 'study' IN raw_associations
+            AND NOT 'participant' IN raw_associations
+            AND NOT 'biospecimen' IN raw_associations
+          THEN ['study']
+          ELSE [a IN raw_associations WHERE a <> 'study']
+        END AS associations
+
 
       MATCH (study:study)-[:associated_with]-(f)
 
@@ -1910,7 +2019,13 @@ Indices:
         diag.primary_disease_site AS primary_disease_site,
         diag.meddra_disease_code AS meddra_disease_code,
         diag.histology AS histology,
-        COALESCE(apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)), '') AS anatomical_collection_site,
+        CASE
+          WHEN spec IS NULL
+            OR spec.anatomical_collection_site IS NULL
+            OR trim(spec.anatomical_collection_site) = ''
+          THEN ''
+          ELSE apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
+        END AS anatomical_collection_site,
         COALESCE(spec.specimen_type, '') AS specimen_type,
         COALESCE(spec.tissue_category, '') AS tissue_category,
         COALESCE(spec.assessment_timepoint, '') AS assessment_timepoint,
@@ -1926,7 +2041,12 @@ Indices:
           {
             specimen_record_id: spec.specimen_record_id,
             specimen_id: spec.specimen_id,
-            anatomical_collection_site: apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)),
+            anatomical_collection_site: CASE
+              WHEN spec.anatomical_collection_site IS NULL
+                OR trim(spec.anatomical_collection_site) = ''
+              THEN ''
+              ELSE apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
+            END,
             specimen_type: spec.specimen_type,
             tissue_category: spec.tissue_category,
             assessment_timepoint: spec.assessment_timepoint
@@ -1936,7 +2056,7 @@ Indices:
           data_file_format: f.data_file_format,
           data_file_type: f.data_file_type }] AS file_info
       "
-            #lists for GS hashmap
+            # lists for GS hashmap
   - index_name: gs_list
     type: neo4j
     # type mapping for each property of the index
@@ -1963,8 +2083,6 @@ Indices:
       study_short_name:
         type: keyword
       study_id:
-        type: keyword
-      study_accession:
         type: keyword
       ctep_disease_term:
         type: keyword
@@ -2053,7 +2171,6 @@ Indices:
       sb.participant_id as participant_id,
       COLLECT(DISTINCT study.study_short_name) as study_short_name,
       COLLECT(DISTINCT toString(study.study_id)) as study_id,
-      COLLECT(DISTINCT study.study_accession) as study_accession,
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
       COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 
@@ -2451,8 +2568,6 @@ Indices:
         type: keyword
       study_id:
         type: keyword
-      study_accession:
-        type: keyword
       targetedTherapyNodeData:
         type: nested
         properties:
@@ -2606,7 +2721,6 @@ Indices:
       RETURN
         study.study_short_name AS study_short_name,
         toString(study.study_id) AS study_id,
-        study.study_accession AS study_accession,
         targetedTherapyNodeData,
         size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
         targetedTherapyParticipantCount,

@@ -736,6 +736,8 @@ type SearchResult {
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
   participantCountBySurvivalStatus: [GroupCount]
+  participantCountByStudyShortName: [GroupCount]
+
   studyFileOverviewCountByDataFileType(
     study_short_name: [String] = [],
     study_id: [String] = [],
@@ -767,6 +769,7 @@ type SearchResult {
   filterParticipantCountBySurvivalStatus: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
+  filterParticipantCountByStudyShortName: [GroupCount]
   filterStudyFileOverviewCountByDataFileType(
     study_short_name: [String] = [],
     study_id: [String] = [],
@@ -888,11 +891,13 @@ type QueryType {
   studyFileOverview(
     study_short_name: [String] = [],
     study_id: [String] = [],
+    association: [String] = [],
     study_accession: [String] = [],
     survival_status: [String] = [],
     data_file_type: [String] = [],
     data_file_format: [String] = [],
     data_file_uuid: [String] = [],
+    ctep_disease_term: [String] = [],
     first: Int,
     offset: Int = 0,
     order_by: String = "data_file_uuid",
