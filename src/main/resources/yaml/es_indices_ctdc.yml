@@ -510,6 +510,8 @@ Indices:
         type: keyword
       diagnosis_id:
         type: keyword
+      survival_status:
+        type: keyword
       sex:
         type: keyword
       race:
@@ -616,10 +618,13 @@ Indices:
       OPTIONAL MATCH (sb)<-[*..2]-(file:file)
       OPTIONAL MATCH (diag:diagnosis)-[:of_participant]->(sb)
       OPTIONAL MATCH (expose:exposure)-[:of_participant]->(sb)
+      OPTIONAL MATCH (ps:participant_status)-[:of_participant]->(sb)
+
       OPTIONAL MATCH (study)<-[:associated_with]-(study_zip_file:file)
       WHERE toLower(coalesce(study_zip_file.data_file_format, '')) = 'zip'
         AND NOT (study_zip_file)--(:participant)
         AND NOT (study_zip_file)-[:associated_with]->(:specimen)
+
 
       RETURN DISTINCT
       'participant' as type,
@@ -633,6 +638,7 @@ Indices:
       COLLECT(DISTINCT diag.tumor_grade) as tumor_grade,
       COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
       COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
+      COLLECT(DISTINCT ps.survival_status) as survival_status,
       
       sex,
       race,
@@ -705,6 +711,8 @@ Indices:
       stage_of_disease:
         type: keyword
       tumor_grade:
+        type: keyword
+      survival_status:
         type: keyword
       age_at_enrollment:
         type: integer
@@ -846,6 +854,14 @@ Indices:
         RETURN head(collect(dm)) AS demo_latest
       }
 
+      CALL {
+        WITH sb
+        OPTIONAL MATCH (sb)<-[:of_participant]-(ps:participant_status)
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(collect(ps)) AS ps_latest
+      }
+
       RETURN DISTINCT
         'participants'                                  AS type,
         sb.participant_id                               AS participant_id,
@@ -861,6 +877,7 @@ Indices:
         d_latest.primary_diagnosis_disease_group         AS primary_diagnosis_disease_group,
         d_latest.stage_of_disease                        AS stage_of_disease,
         d_latest.tumor_grade                             AS tumor_grade,
+        ps_latest.survival_status                        AS survival_status,
 
         demo_latest.age_at_enrollment                    AS age_at_enrollment,
         demo_latest.sex                                  AS sex,
@@ -1000,6 +1017,8 @@ Indices:
         type: keyword
       tumor_grade:
         type: keyword
+      survival_status:
+        type: keyword
       sex:
         type: keyword
       race:
@@ -1043,6 +1062,14 @@ Indices:
         best.stage_of_disease                  AS stage_of_disease,
         best.primary_diagnosis_disease_group   AS primary_diagnosis_disease_group,
         best.tumor_grade                       AS tumor_grade
+      }
+
+      CALL {
+        WITH sub
+        OPTIONAL MATCH (sub)<-[:of_participant]-(ps:participant_status)
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(collect(ps)) AS ps_latest
       }
 
       CALL {
@@ -1107,6 +1134,7 @@ Indices:
       [x IN COLLECT(DISTINCT study_zip_file.data_file_uuid) WHERE x IS NOT NULL]
       ) AS data_file_uuid,
       tumor_grade,
+      ps_latest.survival_status AS survival_status,
       demo.sex AS sex,
       demo.race AS race,
       demo.ethnicity AS ethnicity,
@@ -1166,6 +1194,8 @@ Indices:
       stage_of_disease:
         type: keyword
       tumor_grade:
+        type: keyword
+      survival_status:
         type: keyword
       sex:
         type: keyword
@@ -1300,10 +1330,21 @@ Indices:
         COLLECT(DISTINCT demo.ethnicity)                      AS ethnicity_list,
         COLLECT(DISTINCT demo.age_at_enrollment)              AS ages
 
+      CALL {
+        WITH subs
+        OPTIONAL MATCH (psPart:participant)<-[:of_participant]-(ps:participant_status)
+        WHERE psPart IN subs
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(collect(ps)) AS ps_latest
+      }
+
       OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
       WHERE exPart IN effective_subs
       WITH
-        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions,
+
+        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions, ps_latest,
+
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
@@ -1311,7 +1352,8 @@ Indices:
       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
       WHERE ttPart IN effective_subs
       WITH
-        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions,
+
+        f, associations, effective_subs, specs, study_short_names, study_ids, study_accessions,ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
@@ -1347,6 +1389,7 @@ Indices:
 
         apoc.coll.toSet([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
 
+
         apoc.coll.toSet([x IN ctep_terms     WHERE x IS NOT NULL])        AS ctep_disease_term,
         apoc.coll.toSet([x IN pdg_list       WHERE x IS NOT NULL])        AS primary_diagnosis_disease_group,
         apoc.coll.toSet([x IN stage_list     WHERE x IS NOT NULL])        AS stage_of_disease,
@@ -1354,6 +1397,7 @@ Indices:
         apoc.coll.toSet([x IN primary_sites  WHERE x IS NOT NULL])        AS primary_disease_site,
         apoc.coll.toSet([x IN meddra_codes   WHERE x IS NOT NULL])        AS meddra_disease_code,
         apoc.coll.toSet([x IN histologies    WHERE x IS NOT NULL])        AS histology,
+        ps_latest.survival_status                              AS survival_status,
 
         apoc.coll.toSet([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
         apoc.coll.toSet([x IN race_list      WHERE x IS NOT NULL])        AS race,
@@ -1422,6 +1466,8 @@ Indices:
       stage_of_disease:
         type: keyword
       tumor_grade:
+        type: keyword
+      survival_status:
         type: keyword
       sex:
         type: keyword
@@ -1528,10 +1574,19 @@ Indices:
         COLLECT(DISTINCT demo.ethnicity)                      AS ethnicity_list,
         COLLECT(DISTINCT demo.age_at_enrollment)              AS ages
 
+      CALL {
+        WITH subs
+        OPTIONAL MATCH (psPart:participant)<-[:of_participant]-(ps:participant_status)
+        WHERE psPart IN subs
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(collect(ps)) AS ps_latest
+      }
+
       OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
       WHERE exPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names, study_accessions,
+        f, associations, subs, specs, study_short_names, study_accessions, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
@@ -1539,7 +1594,7 @@ Indices:
        OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
       WHERE ttPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,study_accessions,
+        f, associations, subs, specs, study_short_names,study_accessions, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
@@ -1586,6 +1641,7 @@ Indices:
         head([x IN pdg_list     WHERE x IS NOT NULL])          AS primary_diagnosis_disease_group,
         head([x IN stage_list   WHERE x IS NOT NULL])          AS stage_of_disease,
         head([x IN tumor_grades WHERE x IS NOT NULL])          AS tumor_grade,
+        ps_latest.survival_status                              AS survival_status,
         head([x IN primary_sites WHERE x IS NOT NULL])         AS primary_disease_site,
         head([x IN meddra_codes  WHERE x IS NOT NULL])         AS meddra_disease_code,
         head([x IN histologies   WHERE x IS NOT NULL])         AS histology,
@@ -1651,6 +1707,8 @@ Indices:
         type: keyword
       tumor_grade:
         type: keyword
+      survival_status:
+        type: keyword
       sex:
         type: keyword
       race:
@@ -1684,9 +1742,17 @@ Indices:
 
       OPTIONAL MATCH (sub)-[:belongs_to]->(study:study)
 
+      CALL {
+        WITH sub
+        OPTIONAL MATCH (sub)<-[:of_participant]-(ps:participant_status)
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(collect(ps)) AS ps_latest
+      }
+
       OPTIONAL MATCH (tt:targeted_therapy)-[:of_participant]->(sub)
       WITH
-        f, sub, spec, study,
+        f, sub, spec, study, ps_latest,
         apoc.coll.toSet([t IN collect(DISTINCT tt.targeted_therapy)
                           WHERE t IS NOT NULL AND t <> '' | t])                AS targeted_therapy,
         apoc.text.join(
@@ -1699,7 +1765,7 @@ Indices:
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       WITH
-        f, sub, spec, study, diag, demo,
+        f, sub, spec, study, diag, demo, ps_latest,
         targeted_therapy, targeted_therapy_string,
         collect(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure
 
@@ -1723,6 +1789,7 @@ Indices:
         diag.primary_diagnosis_disease_group        AS primary_diagnosis_disease_group,
         diag.stage_of_disease                       AS stage_of_disease,
         diag.tumor_grade                            AS tumor_grade,
+        ps_latest.survival_status                   AS survival_status,
 
         demo.sex                                    AS sex,
         demo.race                                   AS race,
@@ -1794,6 +1861,8 @@ Indices:
       stage_of_disease:
         type: keyword
       tumor_grade:
+        type: keyword
+      survival_status:
         type: keyword
       primary_disease_site:
         type: keyword
@@ -1909,6 +1978,14 @@ Indices:
 
       CALL {
         WITH sb
+        OPTIONAL MATCH (sb)<-[:of_participant]-(ps:participant_status)
+        WITH ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        RETURN head(COLLECT(ps)) AS ps_latest
+      }
+
+      CALL {
+        WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
         WITH apoc.coll.toSet(ts) AS dedup
@@ -1938,6 +2015,7 @@ Indices:
         diag.primary_diagnosis_disease_group AS primary_diagnosis_disease_group,
         diag.stage_of_disease AS stage_of_disease,
         diag.tumor_grade AS tumor_grade,
+        ps_latest.survival_status AS survival_status,
         diag.primary_disease_site AS primary_disease_site,
         diag.meddra_disease_code AS meddra_disease_code,
         diag.histology AS histology,
