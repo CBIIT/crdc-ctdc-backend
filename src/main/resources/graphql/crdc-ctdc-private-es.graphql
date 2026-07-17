@@ -319,6 +319,7 @@ type StudyFileOverviewInfo {
   primary_diagnosis_disease_group: String
   stage_of_disease: String
   tumor_grade: String
+  survival_status: String
   primary_disease_site: String
   meddra_disease_code: String
   histology: String
@@ -635,6 +636,7 @@ type BiospecimenOverview {
   race: String
   specimen_category: String
   tumor_grade: String
+  survival_status: String
   targeted_therapy: String
   surgical_procedure: String
   age_at_enrollment: String
@@ -667,6 +669,7 @@ type FileOverview {
   data_file_uuid: String
   stage_of_disease: String
   tumor_grade: String
+  survival_status: String
   sex: String
   race: String
   ethnicity: String
@@ -699,6 +702,7 @@ type FileParticipant {
   specimen_id: String
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
+  survival_status: String
   data_file_uuid: String # For Adding Files into Cart
 }
 
@@ -731,6 +735,7 @@ type SearchResult {
   participantCountByAssessmentTimepoint: [GroupCount]
   dataFileCountByDataFileType: [GroupCount]
   dataFileCountByDataFileFormat: [GroupCount]
+  participantCountBySurvivalStatus: [GroupCount]
   studyFileOverviewCountByDataFileType(
     study_short_name: [String] = [],
     study_id: [String] = [],
@@ -759,6 +764,7 @@ type SearchResult {
   filterSpecimenCountBySpecimenType: [GroupCount]
   filterParticipantCountByAssessmentTimepoint: [GroupCount]
   filterParticipantCountByStageOfDisease: [GroupCount]
+  filterParticipantCountBySurvivalStatus: [GroupCount]
   filterDataFileCountByDataFileType: [GroupCount]
   filterDataFileCountByDataFileFormat: [GroupCount]
   filterStudyFileOverviewCountByDataFileType(
@@ -872,6 +878,7 @@ type QueryType {
     study_short_name: [String] = [],
     study_id: [String] = [],
     study_accession: [String] = [],
+    survival_status: [String] = [],
     data_file_uuid: [String] = [],
     data_file_type: [String] = [],
     association: [String] = [],
@@ -882,6 +889,7 @@ type QueryType {
     study_short_name: [String] = [],
     study_id: [String] = [],
     study_accession: [String] = [],
+    survival_status: [String] = [],
     data_file_type: [String] = [],
     data_file_format: [String] = [],
     data_file_uuid: [String] = [],
@@ -912,6 +920,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    survival_status: [String] = []
     
     tumor_grade: [String] = []
     sex: [String] = []
@@ -946,6 +955,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    survival_status: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -977,6 +987,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    survival_status: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -1011,6 +1022,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    survival_status: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -1046,6 +1058,7 @@ type QueryType {
     ctep_disease_term: [String] = []
     primary_diagnosis_disease_group: [String] = []
     stage_of_disease: [String] = []
+    survival_status: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -1072,6 +1085,7 @@ type QueryType {
   searchParticipants(
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
+    survival_status: [String] = []
     tumor_grade: [String] = []
     sex: [String] = []
     race: [String] = []
@@ -1095,6 +1109,7 @@ type QueryType {
 
   fileIDsFromList(
     participant_id: [String] = []
+    survival_status: [String] = []
     specimen_id: [String] = []
     data_file_uuid: [String] = []
     data_file_name: [String] = []
@@ -1103,6 +1118,7 @@ type QueryType {
   filesInList(
     data_file_uuid: [String]
     association: [String] = []
+    survival_status: [String] = []
     order_by: String = ""
     sort_direction: String = "ASC"
     first: Int = 10

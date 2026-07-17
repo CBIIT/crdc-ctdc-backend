@@ -174,12 +174,29 @@ queries:
           selectedField: stage_of_disease
         result:
           type: group_count
+      - name: participantCountBySurvivalStatus
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: survival_status
+        result:
+          type: group_count
       - name: filterParticipantCountByStageOfDisease
         index:
           - widgets_facets_counts
         filter:
           type: aggregation
           selectedField: stage_of_disease
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: filterParticipantCountBySurvivalStatus
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: survival_status
           ignoreSelectedField: true
         result:
           type: group_count
