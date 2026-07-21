@@ -943,7 +943,7 @@ Indices:
         ORDER BY coalesce(sb.participant_id, '') ASC
       "
 
-  # # Biospecimen Table Data
+  # Biospecimen Table Data
   - index_name: tab_biospecimens
     type: neo4j
     mapping:
