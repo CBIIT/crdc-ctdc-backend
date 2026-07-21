@@ -1393,7 +1393,7 @@ Indices:
         apoc.coll.toSet([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]) AS specimen_type,
         apoc.coll.toSet([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]) AS tissue_category,
         apoc.coll.toSet([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]) AS assessment_timepoint,
-        apoc.coll.toSet([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]) AS specimen_record_id,
+        COALESCE(head([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]), '') AS specimen_record_id,
 
         f.data_file_name                                      AS data_file_name,
         f.data_file_format                                    AS data_file_format,
@@ -1410,10 +1410,10 @@ Indices:
 
         associations                                          AS association,
 
-        apoc.coll.toSet([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
+        COALESCE(head([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]), '') AS participant_id,
 
 
-        apoc.coll.toSet([x IN ctep_terms     WHERE x IS NOT NULL])        AS ctep_disease_term,
+        COALESCE(head([x IN ctep_terms     WHERE x IS NOT NULL]), '')     AS ctep_disease_term,
         apoc.coll.toSet([x IN pdg_list       WHERE x IS NOT NULL])        AS primary_diagnosis_disease_group,
         apoc.coll.toSet([x IN stage_list     WHERE x IS NOT NULL])        AS stage_of_disease,
         apoc.coll.toSet([x IN tumor_grades   WHERE x IS NOT NULL])        AS tumor_grade,
