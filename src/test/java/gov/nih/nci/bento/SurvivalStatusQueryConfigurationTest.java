@@ -144,17 +144,17 @@ public class SurvivalStatusQueryConfigurationTest {
         );
     }
 
-            private static void assertQueryArgumentExists(ObjectTypeDefinition queryType, String queryName, String argumentName) {
-            FieldDefinition queryField = queryType.getFieldDefinitions().stream()
+    private static void assertQueryArgumentExists(ObjectTypeDefinition queryType, String queryName, String argumentName) {
+        FieldDefinition queryField = queryType.getFieldDefinitions().stream()
                 .filter(fieldDefinition -> queryName.equals(fieldDefinition.getName()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(queryName + " query should exist"));
 
-            assertTrue(
+        assertTrue(
                 queryField.getInputValueDefinitions().stream().anyMatch(argument -> argumentName.equals(argument.getName())),
                 queryName + " should accept " + argumentName
-            );
-            }
+        );
+    }
 
     @SuppressWarnings("unchecked")
     private static void assertIndexPropagatesSurvivalStatus(List<Map<String, Object>> indices, String indexName) {
