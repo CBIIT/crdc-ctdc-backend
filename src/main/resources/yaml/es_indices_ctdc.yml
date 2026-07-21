@@ -955,6 +955,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       ctep_disease_term:
         type: keyword
       primary_diagnosis_disease_group:
@@ -1097,6 +1099,7 @@ Indices:
       spec.assessment_timepoint AS assessment_timepoint,
       study.study_short_name AS study_short_name,
       toString(study.study_id) AS study_id,
+      study.study_accession AS study_accession,
       [x IN COLLECT(DISTINCT {
       data_file_uuid: df.data_file_uuid,
       data_file_name: df.data_file_name,

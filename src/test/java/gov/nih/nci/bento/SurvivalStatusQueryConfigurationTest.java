@@ -36,6 +36,35 @@ public class SurvivalStatusQueryConfigurationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void tabBiospecimensPropagatesStudyAccession() {
+        Map<String, Object> yamlConfig;
+        Yaml yaml = new Yaml();
+        try (InputStream inputStream = ClassLoader.getSystemResourceAsStream("yaml/es_indices_ctdc.yml")) {
+            assertNotNull(inputStream, "Index configuration should be present");
+            yamlConfig = yaml.load(inputStream);
+        } catch (Exception e) {
+            throw new AssertionError("Unable to load index configuration", e);
+        }
+
+        List<Map<String, Object>> indices = (List<Map<String, Object>>) yamlConfig.get("Indices");
+        assertNotNull(indices, "Indices should be present in the YAML configuration");
+
+        Map<String, Object> index = indices.stream()
+                .filter(candidate -> "tab_biospecimens".equals(candidate.get("index_name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("tab_biospecimens index is missing"));
+
+        Map<String, Object> mapping = (Map<String, Object>) index.get("mapping");
+        assertTrue(mapping.containsKey("study_accession"), "tab_biospecimens mapping should contain study_accession");
+        assertEquals("keyword", ((Map<String, Object>) mapping.get("study_accession")).get("type"));
+
+        String cypherQuery = (String) index.get("cypher_query");
+        assertTrue(cypherQuery.contains("study.study_accession AS study_accession"),
+                "tab_biospecimens cypher should return study_accession");
+    }
+
+    @Test
     public void yamlDefinedQueryArgumentsExposeSurvivalStatus() throws Exception {
         String schema;
         try (InputStream inputStream = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
