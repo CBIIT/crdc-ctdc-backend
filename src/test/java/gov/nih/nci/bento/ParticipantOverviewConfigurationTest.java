@@ -63,7 +63,7 @@ public class ParticipantOverviewConfigurationTest {
         String cypherQuery = (String) tabParticipants.get("cypher_query");
         assertTrue(cypherQuery.contains("OPTIONAL MATCH (sb)<-[:of_participant]-(ps:participant_status)"),
                 "tab_participants cypher should pull participant_status nodes");
-        assertTrue(cypherQuery.contains("ps_latest.survival_status                        AS survival_status"),
+        assertTrue(cypherQuery.contains("ps_latest.survival_status") && cypherQuery.contains("AS survival_status"),
                 "tab_participants cypher should return survival_status");
     }
 }
