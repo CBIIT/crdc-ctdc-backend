@@ -91,7 +91,7 @@ queries:
           method: count_bucket_keys
       - name: numberOfStudyFiles
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           selectedField: data_file_uuid
@@ -174,12 +174,29 @@ queries:
           selectedField: stage_of_disease
         result:
           type: group_count
+      - name: participantCountBySurvivalStatus
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: survival_status
+        result:
+          type: group_count
       - name: filterParticipantCountByStageOfDisease
         index:
           - widgets_facets_counts
         filter:
           type: aggregation
           selectedField: stage_of_disease
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: filterParticipantCountBySurvivalStatus
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: survival_status
           ignoreSelectedField: true
         result:
           type: group_count
@@ -291,6 +308,23 @@ queries:
         filter:
           type: aggregation
           selectedField: targeted_therapy_string
+        result:
+          type: group_count
+      - name: participantCountByStudyShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: study_short_name
+        result:
+          type: group_count
+      - name: filterParticipantCountByStudyShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: study_short_name
+          ignoreSelectedField: true
         result:
           type: group_count
       - name: filterParticipantCountBySingleTargetedTherapyCombinationForFacet
@@ -478,7 +512,7 @@ queries:
           type: nested_list
       - name: studyFileOverviewCountByDataFileType
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           selectedField: data_file_type
@@ -486,7 +520,7 @@ queries:
           type: group_count
       - name: filterStudyFileOverviewCountByDataFileType
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           ignoreSelectedField: true
@@ -495,7 +529,7 @@ queries:
           type: group_count
       - name: studyFileOverviewCountByDataFileFormat
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           selectedField: data_file_format
@@ -503,10 +537,11 @@ queries:
           type: group_count
       - name: filterStudyFileOverviewCountByDataFileFormat
         index:
-          - study_file_overview
+          - tab_data_files
         filter:
           type: aggregation
           ignoreSelectedField: true
           selectedField: data_file_format
         result:
           type: group_count
+      
