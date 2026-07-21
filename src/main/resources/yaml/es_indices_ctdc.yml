@@ -142,6 +142,8 @@ Indices:
     mapping:
       study_short_name:
         type: keyword
+      study_accession:
+        type: keyword
       study_id:
         type: keyword
       list_type:
@@ -200,6 +202,7 @@ Indices:
       optional MATCH (sb:participant)<-[*..2]-(df:file)
       RETURN DISTINCT 
         s.study_short_name as study_short_name,
+        s.study_accession as study_accession,
         toString(s.study_id) AS study_id,
         COLLECT(DISTINCT{
                     data_file_uuid: study_file.data_file_uuid,
@@ -233,6 +236,8 @@ Indices:
     type: neo4j
     mapping:
       study_short_name:
+        type: keyword
+      study_accession:
         type: keyword
       study_id:
         type: keyword
@@ -274,6 +279,7 @@ Indices:
         END AS data_file_type
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
+        s.study_accession AS study_accession,
         s.study_id AS study_id,
         data_file_type AS data_file_type,
         COLLECT(DISTINCT {
@@ -297,6 +303,8 @@ Indices:
     # type mapping for each property of the index
     mapping:
       study_short_name:
+        type: keyword
+      study_accession:
         type: keyword
       study_id:
         type: keyword
@@ -345,6 +353,7 @@ Indices:
       WITH specimen_count, specimen_type, count1, assessment_timepoint, count2, s, sp
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
+        s.study_accession AS study_accession,
         toString(s.study_id) AS study_id,
         COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
         COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
@@ -363,6 +372,8 @@ Indices:
     # type mapping for each property of the index
     mapping:
       study_short_name:
+        type: keyword
+      study_accession:
         type: keyword
       study_id:
         type: keyword
@@ -400,6 +411,7 @@ Indices:
         optional MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
         RETURN DISTINCT
             s.study_short_name AS study_short_name,
+          s.study_accession AS study_accession,
             toString(s.study_id) AS study_id,
             COLLECT(DISTINCT sd.ctep_disease_term) as ctep_disease_terms,
             COLLECT(DISTINCT{
@@ -696,6 +708,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       study_type:
         type: keyword
       study_name:
@@ -868,6 +882,7 @@ Indices:
 
         study.study_short_name                           AS study_short_name,
         study.study_id                                   AS study_id,
+        study.study_accession                            AS study_accession,
         study.study_name                                 AS study_name,
         study.study_type                                 AS study_type,
         study.study_description                          AS study_description,
@@ -1719,6 +1734,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       specimen_id:
         type: keyword
       specimen_record_id:
@@ -1808,6 +1825,7 @@ Indices:
         sub.participant_id                          AS participant_id,
         study.study_short_name                      AS study_short_name,
         toString(study.study_id)                    AS study_id,
+        study.study_accession                       AS study_accession,
 
         diag.ctep_disease_term                      AS ctep_disease_term,
         diag.primary_diagnosis_disease_group        AS primary_diagnosis_disease_group,
@@ -2290,6 +2308,8 @@ Indices:
         type: keyword
       study_id:
         type: keyword
+      study_accession:
+        type: keyword
       unique_node_types:
         type: keyword
       diagnosisNodeData:
@@ -2568,6 +2588,7 @@ Indices:
       RETURN
         study.study_short_name AS study_short_name,
         toString(study.study_id) AS study_id,
+        study.study_accession AS study_accession,
         unique_node_types,
         diagnosisNodeData,
         size(apoc.coll.toSet([d IN diagnosisNodeData | d.diagnosis_record_id])) AS diagnosisNodeCount,
@@ -2591,6 +2612,8 @@ Indices:
       study_short_name:
         type: keyword
       study_id:
+        type: keyword
+      study_accession:
         type: keyword
       targetedTherapyNodeData:
         type: nested
@@ -2745,6 +2768,7 @@ Indices:
       RETURN
         study.study_short_name AS study_short_name,
         toString(study.study_id) AS study_id,
+        study.study_accession AS study_accession,
         targetedTherapyNodeData,
         size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
         targetedTherapyParticipantCount,
