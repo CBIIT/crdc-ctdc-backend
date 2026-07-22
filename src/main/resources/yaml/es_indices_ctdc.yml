@@ -584,25 +584,27 @@ Indices:
       WITH DISTINCT sb, study
 
       CALL {
-          WITH sb, study
-          OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-          WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
-            WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items,
-            [r IN COLLECT(tt.best_response_to_targeted_therapy)
-          WHERE r IS NOT NULL AND toString(r) <> ''
-          | toString(r)
-            ] AS responses
-          WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items, responses
-          WITH apoc.map.groupBy(normalized_items, 'name') AS byName, responses
-          WITH [k IN keys(byName) |
-            {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses
-          WITH grouped,
-            [e IN grouped | apoc.text.capitalizeAll(e.name)] AS names,
-            responses
-          RETURN
-            names AS targeted_therapy,
-            [e IN grouped | e.id] AS targeted_therapy_id,
-        apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string,
+        WITH sb, study
+        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+        WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
+          WHERE x.name IS NOT NULL AND trim(toString(x.name)) <> ''] AS tt_items,
+          [r IN COLLECT(tt.best_response_to_targeted_therapy)
+        WHERE r IS NOT NULL AND toString(r) <> ''
+        | toString(r)
+          ] AS responses
+        WITH apoc.map.groupBy(tt_items, 'name') AS byName, responses
+        WITH [k IN keys(byName) |
+          {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses
+        WITH grouped,
+          [e IN grouped | e.name] AS names,
+          responses
+        RETURN
+          names AS targeted_therapy,
+          [e IN grouped | e.id] AS targeted_therapy_id,
+        CASE
+          WHEN size(names) > 0 THEN apoc.text.join(apoc.coll.sort(names), '|')
+          ELSE null
+        END AS targeted_therapy_string,
         apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
       }
 
@@ -827,27 +829,33 @@ Indices:
         RETURN head(collect(e)) AS e_latest
       }
 
-      CALL {
+        CALL {
         WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [t IN COLLECT(tt.targeted_therapy)
-              WHERE t IS NOT NULL AND toString(t) <> ''
-              | apoc.text.capitalizeAll(toLower(toString(t)))
+          WHERE t IS NOT NULL AND trim(toString(t)) <> ''
+              | CASE
+                  WHEN toLower(trim(toString(t))) = 'not reported' THEN 'Not reported'
+                  ELSE trim(toString(t))
+                END
         ] AS ts,
         [r IN COLLECT(tt.best_response_to_targeted_therapy)
-          WHERE r IS NOT NULL AND toString(r) <> ''
-          | toString(r)
+          WHERE r IS NOT NULL AND trim(toString(r)) <> ''
+          | trim(toString(r))
         ] AS responses
         WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
         WITH CASE
-          WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0
-            THEN [t IN dedup WHERE t <> 'Not Reported']
+          WHEN size(dedup) > 1 AND size([t IN dedup WHERE toLower(t) <> 'not reported']) > 0
+            THEN [t IN dedup WHERE toLower(t) <> 'not reported']
           ELSE dedup
         END AS cleaned_tt,
         best_responses AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
           cleaned_responses AS best_response_to_targeted_therapy,
-              apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
+          CASE
+            WHEN size(cleaned_tt) > 0 THEN apoc.text.join(apoc.coll.sort(cleaned_tt), '|')
+            ELSE null
+          END AS targeted_therapy_string
       }
 
       CALL {
