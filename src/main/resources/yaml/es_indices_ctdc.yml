@@ -1,4 +1,4 @@
-# Indices settings
+# # Indices settings
 Indices:
 #   # First index
 #   # Name of the index to be created, existing index with same name will be deleted
@@ -1390,7 +1390,10 @@ Indices:
             THEN []
             ELSE tt_raw
           END                                                  AS targeted_therapy_raw,
-          tt_strings                                           AS targeted_therapy_string
+          CASE
+            WHEN size(tt_strings) = 0 THEN ['']
+            ELSE tt_strings
+          END                                                  AS targeted_therapy_string
       }
 
       WITH
@@ -1641,7 +1644,16 @@ Indices:
         apoc.text.join(
           apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
           '|'
-        )                                                     AS targeted_therapy_string
+        )                                                     AS targeted_therapy_joined
+      WITH
+        f, associations, subs, specs, study_short_names,study_accessions, ps_latest,
+        ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
+        sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
+        targeted_therapy_raw,
+        CASE
+          WHEN targeted_therapy_joined = '' THEN ['']
+          ELSE [targeted_therapy_joined]
+        END                                                   AS targeted_therapy_string
 
       RETURN
         'data file' AS type,
