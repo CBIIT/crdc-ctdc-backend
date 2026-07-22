@@ -835,11 +835,11 @@ Indices:
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [t IN COLLECT(tt.targeted_therapy)
           WHERE t IS NOT NULL AND trim(toString(t)) <> ''
-              | toString(t)
+              | trim(toString(t))
         ] AS ts,
         [r IN COLLECT(tt.best_response_to_targeted_therapy)
-          WHERE r IS NOT NULL AND toString(r) <> ''
-          | toString(r)
+          WHERE r IS NOT NULL AND trim(toString(r)) <> ''
+          | trim(toString(r))
         ] AS responses
         WITH apoc.coll.toSet(ts) AS targeted_therapy,
              apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
