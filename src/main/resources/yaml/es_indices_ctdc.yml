@@ -849,16 +849,17 @@ Indices:
       CALL {
         WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-        WITH [t IN COLLECT(tt.targeted_therapy)
-              WHERE t IS NOT NULL AND toString(t) <> ''
-              | apoc.text.capitalizeAll(toLower(toString(t)))
-        ] AS ts,
-        [r IN COLLECT(tt.best_response_to_targeted_therapy)
-          WHERE r IS NOT NULL AND toString(r) <> ''
-          | toString(r)
-        ] AS responses
-        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
-        WITH CASE
+        WITH count(tt) AS tt_count,
+             [t IN COLLECT(tt.targeted_therapy)
+               WHERE t IS NOT NULL AND toString(t) <> ''
+               | apoc.text.capitalizeAll(toLower(toString(t)))
+             ] AS ts,
+             [r IN COLLECT(tt.best_response_to_targeted_therapy)
+               WHERE r IS NOT NULL AND toString(r) <> ''
+               | toString(r)
+             ] AS responses
+        WITH tt_count > 0 AS has_tt_nodes, apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
+        WITH has_tt_nodes, CASE
           WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0
             THEN [t IN dedup WHERE t <> 'Not Reported']
           ELSE dedup
@@ -867,7 +868,7 @@ Indices:
         RETURN cleaned_tt AS targeted_therapy,
           cleaned_responses AS best_response_to_targeted_therapy,
               CASE
-                WHEN size(cleaned_tt) = 0 THEN NULL
+                WHEN NOT has_tt_nodes THEN null
                 ELSE apoc.text.join(apoc.coll.sort(cleaned_tt), '|')
               END AS targeted_therapy_string
       }
