@@ -1020,6 +1020,7 @@ type QueryType {
   ): [FileOverview]
 
   participant_data_files(
+    association: [String] = ["participant", "biospecimen"]
     participant_id: [String] = []
     study_short_name: [String] = []
     study_id: [String] = []
