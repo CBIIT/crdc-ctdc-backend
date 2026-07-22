@@ -602,7 +602,10 @@ Indices:
           RETURN
             names AS targeted_therapy,
             [e IN grouped | e.id] AS targeted_therapy_id,
-        apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string,
+        CASE
+          WHEN size(names) > 0 THEN apoc.text.join(apoc.coll.sort(names), '|')
+          ELSE null
+        END AS targeted_therapy_string,
         apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
       }
 
@@ -831,23 +834,21 @@ Indices:
         WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
         WITH [t IN COLLECT(tt.targeted_therapy)
-              WHERE t IS NOT NULL AND toString(t) <> ''
-              | apoc.text.capitalizeAll(toLower(toString(t)))
+          WHERE t IS NOT NULL AND trim(toString(t)) <> ''
+              | toString(t)
         ] AS ts,
         [r IN COLLECT(tt.best_response_to_targeted_therapy)
           WHERE r IS NOT NULL AND toString(r) <> ''
           | toString(r)
         ] AS responses
-        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses
-        WITH CASE
-          WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0
-            THEN [t IN dedup WHERE t <> 'Not Reported']
-          ELSE dedup
-        END AS cleaned_tt,
-        best_responses AS cleaned_responses
-        RETURN cleaned_tt AS targeted_therapy,
-          cleaned_responses AS best_response_to_targeted_therapy,
-              apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
+        WITH apoc.coll.toSet(ts) AS targeted_therapy,
+             apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
+        RETURN targeted_therapy AS targeted_therapy,
+          best_response_to_targeted_therapy AS best_response_to_targeted_therapy,
+          CASE
+            WHEN size(targeted_therapy) > 0 THEN apoc.text.join(apoc.coll.sort(targeted_therapy), '|')
+            ELSE null
+          END AS targeted_therapy_string
       }
 
       CALL {
