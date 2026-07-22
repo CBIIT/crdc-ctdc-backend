@@ -584,24 +584,23 @@ Indices:
       WITH DISTINCT sb, study
 
       CALL {
-          WITH sb, study
-          OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-          WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
-            WHERE x.name IS NOT NULL AND x.name <> ''] AS tt_items,
-            [r IN COLLECT(tt.best_response_to_targeted_therapy)
-          WHERE r IS NOT NULL AND toString(r) <> ''
-          | toString(r)
-            ] AS responses
-          WITH [x IN tt_items | {name: toLower(x.name), id: x.id}] AS normalized_items, responses
-          WITH apoc.map.groupBy(normalized_items, 'name') AS byName, responses
-          WITH [k IN keys(byName) |
-            {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses
-          WITH grouped,
-            [e IN grouped | apoc.text.capitalizeAll(e.name)] AS names,
-            responses
-          RETURN
-            names AS targeted_therapy,
-            [e IN grouped | e.id] AS targeted_therapy_id,
+        WITH sb, study
+        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+        WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
+          WHERE x.name IS NOT NULL AND trim(toString(x.name)) <> ''] AS tt_items,
+          [r IN COLLECT(tt.best_response_to_targeted_therapy)
+        WHERE r IS NOT NULL AND toString(r) <> ''
+        | toString(r)
+          ] AS responses
+        WITH apoc.map.groupBy(tt_items, 'name') AS byName, responses
+        WITH [k IN keys(byName) |
+          {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses
+        WITH grouped,
+          [e IN grouped | e.name] AS names,
+          responses
+        RETURN
+          names AS targeted_therapy,
+          [e IN grouped | e.id] AS targeted_therapy_id,
         CASE
           WHEN size(names) > 0 THEN apoc.text.join(apoc.coll.sort(names), '|')
           ELSE null
