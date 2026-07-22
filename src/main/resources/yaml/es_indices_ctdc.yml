@@ -602,7 +602,10 @@ Indices:
           RETURN
             names AS targeted_therapy,
             [e IN grouped | e.id] AS targeted_therapy_id,
-        apoc.text.join(apoc.coll.sort(names), '|') AS targeted_therapy_string,
+        CASE
+          WHEN size(names) = 0 THEN NULL
+          ELSE apoc.text.join(apoc.coll.sort(names), '|')
+        END AS targeted_therapy_string,
         apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
       }
 
@@ -655,13 +658,23 @@ Indices:
       sex,
       race,
       ethnicity,
-      COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
+      apoc.coll.toSet([
+        x IN COLLECT(expose.carcinogen_exposure)
+        WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+        | x
+      ]) as carcinogen_exposure,
       targeted_therapy,
       targeted_therapy_id,
       targeted_therapy_string,
       best_response_to_targeted_therapy,
       anatomical_collection_site,
-      COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
+      apoc.coll.toSet([
+        x IN COLLECT(spec.tissue_category)
+        WHERE x IS NOT NULL
+          AND trim(toString(x)) <> ''
+          AND toLower(trim(toString(x))) <> 'no value'
+        | x
+      ]) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
       COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
       COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
@@ -680,7 +693,13 @@ Indices:
       COLLECT(DISTINCT{
         specimen_id: spec.specimen_id,
         anatomical_collection_site: spec.anatomical_collection_site,
-        tissue_category: spec.tissue_category,
+        tissue_category: CASE
+          WHEN spec.tissue_category IS NULL
+            OR trim(toString(spec.tissue_category)) = ''
+            OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+          THEN NULL
+          ELSE spec.tissue_category
+        END,
         assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
       [x IN COLLECT(DISTINCT{
@@ -847,7 +866,10 @@ Indices:
         best_responses AS cleaned_responses
         RETURN cleaned_tt AS targeted_therapy,
           cleaned_responses AS best_response_to_targeted_therapy,
-              apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
+              CASE
+                WHEN size(cleaned_tt) = 0 THEN NULL
+                ELSE apoc.text.join(apoc.coll.sort(cleaned_tt), '|')
+              END AS targeted_therapy_string
       }
 
       CALL {
@@ -906,7 +928,13 @@ Indices:
         COLLECT(DISTINCT spec.specimen_id)               AS specimen_id,
         anatomical_collection_site,
         COLLECT(DISTINCT spec.specimen_type)             AS specimen_type,
-        COLLECT(DISTINCT spec.tissue_category)           AS tissue_category,
+        apoc.coll.toSet([
+          x IN COLLECT(spec.tissue_category)
+          WHERE x IS NOT NULL
+            AND trim(toString(x)) <> ''
+            AND toLower(trim(toString(x))) <> 'no value'
+          | x
+        ])                                               AS tissue_category,
         COLLECT(DISTINCT spec.assessment_timepoint)      AS assessment_timepoint,
         apoc.coll.toSet(
           [x IN COLLECT(DISTINCT df.data_file_type) WHERE x IS NOT NULL] +
@@ -922,7 +950,11 @@ Indices:
         targeted_therapy_string,
 
 
-        coalesce(e_latest.carcinogen_exposure, '')       AS carcinogen_exposure,
+        CASE
+          WHEN e_latest.carcinogen_exposure IS NULL OR trim(toString(e_latest.carcinogen_exposure)) = ''
+            THEN NULL
+          ELSE e_latest.carcinogen_exposure
+        END                                          AS carcinogen_exposure,
 
         [x IN COLLECT(DISTINCT {
           data_file_uuid: df.data_file_uuid,
@@ -1096,7 +1128,10 @@ Indices:
         WITH apoc.coll.toSet([x IN ts | apoc.text.capitalizeAll(toLower(x))]) AS dedup
         RETURN
           dedup                                                      AS targeted_therapy,
-          apoc.text.join(apoc.coll.sort(dedup), '|')                 AS targeted_therapy_string
+          CASE
+            WHEN size(dedup) = 0 THEN NULL
+            ELSE apoc.text.join(apoc.coll.sort(dedup), '|')
+          END                                                         AS targeted_therapy_string
       }
 
       RETURN DISTINCT
@@ -1110,7 +1145,11 @@ Indices:
       spec.specimen_type AS specimen_type,
       spec.specimen_category AS specimen_category,
       acs_norm AS anatomical_collection_site,
-      spec.tissue_category AS tissue_category,
+      CASE
+        WHEN spec.tissue_category IS NULL OR trim(toString(spec.tissue_category)) = '' OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+        THEN NULL
+        ELSE spec.tissue_category
+      END AS tissue_category,
       spec.assessment_timepoint AS assessment_timepoint,
       study.study_short_name AS study_short_name,
       toString(study.study_id) AS study_id,
@@ -1144,7 +1183,13 @@ Indices:
       specimen_category: spec.specimen_category,
       anatomical_collection_site: acs_norm,
       specimen_type: spec.specimen_type,
-      tissue_category: spec.tissue_category,
+      tissue_category: CASE
+        WHEN spec.tissue_category IS NULL
+          OR trim(toString(spec.tissue_category)) = ''
+          OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+        THEN NULL
+        ELSE spec.tissue_category
+      END,
       assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
       apoc.coll.toSet(
@@ -1156,7 +1201,11 @@ Indices:
       demo.sex AS sex,
       demo.race AS race,
       demo.ethnicity AS ethnicity,
-      COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
+      apoc.coll.toSet([
+      x IN COLLECT(exp.carcinogen_exposure)
+      WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+      | x
+      ]) AS carcinogen_exposure,
       targeted_therapy,
       targeted_therapy_string,
       apoc.coll.toSet(
@@ -1365,7 +1414,11 @@ Indices:
 
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
-        apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
+        apoc.coll.toSet([
+          x IN COLLECT(exp.carcinogen_exposure)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | x
+        ])                                                    AS carcinogen_exposure
 
       CALL {
         WITH effective_subs, associations
@@ -1391,7 +1444,7 @@ Indices:
             ELSE tt_raw
           END                                                  AS targeted_therapy_raw,
           CASE
-            WHEN size(tt_strings) = 0 THEN ['']
+            WHEN size(tt_strings) = 0 THEN NULL
             ELSE tt_strings
           END                                                  AS targeted_therapy_string
       }
@@ -1412,7 +1465,11 @@ Indices:
 
         apoc.coll.toSet([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]) AS anatomical_collection_site,
         apoc.coll.toSet([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]) AS specimen_type,
-        apoc.coll.toSet([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]) AS tissue_category,
+        apoc.coll.toSet([
+          x IN specs
+          WHERE x.tissue_category IS NOT NULL AND trim(toString(x.tissue_category)) <> ''
+          | x.tissue_category
+        ]) AS tissue_category,
         apoc.coll.toSet([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]) AS assessment_timepoint,
         COALESCE(head([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]), '') AS specimen_record_id,
 
@@ -1457,7 +1514,13 @@ Indices:
           specimen_id:                 x.specimen_id,
           anatomical_collection_site:  apoc.text.capitalizeAll(toLower(x.anatomical_collection_site)),
           specimen_type:               x.specimen_type,
-          tissue_category:             x.tissue_category,
+          tissue_category:             CASE
+                                         WHEN x.tissue_category IS NULL
+                                           OR trim(toString(x.tissue_category)) = ''
+                                           OR toLower(trim(toString(x.tissue_category))) = 'no value'
+                                         THEN NULL
+                                         ELSE x.tissue_category
+                                       END,
           assessment_timepoint:        x.assessment_timepoint
         }]                                                     AS biospecimen_info,
 
@@ -1632,7 +1695,11 @@ Indices:
         f, associations, subs, specs, study_short_names, study_accessions, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
-        apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
+        apoc.coll.toSet([
+          x IN COLLECT(exp.carcinogen_exposure)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | x
+        ])                                                    AS carcinogen_exposure
 
        OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
       WHERE ttPart IN subs
@@ -1641,18 +1708,12 @@ Indices:
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
-        apoc.text.join(
+        CASE
+          WHEN size([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']) = 0 THEN NULL
+          ELSE apoc.text.join(
           apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
           '|'
-        )                                                     AS targeted_therapy_joined
-      WITH
-        f, associations, subs, specs, study_short_names,study_accessions, ps_latest,
-        ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
-        sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
-        targeted_therapy_raw,
-        CASE
-          WHEN targeted_therapy_joined = '' THEN ['']
-          ELSE [targeted_therapy_joined]
+          )
         END                                                   AS targeted_therapy_string
 
       RETURN
@@ -1663,7 +1724,11 @@ Indices:
 
         COALESCE(head([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]), '') AS anatomical_collection_site,
         COALESCE(head([x IN specs WHERE x.specimen_type             IS NOT NULL | x.specimen_type            ]), '') AS specimen_type,
-        COALESCE(head([x IN specs WHERE x.tissue_category           IS NOT NULL | x.tissue_category          ]), '') AS tissue_category,
+        CASE
+          WHEN head([x IN specs WHERE x.tissue_category IS NOT NULL AND trim(toString(x.tissue_category)) <> '' | x.tissue_category]) IS NULL
+          THEN NULL
+          ELSE head([x IN specs WHERE x.tissue_category IS NOT NULL AND trim(toString(x.tissue_category)) <> '' | x.tissue_category])
+        END AS tissue_category,
         COALESCE(head([x IN specs WHERE x.assessment_timepoint      IS NOT NULL | x.assessment_timepoint     ]), '') AS assessment_timepoint,
         COALESCE(head([x IN specs WHERE x.specimen_record_id        IS NOT NULL | x.specimen_record_id       ]), '') AS specimen_record_id,
 
@@ -1712,7 +1777,13 @@ Indices:
           specimen_id:                 x.specimen_id,
           anatomical_collection_site:  apoc.text.capitalizeAll(toLower(x.anatomical_collection_site)),
           specimen_type:               x.specimen_type,
-          tissue_category:             x.tissue_category,
+          tissue_category:             CASE
+                                         WHEN x.tissue_category IS NULL
+                                           OR trim(toString(x.tissue_category)) = ''
+                                           OR toLower(trim(toString(x.tissue_category))) = 'no value'
+                                         THEN NULL
+                                         ELSE x.tissue_category
+                                       END,
           assessment_timepoint:        x.assessment_timepoint
         }]                                                     AS biospecimen_info,
 
@@ -1808,11 +1879,15 @@ Indices:
         f, sub, spec, study, ps_latest,
         apoc.coll.toSet([t IN collect(DISTINCT tt.targeted_therapy)
                           WHERE t IS NOT NULL AND t <> '' | t])                AS targeted_therapy,
-        apoc.text.join(
-          apoc.coll.sort([t IN collect(DISTINCT toLower(tt.targeted_therapy))
-                          WHERE t IS NOT NULL AND t <> '' | t]),
-          '|'
-        )                                                                      AS targeted_therapy_string
+        CASE
+          WHEN size([t IN collect(DISTINCT toLower(tt.targeted_therapy))
+                     WHERE t IS NOT NULL AND t <> '' | t]) = 0 THEN NULL
+          ELSE apoc.text.join(
+            apoc.coll.sort([t IN collect(DISTINCT toLower(tt.targeted_therapy))
+                            WHERE t IS NOT NULL AND t <> '' | t]),
+            '|'
+          )
+        END                                                                    AS targeted_therapy_string
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(diag:diagnosis)
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
@@ -1820,7 +1895,11 @@ Indices:
       WITH
         f, sub, spec, study, diag, demo, ps_latest,
         targeted_therapy, targeted_therapy_string,
-        collect(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure
+        apoc.coll.toSet([
+          x IN collect(exp.carcinogen_exposure)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | x
+        ]) AS carcinogen_exposure
 
       RETURN DISTINCT
         'data file'                                 AS type,
@@ -1855,7 +1934,11 @@ Indices:
 
         toLower(spec.anatomical_collection_site)    AS anatomical_collection_site,
         spec.specimen_type                          AS specimen_type,
-        spec.tissue_category                        AS tissue_category,
+        CASE
+          WHEN spec.tissue_category IS NULL OR trim(toString(spec.tissue_category)) = '' OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+          THEN NULL
+          ELSE spec.tissue_category
+        END                                         AS tissue_category,
         spec.assessment_timepoint                   AS assessment_timepoint
       "
   
@@ -2044,7 +2127,10 @@ Indices:
         WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
         WITH apoc.coll.toSet(ts) AS dedup
         RETURN dedup AS targeted_therapy_raw,
-               apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
+               CASE
+                 WHEN size(dedup) = 0 THEN NULL
+                 ELSE apoc.text.join(apoc.coll.sort(dedup), '|')
+               END AS targeted_therapy_string
       }
 
       RETURN DISTINCT
@@ -2081,14 +2167,24 @@ Indices:
           ELSE apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
         END AS anatomical_collection_site,
         COALESCE(spec.specimen_type, '') AS specimen_type,
-        COALESCE(spec.tissue_category, '') AS tissue_category,
+        CASE
+          WHEN spec.tissue_category IS NULL OR trim(toString(spec.tissue_category)) = '' OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+          THEN NULL
+          ELSE spec.tissue_category
+        END AS tissue_category,
         COALESCE(spec.assessment_timepoint, '') AS assessment_timepoint,
         COALESCE(spec.specimen_record_id, '') AS specimen_record_id,
         demo.sex AS sex,
         demo.race AS race,
         demo.ethnicity AS ethnicity,
         demo.age_at_enrollment AS age_at_enrollment,
-        CASE WHEN exp IS NOT NULL AND exp.carcinogen_exposure IS NOT NULL THEN [exp.carcinogen_exposure] ELSE [] END AS carcinogen_exposure,
+        CASE
+          WHEN exp IS NOT NULL
+            AND exp.carcinogen_exposure IS NOT NULL
+            AND trim(toString(exp.carcinogen_exposure)) <> ''
+          THEN [exp.carcinogen_exposure]
+          ELSE []
+        END AS carcinogen_exposure,
         targeted_therapy_raw AS targeted_therapy,
         targeted_therapy_string AS targeted_therapy_string,
         CASE WHEN spec IS NOT NULL THEN [
@@ -2102,7 +2198,13 @@ Indices:
               ELSE apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
             END,
             specimen_type: spec.specimen_type,
-            tissue_category: spec.tissue_category,
+            tissue_category: CASE
+              WHEN spec.tissue_category IS NULL
+                OR trim(toString(spec.tissue_category)) = ''
+                OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+              THEN NULL
+              ELSE spec.tissue_category
+            END,
             assessment_timepoint: spec.assessment_timepoint
           }
         ] ELSE [] END AS biospecimen_info,
@@ -2234,13 +2336,23 @@ Indices:
       COLLECT(DISTINCT demo.sex) as sex,
       COLLECT(DISTINCT demo.race) as race,
       COLLECT(DISTINCT demo.ethnicity) as ethnicity,
-      COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
+      apoc.coll.toSet([
+        x IN COLLECT(expose.carcinogen_exposure)
+        WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+        | x
+      ]) as carcinogen_exposure,
       COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
       COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
       COLLECT(DISTINCT target.best_response_to_targeted_therapy) as best_response_to_targeted_therapy,
       array as targeted_therapy_string,
       COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
-      COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
+      apoc.coll.toSet([
+        x IN COLLECT(spec.tissue_category)
+        WHERE x IS NOT NULL
+          AND trim(toString(x)) <> ''
+          AND toLower(trim(toString(x))) <> 'no value'
+        | x
+      ]) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
       COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
       COLLECT(DISTINCT COALESCE(spec.specimen_type, '')) AS specimen_type,
@@ -2250,7 +2362,13 @@ Indices:
       COLLECT(DISTINCT{
         specimen_id: spec.specimen_id,
         anatomical_collection_site: spec.anatomical_collection_site,
-        tissue_category: spec.tissue_category,
+        tissue_category: CASE
+          WHEN spec.tissue_category IS NULL
+            OR trim(toString(spec.tissue_category)) = ''
+            OR toLower(trim(toString(spec.tissue_category))) = 'no value'
+          THEN NULL
+          ELSE spec.tissue_category
+        END,
         assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
       COLLECT(DISTINCT{
@@ -2585,7 +2703,13 @@ Indices:
           specimen_category: s.specimen_category,
           specimen_record_id: s.specimen_record_id,
           specimen_type_concept_code: s.specimen_type_concept_code,
-          tissue_category: s.tissue_category
+          tissue_category: CASE
+            WHEN s.tissue_category IS NULL
+              OR trim(toString(s.tissue_category)) = ''
+              OR toLower(trim(toString(s.tissue_category))) = 'no value'
+            THEN NULL
+            ELSE s.tissue_category
+          END
         }] AS specimenNodeData,
         size(apoc.coll.toSet([x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS specimenParticipantCount,
         [p IN unique_ps | {
