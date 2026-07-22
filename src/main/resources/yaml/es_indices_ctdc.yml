@@ -686,18 +686,22 @@ Indices:
       CALL {
         WITH sb
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-        WITH [t IN COLLECT(tt.targeted_therapy)
-              WHERE t IS NOT NULL AND toString(t) <> ''
-              | apoc.text.capitalizeAll(toLower(toString(t)))
-        ] AS ts
-        WITH apoc.coll.toSet(ts) AS dedup
-        WITH CASE
+        WITH count(tt) AS tt_count,
+             [t IN COLLECT(tt.targeted_therapy)
+               WHERE t IS NOT NULL AND toString(t) <> ''
+               | apoc.text.capitalizeAll(toLower(toString(t)))
+             ] AS ts
+        WITH tt_count > 0 AS has_tt_nodes, apoc.coll.toSet(ts) AS dedup
+        WITH has_tt_nodes, CASE
           WHEN size(dedup) > 1 AND size([t IN dedup WHERE t <> 'Not Reported']) > 0
             THEN [t IN dedup WHERE t <> 'Not Reported']
           ELSE dedup
         END AS cleaned_tt
         RETURN cleaned_tt AS targeted_therapy,
-              apoc.text.join(apoc.coll.sort(cleaned_tt), '|') AS targeted_therapy_string
+              CASE
+                WHEN NOT has_tt_nodes THEN null
+                ELSE apoc.text.join(apoc.coll.sort(cleaned_tt), '|')
+              END AS targeted_therapy_string
       }
 
       CALL {
