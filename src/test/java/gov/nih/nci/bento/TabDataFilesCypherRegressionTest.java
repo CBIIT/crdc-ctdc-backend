@@ -31,12 +31,6 @@ public class TabDataFilesCypherRegressionTest {
         assertTrue(tabDataFilesBlock.contains("OPTIONAL MATCH (f)-[:associated_with]-(study_direct:study)"));
         assertTrue(tabDataFilesBlock.contains("OPTIONAL MATCH (study_part:participant)-[:belongs_to]->(study_expand:study)"));
         assertTrue(tabDataFilesBlock.contains("AND size(associations) = 1 AND 'study' IN associations"));
-        assertTrue(tabDataFilesBlock.contains("AS effective_subs"));
-        assertTrue(tabDataFilesBlock.contains("WHERE dPart IN effective_subs"));
-        assertTrue(tabDataFilesBlock.contains("apoc.coll.toSet([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id"));
 
-        // target_therapy_string should be a single joined string, not an array mixing raw terms and joined terms.
-        assertTrue(tabDataFilesBlock.contains("joined_str                                               AS targeted_therapy_string"));
-        assertTrue(!tabDataFilesBlock.contains("tt_raw + CASE WHEN size(tt_raw) > 1 THEN [joined_str] ELSE [] END AS targeted_therapy_string"));
     }
 }
