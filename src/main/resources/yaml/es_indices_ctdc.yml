@@ -1393,12 +1393,17 @@ Indices:
             )
           )                                                    AS tt_raw,
           associations
-        RETURN
-          CASE WHEN size(associations) = 1 AND 'study' IN associations
+        WITH CASE WHEN size(associations) = 1 AND 'study' IN associations
             THEN []
             ELSE tt_raw
           END                                                  AS targeted_therapy_raw,
-          tt_strings                                           AS targeted_therapy_string
+          CASE
+            WHEN size(tt_strings) > 0 THEN apoc.text.join(apoc.coll.sort(tt_strings), '|')
+            ELSE null
+          END                                                  AS joined_str
+        RETURN
+          targeted_therapy_raw,
+          joined_str                                               AS targeted_therapy_string
       }
 
       WITH
@@ -1436,7 +1441,7 @@ Indices:
 
         associations                                          AS association,
 
-        COALESCE(head([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]), '') AS participant_id,
+        apoc.coll.toSet([x IN effective_subs WHERE x.participant_id IS NOT NULL | x.participant_id]) AS participant_id,
 
 
         COALESCE(head([x IN ctep_terms     WHERE x IS NOT NULL]), '')     AS ctep_disease_term,
