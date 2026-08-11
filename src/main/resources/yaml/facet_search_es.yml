@@ -89,6 +89,15 @@ queries:
         result:
           type: int
           method: count_bucket_keys
+      - name: numberOfStudyFiles
+        index:
+          - tab_data_files
+        filter:
+          type: aggregation
+          selectedField: data_file_uuid
+        result:
+          type: int
+          method: count_bucket_keys
       - name: participantCountByCtepDiseaseTerm
         index:
           - widgets_facets_counts
@@ -165,12 +174,29 @@ queries:
           selectedField: stage_of_disease
         result:
           type: group_count
+      - name: participantCountBySurvivalStatus
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: survival_status
+        result:
+          type: group_count
       - name: filterParticipantCountByStageOfDisease
         index:
           - widgets_facets_counts
         filter:
           type: aggregation
           selectedField: stage_of_disease
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: filterParticipantCountBySurvivalStatus
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: survival_status
           ignoreSelectedField: true
         result:
           type: group_count
@@ -282,6 +308,23 @@ queries:
         filter:
           type: aggregation
           selectedField: targeted_therapy_string
+        result:
+          type: group_count
+      - name: participantCountByStudyShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: study_short_name
+        result:
+          type: group_count
+      - name: filterParticipantCountByStudyShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: study_short_name
+          ignoreSelectedField: true
         result:
           type: group_count
       - name: filterParticipantCountBySingleTargetedTherapyCombinationForFacet
@@ -467,3 +510,38 @@ queries:
             - data_file_type
         result:
           type: nested_list
+      - name: studyFileOverviewCountByDataFileType
+        index:
+          - tab_data_files
+        filter:
+          type: aggregation
+          selectedField: data_file_type
+        result:
+          type: group_count
+      - name: filterStudyFileOverviewCountByDataFileType
+        index:
+          - tab_data_files
+        filter:
+          type: aggregation
+          ignoreSelectedField: true
+          selectedField: data_file_type
+        result:
+          type: group_count
+      - name: studyFileOverviewCountByDataFileFormat
+        index:
+          - tab_data_files
+        filter:
+          type: aggregation
+          selectedField: data_file_format
+        result:
+          type: group_count
+      - name: filterStudyFileOverviewCountByDataFileFormat
+        index:
+          - tab_data_files
+        filter:
+          type: aggregation
+          ignoreSelectedField: true
+          selectedField: data_file_format
+        result:
+          type: group_count
+      
