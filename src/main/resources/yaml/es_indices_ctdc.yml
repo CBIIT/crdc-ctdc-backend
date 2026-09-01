@@ -2,271 +2,180 @@
 Indices:
 #   # First index
 #   # Name of the index to be created, existing index with same name will be deleted
-  - index_name: study
-    type: neo4j
-    # type mapping for each property of the index
+  - index_name: "study"
+    id_field: "study_id"
     mapping:
-      study_short_name:
-        type: keyword
-      study_accession:
-        type: keyword
-      study_id:
-        type: keyword
-      study_name:
-        type: keyword
-      study_description:
-        type: keyword
-      study_type:
-        type: keyword
-      dates_of_conduct:
-        type: keyword
-      participants:
-        type: nested
-        properties:
-          biomarker_results_available:
-            type: keyword
-          histology_images_available:
-            type: keyword
-          radiology_images_available:
-            type: keyword
-          radiology_report_available:
-            type: keyword
-          participant_id:
-            type: keyword
-      participant_count:
-        type: keyword
-      image_collection_count:
-        type: keyword
-      study_file_count:
-        type: keyword
-      participant_file_count:
-        type: keyword
-      associated_links:
-        type: nested
-        properties:
-          associated_link_record_id:
-            type: keyword
-          associated_link_name:
-            type: keyword
-          associated_link_url:
-            type: keyword
-      image_collection:
-        type: nested
-        properties:
-          image_collection_record_id:
-            type: keyword
-          image_collection_name:
-            type: keyword
-          image_type_included:
-            type: keyword
-          image_collection_url:
-            type: keyword
-          repository_name:
-            type: keyword
-          collection_access:
-            type: keyword
-      publications:
-        type: nested
-        properties:
-          publication_title:
-            type: keyword
-          authorship:
-            type: keyword
-          year_of_publication:
-            type: keyword
-          journal_citation:
-            type: keyword
-          digital_object_id:
-            type: keyword
-          pubmed_id:
-            type: integer
-
-
-
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    cypher_query: "
+      keyword:
+        - study_short_name
+        - study_accession
+        - study_id
+        - study_name
+        - study_description
+        - study_type
+        - dates_of_conduct
+        - participants.participant_id
+        - participants.biomarker_results_available
+        - participants.histology_images_available
+        - participants.radiology_images_available
+        - participants.radiology_report_available
+        - associated_links.associated_link_record_id
+        - associated_links.associated_link_name
+        - associated_links.associated_link_url
+        - image_collection.image_collection_record_id
+        - image_collection.image_collection_name
+        - image_collection.image_type_included
+        - image_collection.image_collection_url
+        - image_collection.repository_name
+        - image_collection.collection_access
+        - publications.publication_title
+        - publications.authorship
+        - publications.journal_citation
+        - publications.digital_object_id
+      long:
+        - participant_count
+        - image_collection_count
+        - study_file_count
+        - participant_file_count
+        - publications.year_of_publication
+        - publications.pubmed_id
+    query: |
       MATCH (s:study)
-      optional MATCH (s)<-[:associated_with]-(ic:image_collection)
-      optional MATCH (s)<-[:associated_with]-(al:associated_link)
-      optional MATCH (p:publication)-[:of_study]->(s)
-      optional MATCH (s)<-[:belongs_to]-(participant)
-      optional MATCH (participant)<-[*..2]-(parent)<--(f:file)
-      optional MATCH (s)<-[:associated_with]-(df:file)
+      OPTIONAL MATCH (s)<-[:associated_with]-(ic:image_collection)
+      OPTIONAL MATCH (s)<-[:associated_with]-(al:associated_link)
+      OPTIONAL MATCH (p:publication)-[:of_study]->(s)
+      OPTIONAL MATCH (s)<-[:belongs_to]-(participant)
+      OPTIONAL MATCH (participant)<-[*..2]-(parent)<--(f:file)
+      OPTIONAL MATCH (s)<-[:associated_with]-(df:file)
       WHERE NOT (df)--(:participant)
-      AND NOT (df)-[:associated_with]->(:specimen)
-       RETURN DISTINCT
-                s.study_name as study_name,
-                s.study_short_name as study_short_name,
-                s.study_accession as study_accession,
-                toString(s.study_id) as study_id,
-                s.study_description as study_description,
-                s.study_type as study_type,
-                s.dates_of_conduct as dates_of_conduct,
-                COLLECT(DISTINCT{
-                    associated_link_record_id: al.associated_link_record_id,
-                    associated_link_name: al.associated_link_name,
-                    associated_link_url: al.associated_link_url
-                }) AS associated_links,
-                COLLECT(DISTINCT{
-                    image_collection_record_id: ic.image_collection_record_id,
-                    image_collection_name: ic.image_collection_name,
-                    image_type_included: ic.image_type_included,
-                    image_collection_url: ic.image_collection_url,
-                    repository_name: ic.repository_name,
-                    collection_access: ic.collection_access
-                }) AS image_collection,
-                COLLECT(DISTINCT{
-                  publication_title: p.publication_title,
-                  authorship: p.authorship,
-                  year_of_publication: p.year_of_publication,
-                  journal_citation: p.journal_citation,
-                  digital_object_id: p.digital_object_id,
-                  pubmed_id: CASE WHEN p.pubmed_id IS NULL THEN NULL ELSE toInteger(p.pubmed_id) END
-                }) AS publications,
-                COLLECT(DISTINCT{
-                  biomarker_results_available: participant.biomarker_results_available,
-                  histology_images_available: participant.histology_images_available,
-                  radiology_images_available: participant.radiology_images_available,
-                  radiology_report_available: participant.radiology_report_available,
-                  participant_id: participant.participant_id
-                  })as participants,
-                COUNT( DISTINCT participant) as participant_count,
-                COUNT( DISTINCT ic) as image_collection_count,
-                COUNT( DISTINCT df) as study_file_count,
-                COUNT( DISTINCT f) as participant_file_count
-      "
-      
-  - index_name: study_data_file
-    type: neo4j
-    # type mapping for each property of the index
-    mapping:
-      study_short_name:
-        type: keyword
-      study_accession:
-        type: keyword
-      study_id:
-        type: keyword
-      list_type:
-        type: keyword
-      study_data_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
-      data_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
-
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    cypher_query: "
-       MATCH (s:study)<-[:belongs_to]-(sb:participant)
-       MATCH (s:study)<-[:associated_with]-(study_file:file)
-      optional MATCH (sb:participant)<-[*..2]-(df:file)
-      RETURN DISTINCT 
-        s.study_short_name as study_short_name,
-        s.study_accession as study_accession,
+        AND NOT (df)-[:associated_with]->(:specimen)
+      RETURN DISTINCT
+        s.study_name AS study_name,
+        s.study_short_name AS study_short_name,
+        s.study_accession AS study_accession,
         toString(s.study_id) AS study_id,
-        COLLECT(DISTINCT{
-                    data_file_uuid: study_file.data_file_uuid,
-                    data_file_name: study_file.data_file_name,
-                    data_file_type: study_file.data_file_type,
-                    data_file_description: study_file.data_file_description,
-                    data_file_format: study_file.data_file_format,
-                    data_file_size: study_file.data_file_size,
-                    data_file_checksum_value: study_file.data_file_checksum_value,
-                    data_file_checksum_type: study_file.data_file_checksum_type,
-                    data_file_compression_status: study_file.data_file_compression_status,
-                    data_file_location: study_file.data_file_location
-                }) AS study_data_files,
-        COLLECT(DISTINCT{
-                    data_file_uuid: df.data_file_uuid,
-                    data_file_name: df.data_file_name,
-                    data_file_type: df.data_file_type,
-                    data_file_description: df.data_file_description,
-                    data_file_format: df.data_file_format,
-                    data_file_size: df.data_file_size,
-                    data_file_checksum_value: df.data_file_checksum_value,
-                    data_file_checksum_type: df.data_file_checksum_type,
-                    data_file_compression_status: df.data_file_compression_status,
-                    data_file_location: df.data_file_location
-                }) AS data_files,
-         COLLECT(DISTINCT df.data_file_type) as list_type
-      "
-
-  # Name of the index to be created, existing index with same name will be deleted
-  - index_name: study_zip_file
-    type: neo4j
+        s.study_description AS study_description,
+        s.study_type AS study_type,
+        s.dates_of_conduct AS dates_of_conduct,
+        COLLECT(DISTINCT {
+          associated_link_record_id: al.associated_link_record_id,
+          associated_link_name: al.associated_link_name,
+          associated_link_url: al.associated_link_url
+        }) AS associated_links,
+        COLLECT(DISTINCT {
+          image_collection_record_id: ic.image_collection_record_id,
+          image_collection_name: ic.image_collection_name,
+          image_type_included: ic.image_type_included,
+          image_collection_url: ic.image_collection_url,
+          repository_name: ic.repository_name,
+          collection_access: ic.collection_access
+        }) AS image_collection,
+        COLLECT(DISTINCT {
+          publication_title: p.publication_title,
+          authorship: p.authorship,
+          year_of_publication: p.year_of_publication,
+          journal_citation: p.journal_citation,
+          digital_object_id: p.digital_object_id,
+          pubmed_id: CASE WHEN p.pubmed_id IS NULL THEN NULL ELSE toInteger(p.pubmed_id) END
+        }) AS publications,
+        COLLECT(DISTINCT {
+          biomarker_results_available: participant.biomarker_results_available,
+          histology_images_available: participant.histology_images_available,
+          radiology_images_available: participant.radiology_images_available,
+          radiology_report_available: participant.radiology_report_available,
+          participant_id: participant.participant_id
+        }) AS participants,
+        COUNT(DISTINCT participant) AS participant_count,
+        COUNT(DISTINCT ic) AS image_collection_count,
+        COUNT(DISTINCT df) AS study_file_count,
+        COUNT(DISTINCT f) AS participant_file_count
+      SKIP $skip LIMIT $limit
+    page_size: 1000
+      
+  - index_name: "study_data_file"
+    id_field: "study_id"
     mapping:
-      study_short_name:
-        type: keyword
-      study_accession:
-        type: keyword
-      study_id:
-        type: keyword
-      data_file_type:
-        type: keyword
-      zip_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
-    cypher_query: "
+      keyword:
+        - study_short_name
+        - study_accession
+        - study_id
+        - list_type
+        - study_data_files.data_file_uuid
+        - study_data_files.data_file_name
+        - study_data_files.data_file_type
+        - study_data_files.data_file_description
+        - study_data_files.data_file_format
+        - study_data_files.data_file_checksum_value
+        - study_data_files.data_file_checksum_type
+        - study_data_files.data_file_compression_status
+        - study_data_files.data_file_location
+        - data_files.data_file_uuid
+        - data_files.data_file_name
+        - data_files.data_file_type
+        - data_files.data_file_description
+        - data_files.data_file_format
+        - data_files.data_file_checksum_value
+        - data_files.data_file_checksum_type
+        - data_files.data_file_compression_status
+        - data_files.data_file_location
+      double:
+        - study_data_files.data_file_size
+        - data_files.data_file_size
+    query: |
+      MATCH (s:study)<-[:belongs_to]-(sb:participant)
+      MATCH (s:study)<-[:associated_with]-(study_file:file)
+      OPTIONAL MATCH (sb:participant)<-[*..2]-(df:file)
+      RETURN DISTINCT
+        s.study_short_name AS study_short_name,
+        s.study_accession AS study_accession,
+        toString(s.study_id) AS study_id,
+        COLLECT(DISTINCT {
+          data_file_uuid: study_file.data_file_uuid,
+          data_file_name: study_file.data_file_name,
+          data_file_type: study_file.data_file_type,
+          data_file_description: study_file.data_file_description,
+          data_file_format: study_file.data_file_format,
+          data_file_size: study_file.data_file_size,
+          data_file_checksum_value: study_file.data_file_checksum_value,
+          data_file_checksum_type: study_file.data_file_checksum_type,
+          data_file_compression_status: study_file.data_file_compression_status,
+          data_file_location: study_file.data_file_location
+        }) AS study_data_files,
+        COLLECT(DISTINCT {
+          data_file_uuid: df.data_file_uuid,
+          data_file_name: df.data_file_name,
+          data_file_type: df.data_file_type,
+          data_file_description: df.data_file_description,
+          data_file_format: df.data_file_format,
+          data_file_size: df.data_file_size,
+          data_file_checksum_value: df.data_file_checksum_value,
+          data_file_checksum_type: df.data_file_checksum_type,
+          data_file_compression_status: df.data_file_compression_status,
+          data_file_location: df.data_file_location
+        }) AS data_files,
+        COLLECT(DISTINCT df.data_file_type) AS list_type
+      SKIP $skip LIMIT $limit
+    page_size: 1000
+
+  - index_name: "study_zip_file"
+    id_field: "study_id"
+    mapping:
+      keyword:
+        - study_short_name
+        - study_accession
+        - study_id
+        - data_file_type
+        - zip_files.data_file_uuid
+        - zip_files.data_file_name
+        - zip_files.data_file_type
+        - zip_files.data_file_description
+        - zip_files.data_file_format
+        - zip_files.data_file_checksum_value
+        - zip_files.data_file_checksum_type
+        - zip_files.data_file_compression_status
+        - zip_files.data_file_location
+      double:
+        - zip_files.data_file_size
+    query: |
       MATCH (s:study)
       OPTIONAL MATCH (s)<-[:associated_with]-(study_file:file)
       WHERE toLower(coalesce(study_file.data_file_format, '')) = 'zip'
@@ -280,7 +189,7 @@ Indices:
       RETURN DISTINCT
         s.study_short_name AS study_short_name,
         s.study_accession AS study_accession,
-        s.study_id AS study_id,
+        toString(s.study_id) AS study_id,
         data_file_type AS data_file_type,
         COLLECT(DISTINCT {
           data_file_uuid: study_file.data_file_uuid,
@@ -295,54 +204,29 @@ Indices:
           data_file_location: study_file.data_file_location
         }) AS zip_files
       ORDER BY study_short_name, data_file_type
-      "
+      SKIP $skip LIMIT $limit
+    page_size: 1000
 
-  - index_name: study_specimen
-    type: neo4j
-
-    # type mapping for each property of the index
+  - index_name: "study_specimen"
+    id_field: "study_id"
     mapping:
-      study_short_name:
-        type: keyword
-      study_accession:
-        type: keyword
-      study_id:
-        type: keyword
-      specimen_types:
-        type: nested
-        properties:
-          group:
-            type: keyword
-          count:
-            type: keyword
-      specimen_timepoints:
-        type: nested
-        properties:
-          group:
-            type: keyword
-          count:
-            type: keyword
-      specimen_count:
-        type: keyword
-      specimen:
-        type: nested
-        properties:
-          specimen_record_id:
-            type: keyword
-          specimen_type:
-            type: keyword
-          specimen_category:
-            type: keyword
-          anatomical_collection_site:
-            type: keyword
-          tissue_category:
-            type: keyword
-          assessment_timepoint:
-            type: keyword
-          collection_date:
-            type: keyword
-            
-    cypher_query: "
+      keyword:
+        - study_short_name
+        - study_accession
+        - study_id
+        - specimen_timepoints.group
+        - specimen_types.group
+        - specimen.specimen_record_id
+        - specimen.specimen_type
+        - specimen.specimen_category
+        - specimen.anatomical_collection_site
+        - specimen.tissue_category
+        - specimen.assessment_timepoint
+      long:
+        - specimen_count
+      double:
+        - specimen.collection_date
+    query: |
       MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
       WITH COUNT(sp) AS specimen_count
       MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sp:specimen)
@@ -355,9 +239,9 @@ Indices:
         s.study_short_name AS study_short_name,
         s.study_accession AS study_accession,
         toString(s.study_id) AS study_id,
-        COLLECT(DISTINCT{group: assessment_timepoint, count: count2}) AS specimen_timepoints,
-        COLLECT(DISTINCT{group: specimen_type, count: count1}) AS specimen_types,
-        COLLECT(DISTINCT{
+        COLLECT(DISTINCT { group: assessment_timepoint, count: count2 }) AS specimen_timepoints,
+        COLLECT(DISTINCT { group: specimen_type, count: count1 }) AS specimen_types,
+        COLLECT(DISTINCT {
           specimen_record_id: sp.specimen_record_id,
           specimen_type: sp.specimen_type,
           specimen_category: sp.specimen_category,
@@ -365,143 +249,105 @@ Indices:
           tissue_category: sp.tissue_category,
           assessment_timepoint: sp.assessment_timepoint,
           collection_date: toFloat(sp.collection_date)
-        }) as specimen,
-        specimen_count"
-  - index_name: study_diagnosis
-    type: neo4j
-    # type mapping for each property of the index
-    mapping:
-      study_short_name:
-        type: keyword
-      study_accession:
-        type: keyword
-      study_id:
-        type: keyword
-      diagnosis:
-        type: nested
-        properties:
-          diagnosis_record_id:
-            type: keyword
-          primary_diagnosis_disease_group:
-            type: keyword
-          ctep_disease_term:
-            type: keyword
-          meddra_disease_code:
-            type: keyword
-          snomed_disease_term:
-            type: keyword
-          snomed_disease_code:
-            type: keyword
-          primary_disease_site:
-            type: keyword
-          histology:
-            type: keyword
-          histological_subtype:
-            type: keyword
-          stage_of_disease:
-            type: keyword
-          tumor_grade:
-            type: keyword
-      ctep_disease_terms:
-        type: keyword
+        }) AS specimen,
+        specimen_count
+      SKIP $skip LIMIT $limit
+    page_size: 1000
 
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    cypher_query: "
-        MATCH (s:study)
-        optional MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
-        RETURN DISTINCT
-            s.study_short_name AS study_short_name,
-          s.study_accession AS study_accession,
-            toString(s.study_id) AS study_id,
-            COLLECT(DISTINCT sd.ctep_disease_term) as ctep_disease_terms,
-            COLLECT(DISTINCT{
-            diagnosis_record_id: sd.diagnosis_record_id,
-            primary_diagnosis_disease_group: sd.primary_diagnosis_disease_group,
-            ctep_disease_term: sd.ctep_disease_term,
-            meddra_disease_code: sd.meddra_disease_code,
-            snomed_disease_term: sd.snomed_disease_term,
-            snomed_disease_code: sd.snomed_disease_code,
-            primary_disease_site: sd.primary_disease_site,
-            histology: sd.histology,
-            histological_subtype: sd.histological_subtype,
-            stage_of_disease: sd.stage_of_disease,
-            tumor_grade: sd.tumor_grade}) as diagnosis
-      "
-  # Supplies Hero Image information for the front page
-  - index_name: home_page
-    type: neo4j
-    # type mapping for each property of the index
+  - index_name: "study_diagnosis"
+    id_field: "study_id"
     mapping:
-      numberOfParticipants:
-        type: keyword
-      numberOfDiagnoses:
-        type: keyword
-      numberOfTargeted:
-        type: keyword
-      numberOfNonTargeted:
-        type: keyword
-      numberOfTherapies:
-        type: keyword
-      dataFileCount:
-        type: keyword
-      specimenCountbyStageOfDisease:
-        type: nested
-        properties:
-          group:
-            type: keyword
-          participants:
-            type: keyword
-      dataFileByType:
-        type: nested
-        properties:
-          group:
-            type: keyword
-          participants:
-            type: keyword
-  
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    cypher_query: "
+      keyword:
+        - study_short_name
+        - study_accession
+        - study_id
+        - ctep_disease_terms
+        - diagnosis.diagnosis_record_id
+        - diagnosis.primary_diagnosis_disease_group
+        - diagnosis.ctep_disease_term
+        - diagnosis.meddra_disease_code
+        - diagnosis.snomed_disease_term
+        - diagnosis.snomed_disease_code
+        - diagnosis.primary_disease_site
+        - diagnosis.histology
+        - diagnosis.histological_subtype
+        - diagnosis.stage_of_disease
+        - diagnosis.tumor_grade
+    query: |
+      MATCH (s:study)
+      OPTIONAL MATCH (s:study)<-[:belongs_to]-(participant)<-[:of_participant]-(sd:diagnosis)
+      RETURN DISTINCT
+        s.study_short_name AS study_short_name,
+        s.study_accession AS study_accession,
+        toString(s.study_id) AS study_id,
+        COLLECT(DISTINCT sd.ctep_disease_term) AS ctep_disease_terms,
+        COLLECT(DISTINCT {
+          diagnosis_record_id: sd.diagnosis_record_id,
+          primary_diagnosis_disease_group: sd.primary_diagnosis_disease_group,
+          ctep_disease_term: sd.ctep_disease_term,
+          meddra_disease_code: sd.meddra_disease_code,
+          snomed_disease_term: sd.snomed_disease_term,
+          snomed_disease_code: sd.snomed_disease_code,
+          primary_disease_site: sd.primary_disease_site,
+          histology: sd.histology,
+          histological_subtype: sd.histological_subtype,
+          stage_of_disease: sd.stage_of_disease,
+          tumor_grade: sd.tumor_grade
+        }) AS diagnosis
+      SKIP $skip LIMIT $limit
+    page_size: 1000
+  # Supplies Hero Image information for the front page
+  - index_name: "home_page"
+    id_field: "page"
+    mapping:
+      keyword:
+        - page
+        - numberOfParticipants
+        - numberOfDiagnoses
+        - numberOfTargeted
+        - numberOfNonTargeted
+        - numberOfTherapies
+        - dataFileCount
+        - specimenCountbyStageOfDisease.group
+        - specimenCountbyStageOfDisease.subjects
+        - dataFileByType.group
+        - dataFileByType.subjects
+    query: |
       MATCH (sub:participant)<-[*..2]-(df:file)
       WITH DISTINCT df
       WHERE df.data_file_format <> 'zip'
-
       WITH df.data_file_type AS t, COUNT(*) AS c
       WITH COLLECT({group: t, subjects: c}) AS dataFileByType
-
       WITH dataFileByType,
-          REDUCE(total=0, x IN dataFileByType | total + x.subjects) AS dataFileCount
-
+           REDUCE(total = 0, x IN dataFileByType | total + x.subjects) AS dataFileCount
       MATCH (sb:participant)
       WITH COUNT(sb) AS participantcount, dataFileByType, dataFileCount
-
       MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> ''
       WITH participantcount, dataFileByType, dataFileCount,
-          COUNT(DISTINCT target.targeted_therapy) AS targetTherapyCount
-
+           COUNT(DISTINCT target.targeted_therapy) AS targetTherapyCount
       MATCH (untargeted:non_targeted_therapy)
       WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount,
-          COUNT(DISTINCT untargeted.targeted_therapy) AS untargetedTherapyCount
-
+           COUNT(DISTINCT untargeted.targeted_therapy) AS untargetedTherapyCount
       MATCH (diag:diagnosis)
       WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount,
-          COUNT(DISTINCT diag.ctep_disease_term) AS countofDiagnoses,
-          (untargetedTherapyCount + targetTherapyCount) AS TotalTherapy
-
+           COUNT(DISTINCT diag.ctep_disease_term) AS countofDiagnoses,
+           (untargetedTherapyCount + targetTherapyCount) AS TotalTherapy
       MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
       WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
-          { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
-
+           { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
       RETURN DISTINCT
+        'home' AS page,
         TotalTherapy AS numberOfTherapies,
         participantcount AS numberOfParticipants,
         countofDiagnoses AS numberOfDiagnoses,
         untargetedTherapyCount AS numberOfNonTargeted,
         targetTherapyCount AS numberOfTargeted,
         dataFileCount AS dataFileCount,
-        apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) AS specimenCountbyStageOfDisease,
+        COLLECT(DISTINCT specimenCountbyStageOfDisease) AS specimenCountbyStageOfDisease,
         dataFileByType AS dataFileByType
-      "
-      
+      SKIP $skip LIMIT $limit
+    page_size: 1000
+
   - index_name: widgets_facets_counts
     type: neo4j
     # Widgets,Facets,and Global Stats bar
