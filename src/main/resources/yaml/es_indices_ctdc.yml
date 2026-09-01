@@ -298,10 +298,8 @@ Indices:
     page_size: 1000
   # Supplies Hero Image information for the front page
   - index_name: "home_page"
-    id_field: "page"
     mapping:
       keyword:
-        - page
         - numberOfParticipants
         - numberOfDiagnoses
         - numberOfTargeted
@@ -309,9 +307,9 @@ Indices:
         - numberOfTherapies
         - dataFileCount
         - specimenCountbyStageOfDisease.group
-        - specimenCountbyStageOfDisease.subjects
+        - specimenCountbyStageOfDisease.participants
         - dataFileByType.group
-        - dataFileByType.subjects
+        - dataFileByType.participants
     query: |
       MATCH (sub:participant)<-[*..2]-(df:file)
       WITH DISTINCT df
@@ -336,7 +334,6 @@ Indices:
       WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
            { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
       RETURN DISTINCT
-        'home' AS page,
         TotalTherapy AS numberOfTherapies,
         participantcount AS numberOfParticipants,
         countofDiagnoses AS numberOfDiagnoses,
