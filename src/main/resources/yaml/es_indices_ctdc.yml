@@ -1219,6 +1219,7 @@ Indices:
             data_file_compression_status: study_zip_file.data_file_compression_status,
             data_file_location: study_zip_file.data_file_location
         }) WHERE x.data_file_uuid IS NOT NULL] AS data_files
+        SKIP $skip LIMIT $limit
       page_size: 10000
   - index_name: "tab_biospecimens"
     id_field: "specimen_record_id"
@@ -1494,8 +1495,12 @@ Indices:
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       WITH
         f, sub, spec, study, ps_latest, diag, demo,
+        targeted_therapy, targeted_therapy_string, exp
+      ORDER BY coalesce(datetime(exp.updated), datetime(exp.created)) DESC, id(exp) DESC
+      WITH
+        f, sub, spec, study, ps_latest, diag, demo,
         targeted_therapy, targeted_therapy_string,
-        [x IN collect(DISTINCT exp.carcinogen_exposure) WHERE x IS NOT NULL] AS carcinogen_exposure
+        head(collect(exp)) AS e_latest
 
       RETURN DISTINCT
         'data file' AS type,
@@ -1529,7 +1534,7 @@ Indices:
         demo.race AS race,
         demo.ethnicity AS ethnicity,
         demo.age_at_enrollment AS age_at_enrollment,
-        carcinogen_exposure AS carcinogen_exposure,
+        COALESCE(e_latest.carcinogen_exposure, '') AS carcinogen_exposure,
         targeted_therapy AS targeted_therapy,
         targeted_therapy_string AS targeted_therapy_string,
         toLower(spec.anatomical_collection_site) AS anatomical_collection_site,
@@ -1982,22 +1987,33 @@ Indices:
         OPTIONAL MATCH (tt:targeted_therapy)-[:of_participant]->(sub)
         WITH
           f, sub, spec,
-          collect(DISTINCT tt.targeted_therapy)                                   AS tt_raw
+          [x IN COLLECT(DISTINCT tt.targeted_therapy)
+            WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+            | CASE
+                WHEN toLower(trim(toString(x))) = 'not reported' THEN 'Not reported'
+                ELSE trim(toString(x))
+              END
+          ]                                                                       AS raw_targeted_therapy
         WITH f, sub, spec,
-          REDUCE(result = [], t IN tt_raw |
-            CASE WHEN t IS NULL OR t = '' THEN result ELSE result + t END)        AS targeted_therapy,
-          REDUCE(result = [], t IN tt_raw |
-            CASE WHEN t IS NULL OR t = '' THEN result ELSE result + toLower(t) END) AS tt_lower
-        UNWIND CASE WHEN size(tt_lower) = 0 THEN [null] ELSE tt_lower END AS tt_item
-        WITH f, sub, spec, targeted_therapy, tt_item
-        ORDER BY tt_item
+          REDUCE(dedup = [], x IN raw_targeted_therapy |
+            CASE
+              WHEN any(existing IN dedup WHERE toLower(existing) = toLower(x)) THEN dedup
+              ELSE dedup + x
+            END
+          )                                                                       AS dedup_targeted_therapy
+        WITH f, sub, spec,
+          CASE
+            WHEN size(dedup_targeted_therapy) > 1
+              AND size([x IN dedup_targeted_therapy WHERE toLower(x) <> 'not reported']) > 0
+            THEN [x IN dedup_targeted_therapy WHERE toLower(x) <> 'not reported']
+            ELSE dedup_targeted_therapy
+          END                                                                     AS targeted_therapy
         WITH f, sub, spec, targeted_therapy,
-          COLLECT(tt_item)                                                        AS tt_sorted
-        WITH f, sub, spec, targeted_therapy,
-          REDUCE(result = '', t IN tt_sorted |
-            CASE WHEN t IS NULL OR t = '' THEN result
-                 ELSE result + CASE WHEN result = '' THEN t ELSE '|' + t END
-            END)                                                                  AS targeted_therapy_string
+          CASE
+            WHEN size(targeted_therapy) > 0
+            THEN REDUCE(result = '', t IN targeted_therapy | result + CASE WHEN result = '' THEN '' ELSE '|' END + t)
+            ELSE null
+          END                                                                     AS targeted_therapy_string
 
         OPTIONAL MATCH (sub)<-[:of_participant]-(diag:diagnosis)
         OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
