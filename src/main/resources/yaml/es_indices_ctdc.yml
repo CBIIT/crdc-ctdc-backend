@@ -767,82 +767,123 @@ Indices:
       WITH study, diag_data, demo_data, exp_data, COLLECT(DISTINCT {node: spec, participant_id: p_spec.participant_id}) AS spec_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_ps:participant)<-[:of_participant]-(ps:participant_status)
       WITH study, diag_data, demo_data, exp_data, spec_data, COLLECT(DISTINCT {node: ps, participant_id: p_ps.participant_id}) AS ps_data
+      WITH study, diag_data, demo_data, exp_data, spec_data, ps_data,
+        REDUCE(nodes = [], x IN [entry IN diag_data WHERE entry.node IS NOT NULL | entry.node] |
+          CASE WHEN x IN nodes THEN nodes ELSE nodes + x END) AS unique_diag,
+        REDUCE(nodes = [], x IN [entry IN demo_data WHERE entry.node IS NOT NULL | entry.node] |
+          CASE WHEN x IN nodes THEN nodes ELSE nodes + x END) AS unique_demo,
+        REDUCE(nodes = [], x IN [entry IN exp_data WHERE entry.node IS NOT NULL | entry.node] |
+          CASE WHEN x IN nodes THEN nodes ELSE nodes + x END) AS unique_exp,
+        REDUCE(nodes = [], x IN [entry IN spec_data WHERE entry.node IS NOT NULL | entry.node] |
+          CASE WHEN x IN nodes THEN nodes ELSE nodes + x END) AS unique_spec,
+        REDUCE(nodes = [], x IN [entry IN ps_data WHERE entry.node IS NOT NULL | entry.node] |
+          CASE WHEN x IN nodes THEN nodes ELSE nodes + x END) AS unique_ps
       WITH study,
-        [x IN diag_data WHERE x.node IS NOT NULL | {
-          participant_ids: COALESCE(x.participant_id, ''),
-          ctep_disease_term: x.node.ctep_disease_term,
-          date_of_diagnosis: x.node.date_of_diagnosis,
-          date_of_diagnosis_original: x.node.date_of_diagnosis_original,
-          date_of_diagnosis_unit: x.node.date_of_diagnosis_unit,
-          diagnosis_record_id: x.node.diagnosis_record_id,
-          histological_subtype: x.node.histological_subtype,
-          histology: x.node.histology,
-          meddra_disease_code: x.node.meddra_disease_code,
-          primary_diagnosis_disease_group: x.node.primary_diagnosis_disease_group,
-          primary_disease_site: x.node.primary_disease_site,
-          snomed_disease_code: x.node.snomed_disease_code,
-          snomed_disease_term: x.node.snomed_disease_term,
-          UUID: x.node.uuid
+        [d IN unique_diag | {
+          participant_ids: REDUCE(
+            text = '',
+            participant_id IN REDUCE(ids = [], x IN [entry IN diag_data WHERE entry.node = d AND entry.participant_id IS NOT NULL | entry.participant_id] |
+              CASE WHEN x IN ids THEN ids ELSE ids + x END
+            ) |
+              text + CASE WHEN text = '' THEN '' ELSE '|' END + participant_id
+          ),
+          ctep_disease_term: d.ctep_disease_term,
+          date_of_diagnosis: d.date_of_diagnosis,
+          date_of_diagnosis_original: d.date_of_diagnosis_original,
+          date_of_diagnosis_unit: d.date_of_diagnosis_unit,
+          diagnosis_record_id: d.diagnosis_record_id,
+          histological_subtype: d.histological_subtype,
+          histology: d.histology,
+          meddra_disease_code: d.meddra_disease_code,
+          primary_diagnosis_disease_group: d.primary_diagnosis_disease_group,
+          primary_disease_site: d.primary_disease_site,
+          snomed_disease_code: d.snomed_disease_code,
+          snomed_disease_term: d.snomed_disease_term,
+          UUID: d.uuid
         }] AS diagnosisNodeData,
         size(REDUCE(a = [], p IN [x IN diag_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id] | CASE WHEN p IN a THEN a ELSE a + p END)) AS diagnosisParticipantCount,
-        [x IN demo_data WHERE x.node IS NOT NULL | {
-          participant_ids: COALESCE(x.participant_id, ''),
-          age_at_enrollment: x.node.age_at_enrollment,
-          age_at_enrollment_original: x.node.age_at_enrollment_original,
-          age_at_enrollment_original_unit: x.node.age_at_enrollment_original_unit,
-          age_at_enrollment_unit: x.node.age_at_enrollment_unit,
-          body_surface_area: x.node.body_surface_area,
-          body_surface_area_original: x.node.body_surface_area_original,
-          body_surface_area_original_unit: x.node.body_surface_area_original_unit,
-          body_surface_area_unit: x.node.body_surface_area_unit,
-          demographic_record_id: x.node.demographic_record_id,
-          ethnicity: x.node.ethnicity,
-          height: x.node.height,
-          height_original: x.node.height_original,
-          height_original_unit: x.node.height_original_unit,
-          height_unit: x.node.height_unit,
-          ncbi_taxonomy_id: x.node.ncbi_taxonomy_id,
-          ncbi_taxonomy_name: x.node.ncbi_taxonomy_name,
-          race: x.node.race,
-          sex: x.node.sex,
-          uuid: x.node.uuid,
-          weight: x.node.weight,
-          weight_original: x.node.weight_original,
-          weight_original_unit: x.node.weight_original_unit,
-          weight_unit: x.node.weight_unit,
-          occupation: x.node.occupation,
-          income: x.node.income,
-          highest_level_of_education: x.node.highest_level_of_education
+        [dm IN unique_demo | {
+          participant_ids: REDUCE(
+            text = '',
+            participant_id IN REDUCE(ids = [], x IN [entry IN demo_data WHERE entry.node = dm AND entry.participant_id IS NOT NULL | entry.participant_id] |
+              CASE WHEN x IN ids THEN ids ELSE ids + x END
+            ) |
+              text + CASE WHEN text = '' THEN '' ELSE '|' END + participant_id
+          ),
+          age_at_enrollment: dm.age_at_enrollment,
+          age_at_enrollment_original: dm.age_at_enrollment_original,
+          age_at_enrollment_original_unit: dm.age_at_enrollment_original_unit,
+          age_at_enrollment_unit: dm.age_at_enrollment_unit,
+          body_surface_area: dm.body_surface_area,
+          body_surface_area_original: dm.body_surface_area_original,
+          body_surface_area_original_unit: dm.body_surface_area_original_unit,
+          body_surface_area_unit: dm.body_surface_area_unit,
+          demographic_record_id: dm.demographic_record_id,
+          ethnicity: dm.ethnicity,
+          height: dm.height,
+          height_original: dm.height_original,
+          height_original_unit: dm.height_original_unit,
+          height_unit: dm.height_unit,
+          ncbi_taxonomy_id: dm.ncbi_taxonomy_id,
+          ncbi_taxonomy_name: dm.ncbi_taxonomy_name,
+          race: dm.race,
+          sex: dm.sex,
+          uuid: dm.uuid,
+          weight: dm.weight,
+          weight_original: dm.weight_original,
+          weight_original_unit: dm.weight_original_unit,
+          weight_unit: dm.weight_unit,
+          occupation: dm.occupation,
+          income: dm.income,
+          highest_level_of_education: dm.highest_level_of_education
         }] AS demographicNodeData,
         size(REDUCE(a = [], p IN [x IN demo_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id] | CASE WHEN p IN a THEN a ELSE a + p END)) AS demographicParticipantCount,
-        [x IN exp_data WHERE x.node IS NOT NULL | {
-          participant_ids: COALESCE(x.participant_id, ''),
-          carcinogen_exposure: x.node.carcinogen_exposure,
-          exposure_record_id: x.node.exposure_record_id
+        [e IN unique_exp | {
+          participant_ids: REDUCE(
+            text = '',
+            participant_id IN REDUCE(ids = [], x IN [entry IN exp_data WHERE entry.node = e AND entry.participant_id IS NOT NULL | entry.participant_id] |
+              CASE WHEN x IN ids THEN ids ELSE ids + x END
+            ) |
+              text + CASE WHEN text = '' THEN '' ELSE '|' END + participant_id
+          ),
+          carcinogen_exposure: e.carcinogen_exposure,
+          exposure_record_id: e.exposure_record_id
         }] AS exposureNodeData,
         size(REDUCE(a = [], p IN [x IN exp_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id] | CASE WHEN p IN a THEN a ELSE a + p END)) AS exposureParticipantCount,
-        [x IN spec_data WHERE x.node IS NOT NULL | {
-          participant_ids: COALESCE(x.participant_id, ''),
-          anatomical_collection_site: x.node.anatomical_collection_site,
-          assessment_timepoint: toString(x.node.assessment_timepoint),
-          collection_date: toString(x.node.collection_date),
-          collection_date_original: toString(x.node.collection_date_original),
-          collection_date_original_unit: x.node.collection_date_original_unit,
-          collection_date_unit: toString(x.node.collection_date_unit),
-          crdc_id: x.node.crdc_id,
-          created: toString(x.node.created),
-          specimen_category: x.node.specimen_category,
-          specimen_record_id: x.node.specimen_record_id,
-          specimen_type_concept_code: x.node.specimen_type_concept_code,
-          tissue_category: x.node.tissue_category
+        [s IN unique_spec | {
+          participant_ids: REDUCE(
+            text = '',
+            participant_id IN REDUCE(ids = [], x IN [entry IN spec_data WHERE entry.node = s AND entry.participant_id IS NOT NULL | entry.participant_id] |
+              CASE WHEN x IN ids THEN ids ELSE ids + x END
+            ) |
+              text + CASE WHEN text = '' THEN '' ELSE '|' END + participant_id
+          ),
+          anatomical_collection_site: s.anatomical_collection_site,
+          assessment_timepoint: toString(s.assessment_timepoint),
+          collection_date: toString(s.collection_date),
+          collection_date_original: toString(s.collection_date_original),
+          collection_date_original_unit: s.collection_date_original_unit,
+          collection_date_unit: toString(s.collection_date_unit),
+          crdc_id: s.crdc_id,
+          created: toString(s.created),
+          specimen_category: s.specimen_category,
+          specimen_record_id: s.specimen_record_id,
+          specimen_type_concept_code: s.specimen_type_concept_code,
+          tissue_category: s.tissue_category
         }] AS specimenNodeData,
         size(REDUCE(a = [], p IN [x IN spec_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id] | CASE WHEN p IN a THEN a ELSE a + p END)) AS specimenParticipantCount,
-        [x IN ps_data WHERE x.node IS NOT NULL | {
-          participant_ids: COALESCE(x.participant_id, ''),
-          off_study: x.node.off_study,
-          off_study_reason: x.node.off_study_reason,
-          participant_status_record_id: x.node.participant_status_record_id,
-          survival_status: x.node.survival_status
+        [p IN unique_ps | {
+          participant_ids: REDUCE(
+            text = '',
+            participant_id IN REDUCE(ids = [], x IN [entry IN ps_data WHERE entry.node = p AND entry.participant_id IS NOT NULL | entry.participant_id] |
+              CASE WHEN x IN ids THEN ids ELSE ids + x END
+            ) |
+              text + CASE WHEN text = '' THEN '' ELSE '|' END + participant_id
+          ),
+          off_study: p.off_study,
+          off_study_reason: p.off_study_reason,
+          participant_status_record_id: p.participant_status_record_id,
+          survival_status: p.survival_status
         }] AS participantStatusNodeData,
         size(REDUCE(a = [], p IN [x IN ps_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id] | CASE WHEN p IN a THEN a ELSE a + p END)) AS participantStatusParticipantCount,
         ['diagnosis','demographic','exposure','specimen','participant_status'] AS unique_node_types
@@ -1032,153 +1073,153 @@ Indices:
         - surgical_procedure_id
         - surgical_procedure_therapeutic
         - extent_of_residual_disease
-    data_files:
-      type: nested
-      properties:
-        data_file_uuid:
-          type: keyword
-        data_file_name:
-          type: keyword
-        data_file_type:
-          type: keyword
-        data_file_description:
-          type: keyword
-        data_file_format:
-          type: keyword
-        data_file_size:
-          type: double
-        data_file_checksum_value:
-          type: keyword
-        data_file_checksum_type:
-          type: keyword
-        data_file_compression_status:
-          type: keyword
-        data_file_location:
-          type: keyword
-    long:
-    - age_at_enrollment
+      data_files:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_name:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_description:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_size:
+            type: double
+          data_file_checksum_value:
+            type: keyword
+          data_file_checksum_type:
+            type: keyword
+          data_file_compression_status:
+            type: keyword
+          data_file_location:
+            type: keyword
+      long:
+        - age_at_enrollment
     initial_query:
-    query: |
-      MATCH (study:study)<-[:belongs_to]-(sb:participant)
-      OPTIONAL MATCH (sb)<-[:of_participant]-(d:diagnosis)
-      WITH study, sb, d
-      ORDER BY coalesce(datetime(d.updated), datetime(d.created)) DESC, id(d) DESC
-      WITH study, sb, head(collect(d)) AS d_latest
-
-      OPTIONAL MATCH (sb)<-[:of_participant]-(e:exposure)
-      WITH study, sb, d_latest, e
-      ORDER BY coalesce(datetime(e.updated), datetime(e.created)) DESC, id(e) DESC
-      WITH study, sb, d_latest, head(collect(e)) AS e_latest
-
-      OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-      WITH study, sb, d_latest, e_latest, collect(tt) AS tts
-      WITH study, sb, d_latest, e_latest,
-        [x IN [t IN tts
-          WHERE t.targeted_therapy IS NOT NULL AND trim(toString(t.targeted_therapy)) <> ''
-          | CASE
-              WHEN toLower(trim(toString(t.targeted_therapy))) = 'not reported' THEN 'Not reported'
-              ELSE trim(toString(t.targeted_therapy))
-            END
-        ] WHERE x IS NOT NULL] AS targeted_therapy,
-        [x IN [t IN tts
-          WHERE t.best_response_to_targeted_therapy IS NOT NULL AND trim(toString(t.best_response_to_targeted_therapy)) <> ''
-          | trim(toString(t.best_response_to_targeted_therapy))
-        ] WHERE x IS NOT NULL] AS best_response_to_targeted_therapy
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy,
-        CASE
-          WHEN size(targeted_therapy) > 0 THEN REDUCE(s = '', x IN targeted_therapy | s + CASE WHEN s = '' THEN '' ELSE '|' END + x)
-          ELSE null
-        END AS targeted_therapy_string
-
-      OPTIONAL MATCH (sb)<-[:of_participant]-(sp:specimen)
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, sp
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string,
-        [s IN collect(CASE WHEN sp.anatomical_collection_site IS NOT NULL AND toString(sp.anatomical_collection_site) <> '' THEN trim(toLower(toString(sp.anatomical_collection_site))) ELSE null END) WHERE s IS NOT NULL] AS anatomical_collection_site,
-        collect(DISTINCT sp.specimen_id) AS specimen_id,
-        collect(DISTINCT sp.specimen_type) AS specimen_type,
-        collect(DISTINCT sp.tissue_category) AS tissue_category,
-        collect(DISTINCT sp.assessment_timepoint) AS assessment_timepoint
-
-      OPTIONAL MATCH (sb)<-[:of_participant]-(dm:demographic)
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
-        specimen_id, specimen_type, tissue_category, assessment_timepoint, dm
-      ORDER BY coalesce(datetime(dm.updated), datetime(dm.created)) DESC, id(dm) DESC
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
-        specimen_id, specimen_type, tissue_category, assessment_timepoint, head(collect(dm)) AS demo_latest
-
-      OPTIONAL MATCH (sb)<-[:of_participant]-(ps:participant_status)
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
-        specimen_id, specimen_type, tissue_category, assessment_timepoint, demo_latest, ps
-      ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
-        specimen_id, specimen_type, tissue_category, assessment_timepoint, demo_latest, head(collect(ps)) AS ps_latest
-
-      OPTIONAL MATCH (sb)<-[*..2]-(df:file)
-      OPTIONAL MATCH (study)<-[:associated_with]-(study_zip_file:file)
-      WHERE toLower(coalesce(study_zip_file.data_file_format, '')) = 'zip'
-        AND NOT (study_zip_file)--(:participant)
-        AND NOT (study_zip_file)-[:associated_with]->(:specimen)
-
-      WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
-        specimen_id, specimen_type, tissue_category, assessment_timepoint, demo_latest, ps_latest, df, study_zip_file
-      ORDER BY coalesce(sb.participant_id, '') ASC
-
-      RETURN DISTINCT
-        'participant' AS type,
-        sb.participant_id AS participant_id,
-        study.study_short_name AS study_short_name,
-        study.study_id AS study_id,
-        study.study_accession AS study_accession,
-        study.study_name AS study_name,
-        study.study_type AS study_type,
-        study.study_description AS study_description,
-        study.dates_of_conduct AS dates_of_conduct,
-        d_latest.ctep_disease_term AS ctep_disease_term,
-        d_latest.primary_diagnosis_disease_group AS primary_diagnosis_disease_group,
-        d_latest.stage_of_disease AS stage_of_disease,
-        d_latest.tumor_grade AS tumor_grade,
-        ps_latest.survival_status AS survival_status,
-        demo_latest.age_at_enrollment AS age_at_enrollment,
-        demo_latest.sex AS sex,
-        demo_latest.race AS race,
-        demo_latest.ethnicity AS ethnicity,
-        COALESCE(e_latest.carcinogen_exposure, '') AS carcinogen_exposure,
-        targeted_therapy,
-        best_response_to_targeted_therapy,
-        targeted_therapy_string,
-        anatomical_collection_site,
-        specimen_id,
-        specimen_type,
-        tissue_category,
-        assessment_timepoint,
-        [x IN COLLECT(DISTINCT df.data_file_type) + COLLECT(DISTINCT study_zip_file.data_file_type) WHERE x IS NOT NULL] AS data_file_type,
-        [x IN COLLECT(DISTINCT df.data_file_uuid) + COLLECT(DISTINCT study_zip_file.data_file_uuid) WHERE x IS NOT NULL] AS data_file_uuid,
-        [x IN COLLECT(DISTINCT df.data_file_format) + COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL] AS data_file_format,
-        [x IN COLLECT(DISTINCT {
-          data_file_uuid: df.data_file_uuid,
-          data_file_name: df.data_file_name,
-          data_file_type: df.data_file_type,
-          data_file_description: df.data_file_description,
-          data_file_format: df.data_file_format,
-          data_file_size: df.data_file_size,
-          data_file_checksum_value: df.data_file_checksum_value,
-          data_file_checksum_type: df.data_file_checksum_type,
-          data_file_compression_status: df.data_file_compression_status,
-          data_file_location: df.data_file_location
-        }) WHERE x.data_file_uuid IS NOT NULL] +
-        [x IN COLLECT(DISTINCT {
-          data_file_uuid: study_zip_file.data_file_uuid,
-          data_file_name: study_zip_file.data_file_name,
-          data_file_type: study_zip_file.data_file_type,
-          data_file_description: study_zip_file.data_file_description,
-          data_file_format: study_zip_file.data_file_format,
-          data_file_size: study_zip_file.data_file_size,
-          data_file_checksum_value: study_zip_file.data_file_checksum_value,
-          data_file_checksum_type: study_zip_file.data_file_checksum_type,
-          data_file_compression_status: study_zip_file.data_file_compression_status,
-          data_file_location: study_zip_file.data_file_location
-      }) WHERE x.data_file_uuid IS NOT NULL] AS data_files
-    page_size: 10000
+      query: |
+        MATCH (study:study)<-[:belongs_to]-(sb:participant)
+        OPTIONAL MATCH (sb)<-[:of_participant]-(d:diagnosis)
+        WITH study, sb, d
+        ORDER BY coalesce(datetime(d.updated), datetime(d.created)) DESC, id(d) DESC
+        WITH study, sb, head(collect(d)) AS d_latest
+  
+        OPTIONAL MATCH (sb)<-[:of_participant]-(e:exposure)
+        WITH study, sb, d_latest, e
+        ORDER BY coalesce(datetime(e.updated), datetime(e.created)) DESC, id(e) DESC
+        WITH study, sb, d_latest, head(collect(e)) AS e_latest
+  
+        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
+        WITH study, sb, d_latest, e_latest, collect(tt) AS tts
+        WITH study, sb, d_latest, e_latest,
+          [x IN [t IN tts
+            WHERE t.targeted_therapy IS NOT NULL AND trim(toString(t.targeted_therapy)) <> ''
+            | CASE
+                WHEN toLower(trim(toString(t.targeted_therapy))) = 'not reported' THEN 'Not reported'
+                ELSE trim(toString(t.targeted_therapy))
+              END
+          ] WHERE x IS NOT NULL] AS targeted_therapy,
+          [x IN [t IN tts
+            WHERE t.best_response_to_targeted_therapy IS NOT NULL AND trim(toString(t.best_response_to_targeted_therapy)) <> ''
+            | trim(toString(t.best_response_to_targeted_therapy))
+          ] WHERE x IS NOT NULL] AS best_response_to_targeted_therapy
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy,
+          CASE
+            WHEN size(targeted_therapy) > 0 THEN REDUCE(s = '', x IN targeted_therapy | s + CASE WHEN s = '' THEN '' ELSE '|' END + x)
+            ELSE null
+          END AS targeted_therapy_string
+  
+        OPTIONAL MATCH (sb)<-[:of_participant]-(sp:specimen)
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, sp
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string,
+          [s IN collect(CASE WHEN sp.anatomical_collection_site IS NOT NULL AND toString(sp.anatomical_collection_site) <> '' THEN trim(toLower(toString(sp.anatomical_collection_site))) ELSE null END) WHERE s IS NOT NULL] AS anatomical_collection_site,
+          collect(DISTINCT sp.specimen_id) AS specimen_id,
+          collect(DISTINCT sp.specimen_type) AS specimen_type,
+          collect(DISTINCT sp.tissue_category) AS tissue_category,
+          collect(DISTINCT sp.assessment_timepoint) AS assessment_timepoint
+  
+        OPTIONAL MATCH (sb)<-[:of_participant]-(dm:demographic)
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
+          specimen_id, specimen_type, tissue_category, assessment_timepoint, dm
+        ORDER BY coalesce(datetime(dm.updated), datetime(dm.created)) DESC, id(dm) DESC
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
+          specimen_id, specimen_type, tissue_category, assessment_timepoint, head(collect(dm)) AS demo_latest
+  
+        OPTIONAL MATCH (sb)<-[:of_participant]-(ps:participant_status)
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
+          specimen_id, specimen_type, tissue_category, assessment_timepoint, demo_latest, ps
+        ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
+          specimen_id, specimen_type, tissue_category, assessment_timepoint, demo_latest, head(collect(ps)) AS ps_latest
+  
+        OPTIONAL MATCH (sb)<-[*..2]-(df:file)
+        OPTIONAL MATCH (study)<-[:associated_with]-(study_zip_file:file)
+        WHERE toLower(coalesce(study_zip_file.data_file_format, '')) = 'zip'
+          AND NOT (study_zip_file)--(:participant)
+          AND NOT (study_zip_file)-[:associated_with]->(:specimen)
+  
+        WITH study, sb, d_latest, e_latest, targeted_therapy, best_response_to_targeted_therapy, targeted_therapy_string, anatomical_collection_site,
+          specimen_id, specimen_type, tissue_category, assessment_timepoint, demo_latest, ps_latest, df, study_zip_file
+        ORDER BY coalesce(sb.participant_id, '') ASC
+  
+        RETURN DISTINCT
+          'participant' AS type,
+          sb.participant_id AS participant_id,
+          study.study_short_name AS study_short_name,
+          study.study_id AS study_id,
+          study.study_accession AS study_accession,
+          study.study_name AS study_name,
+          study.study_type AS study_type,
+          study.study_description AS study_description,
+          study.dates_of_conduct AS dates_of_conduct,
+          d_latest.ctep_disease_term AS ctep_disease_term,
+          d_latest.primary_diagnosis_disease_group AS primary_diagnosis_disease_group,
+          d_latest.stage_of_disease AS stage_of_disease,
+          d_latest.tumor_grade AS tumor_grade,
+          ps_latest.survival_status AS survival_status,
+          demo_latest.age_at_enrollment AS age_at_enrollment,
+          demo_latest.sex AS sex,
+          demo_latest.race AS race,
+          demo_latest.ethnicity AS ethnicity,
+          COALESCE(e_latest.carcinogen_exposure, '') AS carcinogen_exposure,
+          targeted_therapy,
+          best_response_to_targeted_therapy,
+          targeted_therapy_string,
+          anatomical_collection_site,
+          specimen_id,
+          specimen_type,
+          tissue_category,
+          assessment_timepoint,
+          [x IN COLLECT(DISTINCT df.data_file_type) + COLLECT(DISTINCT study_zip_file.data_file_type) WHERE x IS NOT NULL] AS data_file_type,
+          [x IN COLLECT(DISTINCT df.data_file_uuid) + COLLECT(DISTINCT study_zip_file.data_file_uuid) WHERE x IS NOT NULL] AS data_file_uuid,
+          [x IN COLLECT(DISTINCT df.data_file_format) + COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL] AS data_file_format,
+          [x IN COLLECT(DISTINCT {
+            data_file_uuid: df.data_file_uuid,
+            data_file_name: df.data_file_name,
+            data_file_type: df.data_file_type,
+            data_file_description: df.data_file_description,
+            data_file_format: df.data_file_format,
+            data_file_size: df.data_file_size,
+            data_file_checksum_value: df.data_file_checksum_value,
+            data_file_checksum_type: df.data_file_checksum_type,
+            data_file_compression_status: df.data_file_compression_status,
+            data_file_location: df.data_file_location
+          }) WHERE x.data_file_uuid IS NOT NULL] +
+          [x IN COLLECT(DISTINCT {
+            data_file_uuid: study_zip_file.data_file_uuid,
+            data_file_name: study_zip_file.data_file_name,
+            data_file_type: study_zip_file.data_file_type,
+            data_file_description: study_zip_file.data_file_description,
+            data_file_format: study_zip_file.data_file_format,
+            data_file_size: study_zip_file.data_file_size,
+            data_file_checksum_value: study_zip_file.data_file_checksum_value,
+            data_file_checksum_type: study_zip_file.data_file_checksum_type,
+            data_file_compression_status: study_zip_file.data_file_compression_status,
+            data_file_location: study_zip_file.data_file_location
+        }) WHERE x.data_file_uuid IS NOT NULL] AS data_files
+      page_size: 10000
   - index_name: "tab_biospecimens"
     id_field: "specimen_record_id"
     mapping:
@@ -1997,7 +2038,7 @@ Indices:
           spec.specimen_type                          AS specimen_type,
           spec.tissue_category                        AS tissue_category,
           spec.assessment_timepoint                   AS assessment_timepoint
-          SKIP $skip LIMIT $limit
+        SKIP $skip LIMIT $limit
       page_size: 1000
   - index_name: "about_page"
     type: "about_file"
