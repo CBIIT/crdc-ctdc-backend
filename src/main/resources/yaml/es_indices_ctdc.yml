@@ -407,10 +407,22 @@ Indices:
               [x IN tt_names WHERE x IS NOT NULL] AS targeted_therapy,
               [x IN tt_ids WHERE x IS NOT NULL] AS targeted_therapy_id,
               [x IN responses WHERE x IS NOT NULL] AS best_response_to_targeted_therapy
+            UNWIND CASE WHEN size(targeted_therapy) = 0 THEN [null] ELSE targeted_therapy END AS tt_name
+            WITH targeted_therapy, targeted_therapy_id, best_response_to_targeted_therapy, tt_name
+            ORDER BY toLower(tt_name)
+            WITH
+              targeted_therapy,
+              targeted_therapy_id,
+              best_response_to_targeted_therapy,
+              [x IN COLLECT(tt_name) WHERE x IS NOT NULL] AS sorted_targeted_therapy
             RETURN
               targeted_therapy,
               targeted_therapy_id,
-              REDUCE(s = '', x IN targeted_therapy | s + CASE WHEN s = '' THEN '' ELSE '|' END + toString(x)) AS targeted_therapy_string,
+              CASE
+                WHEN size(sorted_targeted_therapy) > 0
+                THEN REDUCE(s = '', x IN sorted_targeted_therapy | s + CASE WHEN s = '' THEN '' ELSE '|' END + toString(x))
+                ELSE null
+              END AS targeted_therapy_string,
               best_response_to_targeted_therapy
           }
 
@@ -545,10 +557,22 @@ Indices:
           [x IN tt_names WHERE x IS NOT NULL] AS targeted_therapy,
           [x IN tt_ids WHERE x IS NOT NULL] AS targeted_therapy_id,
           [x IN responses WHERE x IS NOT NULL] AS best_response_to_targeted_therapy
+        UNWIND CASE WHEN size(targeted_therapy) = 0 THEN [null] ELSE targeted_therapy END AS tt_name
+        WITH targeted_therapy, targeted_therapy_id, best_response_to_targeted_therapy, tt_name
+        ORDER BY toLower(tt_name)
+        WITH
+          targeted_therapy,
+          targeted_therapy_id,
+          best_response_to_targeted_therapy,
+          [x IN COLLECT(tt_name) WHERE x IS NOT NULL] AS sorted_targeted_therapy
         RETURN
           targeted_therapy,
           targeted_therapy_id,
-          REDUCE(s = '', x IN targeted_therapy | s + CASE WHEN s = '' THEN '' ELSE '|' END + toString(x)) AS targeted_therapy_string,
+          CASE
+            WHEN size(sorted_targeted_therapy) > 0
+            THEN REDUCE(s = '', x IN sorted_targeted_therapy | s + CASE WHEN s = '' THEN '' ELSE '|' END + toString(x))
+            ELSE null
+          END AS targeted_therapy_string,
           best_response_to_targeted_therapy
       }
 
@@ -1275,7 +1299,7 @@ Indices:
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(d:diagnosis)
       WITH spec, sub, study, acs_norm, d
-      ORDER BY id(d) DESC
+      ORDER BY coalesce(datetime(d.updated), datetime(d.created)) DESC, id(d) DESC
       WITH spec, sub, study, acs_norm, head(collect(d)) AS best_diag
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(ps:participant_status)
@@ -1451,18 +1475,19 @@ Indices:
       WHERE sub IS NOT NULL
 
       OPTIONAL MATCH (sub)-[:belongs_to]->(study:study)
-      WITH f, sub, spec, study
+      OPTIONAL MATCH (f)-[:associated_with]-(study_direct:study)
+      WITH f, sub, spec, study, count(study_direct) > 0 AS has_direct_study
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(ps:participant_status)
-      WITH f, sub, spec, study, ps
+      WITH f, sub, spec, study, has_direct_study, ps
       ORDER BY coalesce(datetime(ps.updated), datetime(ps.created)) DESC, id(ps) DESC
-      WITH f, sub, spec, study, head(collect(ps)) AS ps_latest
+      WITH f, sub, spec, study, has_direct_study, head(collect(ps)) AS ps_latest
 
       OPTIONAL MATCH (tt:targeted_therapy)-[:of_participant]->(sub)
-      WITH f, sub, spec, study, ps_latest, tt
+      WITH f, sub, spec, study, has_direct_study, ps_latest, tt
       ORDER BY toLower(tt.targeted_therapy), id(tt) DESC
       WITH
-        f, sub, spec, study, ps_latest,
+        f, sub, spec, study, has_direct_study, ps_latest,
         [t IN collect(DISTINCT tt.targeted_therapy) WHERE t IS NOT NULL AND t <> ''] AS targeted_therapy,
         REDUCE(
           result = '',
@@ -1472,33 +1497,33 @@ Indices:
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(diag:diagnosis)
       WITH
-        f, sub, spec, study, ps_latest,
+        f, sub, spec, study, has_direct_study, ps_latest,
         targeted_therapy, targeted_therapy_string,
         diag
       ORDER BY id(diag) DESC
       WITH
-        f, sub, spec, study, ps_latest,
+        f, sub, spec, study, has_direct_study, ps_latest,
         targeted_therapy, targeted_therapy_string,
         head(collect(diag)) AS diag
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
       WITH
-        f, sub, spec, study, ps_latest, diag,
+        f, sub, spec, study, has_direct_study, ps_latest, diag,
         targeted_therapy, targeted_therapy_string,
         demo
       ORDER BY id(demo) DESC
       WITH
-        f, sub, spec, study, ps_latest, diag,
+        f, sub, spec, study, has_direct_study, ps_latest, diag,
         targeted_therapy, targeted_therapy_string,
         head(collect(demo)) AS demo
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       WITH
-        f, sub, spec, study, ps_latest, diag, demo,
+        f, sub, spec, study, has_direct_study, ps_latest, diag, demo,
         targeted_therapy, targeted_therapy_string, exp
       ORDER BY coalesce(datetime(exp.updated), datetime(exp.created)) DESC, id(exp) DESC
       WITH
-        f, sub, spec, study, ps_latest, diag, demo,
+        f, sub, spec, study, has_direct_study, ps_latest, diag, demo,
         targeted_therapy, targeted_therapy_string,
         head(collect(exp)) AS e_latest
 
@@ -1515,7 +1540,11 @@ Indices:
         f.data_file_checksum_type AS data_file_checksum_type,
         f.data_file_location AS data_file_location,
         f.data_file_compression_status AS data_file_compression_status,
-        CASE WHEN spec IS NOT NULL THEN 'biospecimen' ELSE 'participant' END AS association,
+        [x IN [
+          CASE WHEN has_direct_study OR study IS NOT NULL THEN 'study' ELSE null END,
+          CASE WHEN sub IS NOT NULL THEN 'participant' ELSE null END,
+          CASE WHEN spec IS NOT NULL THEN 'biospecimen' ELSE null END
+        ] WHERE x IS NOT NULL] AS association,
         spec.specimen_id AS specimen_id,
         spec.specimen_record_id AS specimen_record_id,
         sub.participant_id AS participant_id,
@@ -2016,12 +2045,19 @@ Indices:
           END                                                                     AS targeted_therapy_string
 
         OPTIONAL MATCH (sub)<-[:of_participant]-(diag:diagnosis)
+        WITH f, sub, spec, targeted_therapy, targeted_therapy_string, diag
+        ORDER BY coalesce(datetime(diag.updated), datetime(diag.created)) DESC, id(diag) DESC
+        WITH f, sub, spec, targeted_therapy, targeted_therapy_string, head(collect(diag)) AS diag_latest
+
         OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
+        WITH f, sub, spec, diag_latest, targeted_therapy, targeted_therapy_string, demo
+        ORDER BY coalesce(datetime(demo.updated), datetime(demo.created)) DESC, id(demo) DESC
+        WITH f, sub, spec, diag_latest, targeted_therapy, targeted_therapy_string, head(collect(demo)) AS demo_latest
+
         OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
-        WITH
-          f, sub, spec, diag, demo,
-          targeted_therapy, targeted_therapy_string,
-          collect(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure
+        WITH f, sub, spec, diag_latest, demo_latest, targeted_therapy, targeted_therapy_string, exp
+        ORDER BY coalesce(datetime(exp.updated), datetime(exp.created)) DESC, id(exp) DESC
+        WITH f, sub, spec, diag_latest, demo_latest, targeted_therapy, targeted_therapy_string, head(collect(exp)) AS e_latest
 
         RETURN DISTINCT
           'data file'                                 AS type,
@@ -2037,16 +2073,16 @@ Indices:
           spec.specimen_record_id                     AS specimen_record_id,
           sub.participant_id                          AS participant_id,
 
-          diag.ctep_disease_term                      AS ctep_disease_term,
-          diag.primary_diagnosis_disease_group        AS primary_diagnosis_disease_group,
-          diag.stage_of_disease                       AS stage_of_disease,
-          diag.tumor_grade                            AS tumor_grade,
+          diag_latest.ctep_disease_term               AS ctep_disease_term,
+          diag_latest.primary_diagnosis_disease_group AS primary_diagnosis_disease_group,
+          diag_latest.stage_of_disease                AS stage_of_disease,
+          diag_latest.tumor_grade                     AS tumor_grade,
 
-          demo.sex                                    AS sex,
-          demo.race                                   AS race,
-          demo.ethnicity                              AS ethnicity,
+          demo_latest.sex                             AS sex,
+          demo_latest.race                            AS race,
+          demo_latest.ethnicity                       AS ethnicity,
 
-          carcinogen_exposure                         AS carcinogen_exposure,
+          COALESCE(e_latest.carcinogen_exposure, '')  AS carcinogen_exposure,
           targeted_therapy                            AS targeted_therapy,
           targeted_therapy_string                     AS targeted_therapy_string,
 
