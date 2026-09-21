@@ -436,11 +436,11 @@ Indices:
         type: keyword
       numberOfDiagnoses:
         type: keyword
+      numberOfTherapies:
+        type: keyword
       numberOfTargeted:
         type: keyword
       numberOfNonTargeted:
-        type: keyword
-      numberOfTherapies:
         type: keyword
       dataFileCount:
         type: keyword
@@ -474,29 +474,37 @@ Indices:
       MATCH (sb:participant)
       WITH COUNT(sb) AS participantcount, dataFileByType, dataFileCount
 
-      MATCH (target:targeted_therapy) WHERE target.targeted_therapy <> ''
+      MATCH (therapy:therapy)
+      WHERE therapy.therapy_name IS NOT NULL AND trim(toString(therapy.therapy_name)) <> '' AND therapy.therapy_category IS NOT NULL 
       WITH participantcount, dataFileByType, dataFileCount,
-          COUNT(DISTINCT target.targeted_therapy) AS targetTherapyCount
+          COUNT(DISTINCT trim(toString(therapy.therapy_name))) AS therapyCount
 
-      MATCH (untargeted:non_targeted_therapy)
-      WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount,
-          COUNT(DISTINCT untargeted.targeted_therapy) AS untargetedTherapyCount
+      MATCH (therapy:therapy)
+      WHERE therapy.therapy_name IS NOT NULL AND trim(toString(therapy.therapy_name)) <> '' AND therapy.therapy_category = 'Non-Targeted'
+      WITH participantcount, dataFileByType, dataFileCount, therapyCount,
+          COUNT(DISTINCT trim(toString(therapy.therapy_name))) AS nonTargetedTherapyCount
 
+      MATCH (therapy:therapy)
+      WHERE therapy.therapy_name IS NOT NULL AND trim(toString(therapy.therapy_name)) <> '' AND therapy.therapy_category = 'Targeted' 
+      WITH participantcount, dataFileByType, dataFileCount, therapyCount, nonTargetedTherapyCount,
+          COUNT(DISTINCT trim(toString(therapy.therapy_name))) AS targetedTherapyCount
+
+      
       MATCH (diag:diagnosis)
-      WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount,
+      WITH participantcount, dataFileByType, dataFileCount, therapyCount, nonTargetedTherapyCount, targetedTherapyCount,
           COUNT(DISTINCT diag.ctep_disease_term) AS countofDiagnoses,
-          (untargetedTherapyCount + targetTherapyCount) AS TotalTherapy
+          therapyCount AS TotalTherapy
 
       MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
-      WITH participantcount, dataFileByType, dataFileCount, targetTherapyCount, untargetedTherapyCount, countofDiagnoses, TotalTherapy,
+      WITH participantcount, dataFileByType, dataFileCount, countofDiagnoses, TotalTherapy, nonTargetedTherapyCount, targetedTherapyCount,
           { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
 
       RETURN DISTINCT
         TotalTherapy AS numberOfTherapies,
+        nonTargetedTherapyCount AS numberOfNonTargeted,
+        targetedTherapyCount AS numberOfTargeted,
         participantcount AS numberOfParticipants,
         countofDiagnoses AS numberOfDiagnoses,
-        untargetedTherapyCount AS numberOfNonTargeted,
-        targetTherapyCount AS numberOfTargeted,
         dataFileCount AS dataFileCount,
         apoc.coll.toSet(COLLECT(specimenCountbyStageOfDisease)) AS specimenCountbyStageOfDisease,
         dataFileByType AS dataFileByType
@@ -532,15 +540,13 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
       primary_diagnosis_disease_group:
         type: keyword
-      targeted_therapy_id:
+      therapy_record_id:
         type: keyword
-      targeted_therapy_string:
-        type: keyword
-      best_response_to_targeted_therapy:
+      therapy_string:
         type: keyword
       anatomical_collection_site:
         type: keyword
@@ -585,10 +591,16 @@ Indices:
 
       CALL {
         WITH sb, study
-        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-        WITH [x IN COLLECT({name: tt.targeted_therapy, id: tt.targeted_therapy_id}) 
+        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:therapy)
+        WITH [x IN COLLECT({
+            name: CASE
+              WHEN tt.therapy_name IS NULL OR trim(toString(tt.therapy_name)) = '' THEN NULL
+              ELSE trim(toString(tt.therapy_name))
+            END,
+            id: tt.therapy_record_id
+          })
           WHERE x.name IS NOT NULL AND trim(toString(x.name)) <> ''] AS tt_items,
-          [r IN COLLECT(tt.best_response_to_targeted_therapy)
+          [r IN COLLECT(tt.best_response_to_therapy)
         WHERE r IS NOT NULL AND toString(r) <> ''
         | toString(r)
           ] AS responses
@@ -599,13 +611,13 @@ Indices:
           [e IN grouped | e.name] AS names,
           responses
         RETURN
-          names AS targeted_therapy,
-          [e IN grouped | e.id] AS targeted_therapy_id,
+          names AS therapy,
+          [e IN grouped | e.id] AS therapy_record_id,
         CASE
           WHEN size(names) > 0 THEN apoc.text.join(apoc.coll.sort(names), '|')
           ELSE null
-        END AS targeted_therapy_string,
-        apoc.coll.toSet(responses) AS best_response_to_targeted_therapy
+        END AS therapy_string,
+        apoc.coll.toSet(responses) AS best_response_to_therapy
       }
 
       CALL {
@@ -658,10 +670,10 @@ Indices:
       race,
       ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
-      targeted_therapy,
-      targeted_therapy_id,
-      targeted_therapy_string,
-      best_response_to_targeted_therapy,
+      therapy,
+      therapy_record_id,
+      therapy_string AS therapy_string,
+      best_response_to_therapy,
       anatomical_collection_site,
       COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
@@ -740,11 +752,11 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
-      best_response_to_targeted_therapy:
+      best_response_to_therapy:
         type: keyword
       data_files:
         type: nested
@@ -831,15 +843,12 @@ Indices:
 
         CALL {
         WITH sb
-        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-        WITH [t IN COLLECT(tt.targeted_therapy)
+        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:therapy)
+        WITH [t IN COLLECT(tt.therapy_name)
           WHERE t IS NOT NULL AND trim(toString(t)) <> ''
-              | CASE
-                  WHEN toLower(trim(toString(t))) = 'not reported' THEN 'Not reported'
-                  ELSE trim(toString(t))
-                END
+              | trim(toString(t))
         ] AS ts,
-        [r IN COLLECT(tt.best_response_to_targeted_therapy)
+        [r IN COLLECT(tt.best_response_to_therapy)
           WHERE r IS NOT NULL AND trim(toString(r)) <> ''
           | trim(toString(r))
         ] AS responses
@@ -850,12 +859,12 @@ Indices:
           ELSE dedup
         END AS cleaned_tt,
         best_responses AS cleaned_responses
-        RETURN cleaned_tt AS targeted_therapy,
-          cleaned_responses AS best_response_to_targeted_therapy,
+        RETURN cleaned_tt AS therapy,
+          cleaned_responses AS best_response_to_therapy,
           CASE
             WHEN size(cleaned_tt) > 0 THEN apoc.text.join(apoc.coll.sort(cleaned_tt), '|')
             ELSE null
-          END AS targeted_therapy_string
+          END AS therapy_string
       }
 
       CALL {
@@ -925,9 +934,9 @@ Indices:
           [x IN COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL]
         )                                                AS data_file_format,
 
-        targeted_therapy,
-        best_response_to_targeted_therapy,
-        targeted_therapy_string,
+        therapy,
+        best_response_to_therapy,
+        therapy_string AS therapy_string,
 
 
         coalesce(e_latest.carcinogen_exposure, '')       AS carcinogen_exposure,
@@ -1052,9 +1061,9 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
       data_file_type:
         type: keyword
@@ -1099,12 +1108,15 @@ Indices:
 
       CALL {
         WITH sub
-        OPTIONAL MATCH (sub)<-[:of_participant]-(tt:targeted_therapy)
-        WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
-        WITH apoc.coll.toSet([x IN ts | apoc.text.capitalizeAll(toLower(x))]) AS dedup
+        OPTIONAL MATCH (sub)<-[:of_participant]-(tt:therapy)
+        WITH [x IN COLLECT(tt.therapy_name)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | toLower(trim(toString(x)))
+        ] AS ts
+        WITH apoc.coll.toSet(ts) AS dedup
         RETURN
-          dedup                                                      AS targeted_therapy,
-          apoc.text.join(apoc.coll.sort(dedup), '|')                 AS targeted_therapy_string
+          dedup                                                      AS therapy,
+          apoc.text.join(apoc.coll.sort(dedup), '|')                 AS therapy_string
       }
 
       RETURN DISTINCT
@@ -1165,8 +1177,8 @@ Indices:
       demo.race AS race,
       demo.ethnicity AS ethnicity,
       COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
-      targeted_therapy,
-      targeted_therapy_string,
+      therapy,
+      therapy_string AS therapy_string,
       apoc.coll.toSet(
       [x IN COLLECT(DISTINCT df.data_file_type) WHERE x IS NOT NULL] +
       [x IN COLLECT(DISTINCT study_zip_file.data_file_type) WHERE x IS NOT NULL]
@@ -1233,7 +1245,7 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
       anatomical_collection_site:
         type: keyword
@@ -1243,7 +1255,7 @@ Indices:
         type: keyword
       assessment_timepoint:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
       file_info:
         type: nested
@@ -1377,9 +1389,14 @@ Indices:
 
       CALL {
         WITH effective_subs, associations
-        OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
+        OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:therapy)
         WHERE ttPart IN effective_subs
-        WITH ttPart, COLLECT(tt.targeted_therapy) AS part_tts, associations
+        WITH ttPart,
+          [x IN COLLECT(tt.therapy_name)
+            WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+            | trim(toString(x))
+          ] AS part_tts,
+          associations
         WITH COLLECT(
           apoc.text.join(
             apoc.coll.sort(apoc.coll.toSet([x IN part_tts WHERE x IS NOT NULL AND x <> ''])),
@@ -1397,8 +1414,8 @@ Indices:
           CASE WHEN size(associations) = 1 AND 'study' IN associations
             THEN []
             ELSE tt_raw
-          END                                                  AS targeted_therapy_raw,
-          tt_strings                                           AS targeted_therapy_string
+          END                                                  AS therapy_raw,
+          tt_strings                                           AS therapy_string
       }
 
       WITH
@@ -1406,8 +1423,8 @@ Indices:
         f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
-        targeted_therapy_raw,
-        targeted_therapy_string
+        therapy_raw,
+        therapy_string
 
       RETURN
         'data file' AS type,
@@ -1454,8 +1471,8 @@ Indices:
         apoc.coll.toSet([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
 
         carcinogen_exposure,
-        targeted_therapy_raw                                   AS targeted_therapy,
-        targeted_therapy_string                                AS targeted_therapy_string,
+        therapy_raw                                            AS therapy,
+        therapy_string                                         AS therapy_string,
 
         [x IN specs | {
           specimen_record_id:          x.specimen_record_id,
@@ -1527,7 +1544,7 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
       anatomical_collection_site:
         type: keyword
@@ -1537,7 +1554,7 @@ Indices:
         type: keyword
       assessment_timepoint:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
       file_info:
         type: nested
@@ -1639,17 +1656,23 @@ Indices:
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
 
-       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:targeted_therapy)
+       OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:therapy)
       WHERE ttPart IN subs
       WITH
         f, associations, subs, specs, study_short_names,study_accessions, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
-        apoc.coll.toSet(COLLECT(tt.targeted_therapy))         AS targeted_therapy_raw,
+        apoc.coll.toSet([x IN COLLECT(tt.therapy_name)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | trim(toString(x))
+        ])                                                    AS therapy_raw,
         apoc.text.join(
-          apoc.coll.sort([x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> '']),
+          apoc.coll.sort([x IN COLLECT(tt.therapy_name)
+            WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+            | trim(toString(x))
+          ]),
           '|'
-        )                                                     AS targeted_therapy_string
+        )                                                     AS therapy_string
 
       RETURN
         'data file' AS type,
@@ -1700,8 +1723,8 @@ Indices:
         head([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
 
         carcinogen_exposure,
-        targeted_therapy_raw                                   AS targeted_therapy,
-        targeted_therapy_string                                AS targeted_therapy_string,
+        therapy_raw                                            AS therapy,
+        therapy_string                                         AS therapy_string,
 
         [x IN specs | {
           specimen_record_id:          x.specimen_record_id,
@@ -1766,9 +1789,9 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
       # Facets section: Biospecimens
       anatomical_collection_site:
@@ -1799,23 +1822,23 @@ Indices:
         RETURN head(collect(ps)) AS ps_latest
       }
 
-      OPTIONAL MATCH (tt:targeted_therapy)-[:of_participant]->(sub)
+      OPTIONAL MATCH (tt:therapy)-[:of_participant]->(sub)
       WITH
         f, sub, spec, study, ps_latest,
-        apoc.coll.toSet([t IN collect(DISTINCT tt.targeted_therapy)
-                          WHERE t IS NOT NULL AND t <> '' | t])                AS targeted_therapy,
+        apoc.coll.toSet([t IN collect(DISTINCT tt.therapy_name)
+                          WHERE t IS NOT NULL AND trim(toString(t)) <> '' | toLower(trim(toString(t)))]) AS therapy,
         apoc.text.join(
-          apoc.coll.sort([t IN collect(DISTINCT toLower(tt.targeted_therapy))
-                          WHERE t IS NOT NULL AND t <> '' | t]),
+          apoc.coll.sort([t IN collect(DISTINCT tt.therapy_name)
+                          WHERE t IS NOT NULL AND trim(toString(t)) <> '' | toLower(trim(toString(t)))]),
           '|'
-        )                                                                      AS targeted_therapy_string
+        )                                                                      AS therapy_string
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(diag:diagnosis)
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       WITH
         f, sub, spec, study, diag, demo, ps_latest,
-        targeted_therapy, targeted_therapy_string,
+        therapy, therapy_string,
         collect(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure
 
       RETURN DISTINCT
@@ -1846,8 +1869,8 @@ Indices:
         demo.ethnicity                              AS ethnicity,
 
         carcinogen_exposure                         AS carcinogen_exposure,
-        targeted_therapy                            AS targeted_therapy,
-        targeted_therapy_string                     AS targeted_therapy_string,
+        therapy                                     AS therapy,
+        therapy_string                              AS therapy_string,
 
         toLower(spec.anatomical_collection_site)    AS anatomical_collection_site,
         spec.specimen_type                          AS specimen_type,
@@ -1930,9 +1953,9 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
       biospecimen_info:
         type: nested
@@ -1992,11 +2015,31 @@ Indices:
       MATCH (study:study)-[:associated_with]-(f)
 
       CALL {
-        WITH study
-        OPTIONAL MATCH (study)<-[:belongs_to]-(sb:participant)
-        WITH sb ORDER BY sb.participant_id
-        RETURN head(COLLECT(sb)) AS sb
+        WITH f
+        OPTIONAL MATCH (f)-[:associated_with]-(file_participant:participant)
+        WITH file_participant
+        ORDER BY file_participant.participant_id
+        RETURN head(COLLECT(file_participant)) AS file_participant
       }
+
+      CALL {
+        WITH f
+        OPTIONAL MATCH (f)-[:associated_with]-(specimen:specimen)-[:of_participant]->(specimen_participant:participant)
+        WITH specimen_participant
+        ORDER BY specimen_participant.participant_id
+        RETURN head(COLLECT(specimen_participant)) AS specimen_participant
+      }
+
+      CALL {
+        WITH study
+        OPTIONAL MATCH (study)<-[:belongs_to]-(fallback_participant:participant)
+        WITH fallback_participant
+        ORDER BY fallback_participant.participant_id
+        RETURN head(COLLECT(fallback_participant)) AS fallback_participant
+      }
+
+      WITH study, f,associations,
+           coalesce(file_participant, specimen_participant, fallback_participant) AS sb
 
       CALL {
         WITH sb
@@ -2036,11 +2079,14 @@ Indices:
 
       CALL {
         WITH sb
-        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:targeted_therapy)
-        WITH [x IN COLLECT(tt.targeted_therapy) WHERE x IS NOT NULL AND x <> ''] AS ts
+        OPTIONAL MATCH (sb)<-[:of_participant]-(tt:therapy)
+        WITH [x IN COLLECT(tt.therapy_name)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | toLower(trim(toString(x)))
+        ] AS ts
         WITH apoc.coll.toSet(ts) AS dedup
-        RETURN dedup AS targeted_therapy_raw,
-               apoc.text.join(apoc.coll.sort(dedup), '|') AS targeted_therapy_string
+        RETURN dedup AS therapy_raw,
+               apoc.text.join(apoc.coll.sort(dedup), '|') AS therapy_string
       }
 
       RETURN DISTINCT
@@ -2085,8 +2131,8 @@ Indices:
         demo.ethnicity AS ethnicity,
         demo.age_at_enrollment AS age_at_enrollment,
         CASE WHEN exp IS NOT NULL AND exp.carcinogen_exposure IS NOT NULL THEN [exp.carcinogen_exposure] ELSE [] END AS carcinogen_exposure,
-        targeted_therapy_raw AS targeted_therapy,
-        targeted_therapy_string AS targeted_therapy_string,
+        therapy_raw AS therapy,
+        therapy_string AS therapy_string,
         CASE WHEN spec IS NOT NULL THEN [
           {
             specimen_record_id: spec.specimen_record_id,
@@ -2154,13 +2200,13 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      targeted_therapy:
+      therapy:
         type: keyword
-      targeted_therapy_id:
+      therapy_record_id:
         type: keyword
-      targeted_therapy_string:
+      therapy_string:
         type: keyword
-      best_response_to_targeted_therapy:
+      best_response_to_therapy:
         type: keyword
       anatomical_collection_site:
         type: keyword
@@ -2203,19 +2249,25 @@ Indices:
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
-      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
-      WITH COLLECT(distinct target.targeted_therapy) as array,sb,study
+     
+      optional MATCH (target:therapy)-[:of_participant]->(sb)
+      WHERE target.therapy_name IS NOT NULL
+        AND trim(toString(target.therapy_name)) <> ''
+        AND target.therapy_category = 'Targeted'
+      WITH COLLECT(distinct trim(toString(target.therapy_name))) as array,sb,study
       with apoc.coll.sort(array) as array,sb,study
       with apoc.text.join(array,'|') as array,sb,study
       optional MATCH (spec:specimen)-[:of_participant]->(sb)
       optional MATCH (sb)<-[*..2]-(file:file)
       optional MATCH (demo:demographic)-[:of_participant]->(sb)
       optional MATCH (diag:diagnosis)-[:of_participant]->(sb)
-      optional MATCH (target:targeted_therapy)-[:of_participant]->(sb)
+      optional MATCH (target:therapy)-[:of_participant]->(sb)
       optional MATCH (expose:exposure)-[:of_participant]->(sb)
       WHERE target is not null
       with expose,sb,target,diag,demo,file,spec,study,array
-      Where target.targeted_therapy <> ''
+      WHERE target.therapy_name IS NOT NULL
+        AND trim(toString(target.therapy_name)) <> ''
+        AND target.therapy_category = 'Targeted'
       RETURN DISTINCT
       'participants' as type,
       sb.participant_id as participant_id,
@@ -2231,10 +2283,10 @@ Indices:
       COLLECT(DISTINCT demo.race) as race,
       COLLECT(DISTINCT demo.ethnicity) as ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
-      COLLECT(DISTINCT target.targeted_therapy) as targeted_therapy,
-      COLLECT(DISTINCT target.targeted_therapy_id) as targeted_therapy_id,
-      COLLECT(DISTINCT target.best_response_to_targeted_therapy) as best_response_to_targeted_therapy,
-      array as targeted_therapy_string,
+      COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy,
+      COLLECT(DISTINCT target.therapy_record_id) as therapy_record_id,
+      COLLECT(DISTINCT target.best_response_to_therapy) as best_response_to_therapy,
+      array as therapy_string,
       COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
       COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
@@ -2274,8 +2326,7 @@ Indices:
       OPTIONAL MATCH (p)<-[:of_participant]-(demo:demographic)
       OPTIONAL MATCH (p)<-[:of_participant]-(exp:exposure)
       OPTIONAL MATCH (p)<-[:of_participant]-(surg:surgery)
-      OPTIONAL MATCH (p)<-[:of_participant]-(tt:targeted_therapy)
-      OPTIONAL MATCH (p)<-[:of_participant]-(nt:non_targeted_therapy)
+      OPTIONAL MATCH (p)<-[:of_participant]-(th:therapy)
       OPTIONAL MATCH (p)<-[:of_participant]-(rt:radiotherapy)
       WITH study,p,
         collect(DISTINCT diag) AS diags,
@@ -2283,8 +2334,7 @@ Indices:
         collect(DISTINCT demo) AS demos,
         collect(DISTINCT exp) AS exps,
         collect(DISTINCT surg) AS surgs,
-        collect(DISTINCT tt) AS tts,
-        collect(DISTINCT nt) AS nts,
+        collect(DISTINCT th) AS ths,
         collect(DISTINCT rt) as rts
       WITH study,p,
         [
@@ -2294,8 +2344,7 @@ Indices:
           {label: 'exposure', nodeCount: size(exps), participant: CASE WHEN size(exps) > 0 THEN p END},
           {label: 'surgery', nodeCount: size(surgs), participant: CASE WHEN size(surgs) > 0 THEN p END},
           {label: 'radiotherapy', nodeCount: size(rts), participant: CASE WHEN size(rts) > 0 THEN p END},
-          {label: 'targeted_therapy', nodeCount: size(tts), participant: CASE WHEN size(tts) > 0 THEN p END},
-          {label: 'non_targeted_therapy', nodeCount: size(nts), participant: CASE WHEN size(nts) > 0 THEN p END}
+          {label: 'therapy', nodeCount: size(ths), participant: CASE WHEN size(ths) > 0 THEN p END}
         ] AS rows
       UNWIND rows AS row
       WITH row.label AS node_label,
@@ -2623,6 +2672,61 @@ Indices:
         type: keyword
       study_accession:
         type: keyword
+      therapyNodeData:
+        type: nested
+        properties:
+          participant_ids:
+            type: keyword
+          type:
+            type: keyword
+          best_response_to_therapy:
+            type: keyword
+          course_number:
+            type: keyword
+          current_response_to_therapy:
+            type: keyword
+          date_of_best_response_to_therapy:
+            type: keyword
+          date_of_current_response_to_therapy:
+            type: keyword
+          dose_changes_delays:
+            type: keyword
+          dose_changes_delays_description:
+            type: keyword
+          number_of_doses:
+            type: keyword
+          off_treatment:
+            type: keyword
+          off_treatment_reason:
+            type: keyword
+          participant.participant_id:
+            type: keyword
+          planned_dose:
+            type: keyword
+          planned_dose_units:
+            type: keyword
+          therapy_category:
+            type: keyword
+          therapy_description:
+            type: keyword
+          therapy_dose:
+            type: keyword
+          therapy_dose_units:
+            type: keyword
+          therapy_end_date:
+            type: keyword
+          therapy_frequency:
+            type: keyword
+          therapy_name:
+            type: keyword
+          therapy_record_id:
+            type: keyword
+          therapy_start_date:
+            type: keyword
+      therapyNodeCount:
+        type: integer
+      therapyParticipantCount:
+        type: integer
       targetedTherapyNodeData:
         type: nested
         properties:
@@ -2708,49 +2812,70 @@ Indices:
     cypher_query: "
       MATCH (study:study)<-[:belongs_to]-(p:participant)
       WITH study, COLLECT(DISTINCT p.participant_id) AS all_participant_ids
-      OPTIONAL MATCH (study)<-[:belongs_to]-(p_tt:participant)
-      OPTIONAL MATCH (p_tt)<-[:of_participant]-(tt:targeted_therapy)
+      OPTIONAL MATCH (study)<-[:belongs_to]-(p_th:participant)
+      OPTIONAL MATCH (p_th)<-[:of_participant]-(th:therapy)
       WITH study, all_participant_ids,
-        COLLECT({node: tt, participant_id: p_tt.participant_id}) AS tt_data
-      OPTIONAL MATCH (study)<-[:belongs_to]-(p_nt:participant)
-      OPTIONAL MATCH (p_nt)<-[:of_participant]-(nt:non_targeted_therapy)
-      WITH study, all_participant_ids, tt_data,
-        COLLECT({node: nt, participant_id: p_nt.participant_id}) AS nt_data
+        COLLECT({node: th, participant_id: p_th.participant_id}) AS th_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_rt:participant)
       OPTIONAL MATCH (p_rt)<-[:of_participant]-(rt:radiotherapy)
-      WITH study, all_participant_ids, tt_data, nt_data,
+      WITH study, all_participant_ids, th_data,
         COLLECT({node: rt, participant_id: p_rt.participant_id}) AS rt_data
       OPTIONAL MATCH (study)<-[:belongs_to]-(p_surg:participant)
       OPTIONAL MATCH (p_surg)<-[:of_participant]-(surg:surgery)
-      WITH study, all_participant_ids, tt_data, nt_data, rt_data,
+      WITH study, all_participant_ids, th_data, rt_data,
         COLLECT({node: surg, participant_id: p_surg.participant_id}) AS surg_data
       WITH study, all_participant_ids,
-        apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL | x.node]) AS unique_tt,
-        tt_data,
-        apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL | x.node]) AS unique_nt,
-        nt_data,
+        apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL | x.node]) AS unique_th,
+        th_data,
         apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL | x.node]) AS unique_rt,
         rt_data,
         apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL | x.node]) AS unique_surg,
         surg_data
       WITH study,
-        [t IN unique_tt | {
-          participant_ids: apoc.text.join([x IN tt_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-          targeted_therapy: t.targeted_therapy,
-          targeted_therapy_dose: t.targeted_therapy_dose,
-          targeted_therapy_frequency: toString(t.targeted_therapy_frequency),
-          targeted_therapy_record_id: t.targeted_therapy_record_id
+        [t IN unique_th | {
+          participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          type: toString(COALESCE(t.type, '')),
+          best_response_to_therapy: toString(COALESCE(t.best_response_to_therapy, '')),
+          course_number: toString(COALESCE(t.course_number, '')),
+          current_response_to_therapy: toString(COALESCE(t.current_response_to_therapy, '')),
+          date_of_best_response_to_therapy: toString(COALESCE(t.date_of_best_response_to_therapy, '')),
+          date_of_current_response_to_therapy: toString(COALESCE(t.date_of_current_response_to_therapy, '')),
+          dose_changes_delays: toString(COALESCE(t.dose_changes_delays, '')),
+          dose_changes_delays_description: toString(COALESCE(t.dose_changes_delays_description, '')),
+          number_of_doses: toString(COALESCE(t.number_of_doses, '')),
+          off_treatment: toString(COALESCE(t.off_treatment, '')),
+          off_treatment_reason: toString(COALESCE(t.off_treatment_reason, '')),
+          `participant.participant_id`: toString(COALESCE(t.`participant.participant_id`, '')),
+          planned_dose: toString(COALESCE(t.planned_dose, '')),
+          planned_dose_units: toString(COALESCE(t.planned_dose_units, '')),
+          therapy_category: toString(COALESCE(t.therapy_category, '')),
+          therapy_description: toString(COALESCE(t.therapy_description, '')),
+          therapy_dose: toString(COALESCE(t.therapy_dose, '')),
+          therapy_dose_units: toString(COALESCE(t.therapy_dose_units, '')),
+          therapy_end_date: toString(COALESCE(t.therapy_end_date, '')),
+          therapy_frequency: toString(COALESCE(t.therapy_frequency, '')),
+          therapy_name: toString(COALESCE(t.therapy_name, '')),
+          therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
+          therapy_start_date: toString(COALESCE(t.therapy_start_date, ''))
+        }] AS therapyNodeData,
+        size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS therapyParticipantCount,
+        [t IN unique_th | {
+          participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          targeted_therapy: toString(COALESCE(t.therapy_name, '')),
+          targeted_therapy_dose: toString(COALESCE(t.therapy_dose, '')),
+          targeted_therapy_frequency: toString(COALESCE(t.therapy_frequency, '')),
+          targeted_therapy_record_id: toString(COALESCE(t.therapy_record_id, ''))
         }] AS targetedTherapyNodeData,
-        size(apoc.coll.toSet([x IN tt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
-        [n IN unique_nt | {
-          participant_ids: apoc.text.join([x IN nt_data WHERE x.node = n AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-          non_targeted_therapy_record_id: n.non_targeted_therapy_record_id,
-          best_response_to_non_targeted_therapy: toString(COALESCE(n.best_response_to_non_targeted_therapy, '')),
-          non_targeted_therapy: toString(COALESCE(n.non_targeted_therapy, '')),
-          non_targeted_therapy_dose: toString(COALESCE(n.non_targeted_therapy_dose, '')),
-          non_targeted_therapy_frequency: toString(COALESCE(n.non_targeted_therapy_frequency, ''))
+        size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
+        [t IN unique_th | {
+          participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
+          non_targeted_therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
+          best_response_to_non_targeted_therapy: toString(COALESCE(t.best_response_to_therapy, '')),
+          non_targeted_therapy: toString(COALESCE(t.therapy_name, '')),
+          non_targeted_therapy_dose: toString(COALESCE(t.therapy_dose, '')),
+          non_targeted_therapy_frequency: toString(COALESCE(t.therapy_frequency, ''))
         }] AS nonTargetedTherapyNodeData,
-        size(apoc.coll.toSet([x IN nt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
+        size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
         [r IN unique_rt | {
           participant_ids: apoc.text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           radiation_dose: r.radiation_dose,
@@ -2777,11 +2902,14 @@ Indices:
         study.study_short_name AS study_short_name,
         toString(study.study_id) AS study_id,
         study.study_accession AS study_accession,
+        therapyNodeData,
+        size(apoc.coll.toSet([t IN therapyNodeData | t.therapy_record_id])) AS therapyNodeCount,
+        therapyParticipantCount,
         targetedTherapyNodeData,
         size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
         targetedTherapyParticipantCount,
         nonTargetedTherapyNodeData,
-        size(apoc.coll.toSet([n IN nonTargetedTherapyNodeData | n.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
+        size(apoc.coll.toSet([t IN nonTargetedTherapyNodeData | t.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
         nonTargetedTherapyParticipantCount,
         radiotherapyNodeData,
         size(apoc.coll.toSet([r IN radiotherapyNodeData | r.radiological_procedure_record_id])) AS radiotherapyNodeCount,
