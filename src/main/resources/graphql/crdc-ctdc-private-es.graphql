@@ -111,6 +111,11 @@ type Participant {
   exposure: [Exposure]
   diagnosis: [Diagnosis]
   therapy: [Therapy]
+  therapy_string: String
+  therapy_category: [String]
+  therapy_type: [String]
+  best_response_to_therapy: [String]
+  current_response_to_therapy: [String]
   surgery: [Surgery]
   radiotherapy: [Radiotherapy]
   participant_status: ParticipantStatus
@@ -147,7 +152,10 @@ type Therapy {
   therapy_frequency: String
   therapy_start_date: Int
   therapy_end_date: Int
+  therapy_category: String
+  therapy_type: String
   best_response_to_therapy: String
+  current_response_to_therapy: String
 }
 
 type NonTargetedTherapy {
@@ -328,6 +336,10 @@ type StudyFileOverviewInfo {
   age_at_enrollment: String
   carcinogen_exposure: [String]
   therapy: [String]
+  therapy_category: [String]
+  therapy_type: [String]
+  best_response_to_therapy: [String]
+  current_response_to_therapy: [String]
   therapy_string: String
   biospecimen_info: [StudyFileOverviewBiospecimenInfo]
   file_info: [StudyFileOverviewFileInfo]
@@ -933,6 +945,10 @@ type QueryType {
     carcinogen_exposure: [String] = []
     therapy: [String] = []
     therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
 
     extent_of_residual_disease: [String] = []
 
@@ -967,6 +983,10 @@ type QueryType {
     carcinogen_exposure: [String] = []
     therapy: [String] = []
     therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -999,6 +1019,10 @@ type QueryType {
     carcinogen_exposure: [String] = []
     therapy: [String] = []
     therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
     tissue_category: [String] = []
@@ -1035,6 +1059,10 @@ type QueryType {
     carcinogen_exposure: [String] = []
     therapy: [String] = []
     therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -1071,6 +1099,10 @@ type QueryType {
     carcinogen_exposure: [String] = []
     therapy: [String] = []
     therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
 
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
@@ -1102,6 +1134,10 @@ type QueryType {
     carcinogen_exposure: [String] = []
     therapy: [String] = []
     therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
     anatomical_collection_site: [String] = []
     specimen_type: [String] = []
     tissue_category: [String] = []
