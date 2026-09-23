@@ -121,39 +121,53 @@ Indices:
         - study_data_files.data_file_size
         - data_files.data_file_size
     query: |
-      MATCH (s:study)<-[:belongs_to]-(sb:participant)
-      MATCH (s:study)<-[:associated_with]-(study_file:file)
-      OPTIONAL MATCH (sb:participant)<-[*..2]-(df:file)
-      RETURN DISTINCT
+      MATCH (s:study)
+      WITH s
+      ORDER BY s.study_id
+      SKIP $skip LIMIT $limit
+
+      OPTIONAL MATCH (s)<-[:associated_with]-(study_file:file)
+      WITH s, COLLECT(DISTINCT study_file) AS study_files
+
+      OPTIONAL MATCH (df_direct:file)-->(:participant)-[:belongs_to]->(s)
+      WITH s, study_files, COLLECT(DISTINCT df_direct) AS df_direct_files
+
+      OPTIONAL MATCH (df_spec:file)-[:associated_with]->(:specimen)-[:of_participant]->(:participant)-[:belongs_to]->(s)
+      WITH s, study_files, df_direct_files, COLLECT(DISTINCT df_spec) AS df_spec_files
+
+      WITH s, study_files, [df IN df_direct_files + df_spec_files WHERE df IS NOT NULL] AS df_raw
+      UNWIND (CASE WHEN size(df_raw) = 0 THEN [NULL] ELSE df_raw END) AS df
+      WITH s, study_files, COLLECT(DISTINCT df) AS data_files_nodes
+
+      RETURN
         s.study_short_name AS study_short_name,
         s.study_accession AS study_accession,
         toString(s.study_id) AS study_id,
-        COLLECT(DISTINCT {
-          data_file_uuid: study_file.data_file_uuid,
-          data_file_name: study_file.data_file_name,
-          data_file_type: study_file.data_file_type,
-          data_file_description: study_file.data_file_description,
-          data_file_format: study_file.data_file_format,
-          data_file_size: study_file.data_file_size,
-          data_file_checksum_value: study_file.data_file_checksum_value,
-          data_file_checksum_type: study_file.data_file_checksum_type,
-          data_file_compression_status: study_file.data_file_compression_status,
-          data_file_location: study_file.data_file_location
-        }) AS study_data_files,
-        COLLECT(DISTINCT {
-          data_file_uuid: df.data_file_uuid,
-          data_file_name: df.data_file_name,
-          data_file_type: df.data_file_type,
-          data_file_description: df.data_file_description,
-          data_file_format: df.data_file_format,
-          data_file_size: df.data_file_size,
-          data_file_checksum_value: df.data_file_checksum_value,
-          data_file_checksum_type: df.data_file_checksum_type,
-          data_file_compression_status: df.data_file_compression_status,
-          data_file_location: df.data_file_location
-        }) AS data_files,
-        COLLECT(DISTINCT df.data_file_type) AS list_type
-      SKIP $skip LIMIT $limit
+        [f IN study_files WHERE f IS NOT NULL | {
+          data_file_uuid: f.data_file_uuid,
+          data_file_name: f.data_file_name,
+          data_file_type: f.data_file_type,
+          data_file_description: f.data_file_description,
+          data_file_format: f.data_file_format,
+          data_file_size: f.data_file_size,
+          data_file_checksum_value: f.data_file_checksum_value,
+          data_file_checksum_type: f.data_file_checksum_type,
+          data_file_compression_status: f.data_file_compression_status,
+          data_file_location: f.data_file_location
+        }] AS study_data_files,
+        [f IN data_files_nodes WHERE f IS NOT NULL | {
+          data_file_uuid: f.data_file_uuid,
+          data_file_name: f.data_file_name,
+          data_file_type: f.data_file_type,
+          data_file_description: f.data_file_description,
+          data_file_format: f.data_file_format,
+          data_file_size: f.data_file_size,
+          data_file_checksum_value: f.data_file_checksum_value,
+          data_file_checksum_type: f.data_file_checksum_type,
+          data_file_compression_status: f.data_file_compression_status,
+          data_file_location: f.data_file_location
+        }] AS data_files,
+        [f IN data_files_nodes WHERE f IS NOT NULL AND f.data_file_type IS NOT NULL | f.data_file_type] AS list_type
     page_size: 1000
 
   - index_name: "study_zip_file"
