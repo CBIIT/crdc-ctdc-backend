@@ -3069,7 +3069,7 @@ Indices:
           therapy_dose_units: toString(COALESCE(t.therapy_dose_units, '')),
           therapy_end_date: toString(COALESCE(t.therapy_end_date, '')),
           therapy_frequency: toString(COALESCE(t.therapy_frequency, '')),
-          therapy_name: toString(COALESCE(t.therapy_name, '')),
+           therapy: toString(COALESCE(t.therapy_name, '')),
           therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
           therapy_start_date: toString(COALESCE(t.therapy_start_date, ''))
         }] AS therapyNodeData,
