@@ -2498,7 +2498,7 @@ Indices:
       COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy,
       COLLECT(DISTINCT target.therapy_record_id) as therapy_record_id,
       COLLECT(DISTINCT target.best_response_to_therapy) as best_response_to_therapy,
-       COLLECT(DISTINCT target.array) as therapy_string,
+      COLLECT(DISTINCT target.array) as therapy_string,
       COLLECT(DISTINCT target.current_response_to_therapy) as current_response_to_therapy,
       COLLECT(DISTINCT target.therapy_type) as therapy_type,
       COLLECT(DISTINCT target.therapy_category) as therapy_category,
