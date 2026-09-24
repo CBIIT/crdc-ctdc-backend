@@ -285,6 +285,74 @@ queries:
           ignoreSelectedField: true
         result:
           type: group_count
+      - name: participantCountByTherapyCategory
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: therapy_category
+        result:
+          type: group_count
+      - name: filterParticipantCountByTherapyCategory
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: therapy_category
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountByTherapyType
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: therapy_type
+        result:
+          type: group_count
+      - name: filterParticipantCountByTherapyType
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: therapy_type
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountByBestResponseToTherapy
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: best_response_to_therapy
+        result:
+          type: group_count
+      - name: filterParticipantCountByBestResponseToTherapy
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: best_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountByCurrentResponseToTherapy
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: current_response_to_therapy
+        result:
+          type: group_count
+      - name: filterParticipantCountByCurrentResponseToTherapy
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: current_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
       - name: participantCountBySingleTherapyCombination
         index:
           - widgets_facets_counts
