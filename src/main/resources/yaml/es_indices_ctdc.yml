@@ -1049,31 +1049,18 @@ Indices:
         - surgical_procedure_id
         - surgical_procedure_therapeutic
         - extent_of_residual_disease
-    data_files:
-      type: nested
-      properties:
-        data_file_uuid:
-          type: keyword
-        data_file_name:
-          type: keyword
-        data_file_type:
-          type: keyword
-        data_file_description:
-          type: keyword
-        data_file_format:
-          type: keyword
-        data_file_size:
-          type: double
-        data_file_checksum_value:
-          type: keyword
-        data_file_checksum_type:
-          type: keyword
-        data_file_compression_status:
-          type: keyword
-        data_file_location:
-          type: keyword
+        - data_files.data_file_uuid
+        - data_files.data_file_name
+        - data_files.data_file_type
+        - data_files.data_file_description
+        - data_files.data_file_format
+        - data_files.data_file_checksum_value
+        - data_files.data_file_checksum_type
+        - data_files.data_file_compression_status
+        - data_files.data_file_location
       long:
-      - age_at_enrollment
+        - age_at_enrollment
+        - data_files.data_file_size
     query: |
       MATCH (study:study)<-[:belongs_to]-(sb:participant)
       OPTIONAL MATCH (sb)<-[:of_participant]-(d:diagnosis)
@@ -1424,10 +1411,11 @@ Indices:
         f,
         coalesce(sub_direct, sub_via) AS sub,
         head(collect(DISTINCT spec_via)) AS spec
-      WHERE sub IS NOT NULL
 
-      OPTIONAL MATCH (sub)-[:belongs_to]->(study:study)
-      WITH f, sub, spec, study
+      OPTIONAL MATCH (sub)-[:belongs_to]->(study_via_sub:study)
+      OPTIONAL MATCH (f)-[:associated_with]->(study_direct:study)
+      WITH f, sub, spec, coalesce(study_via_sub, study_direct) AS study
+      WHERE sub IS NOT NULL OR study IS NOT NULL
 
       OPTIONAL MATCH (sub)<-[:of_participant]-(ps:participant_status)
       WITH f, sub, spec, study, ps
@@ -1487,7 +1475,11 @@ Indices:
         f.data_file_checksum_type AS data_file_checksum_type,
         f.data_file_location AS data_file_location,
         f.data_file_compression_status AS data_file_compression_status,
-        CASE WHEN spec IS NOT NULL THEN 'biospecimen' ELSE 'participant' END AS association,
+        CASE
+          WHEN spec IS NOT NULL THEN 'biospecimen'
+          WHEN sub  IS NOT NULL THEN 'participant'
+          ELSE                       'study'
+        END AS association,
         spec.specimen_id AS specimen_id,
         spec.specimen_record_id AS specimen_record_id,
         sub.participant_id AS participant_id,
