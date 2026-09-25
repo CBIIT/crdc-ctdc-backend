@@ -2156,6 +2156,12 @@ Indices:
         type: keyword
       therapy_category:
         type: keyword
+      therapy_type:
+        type: keyword
+      best_response_to_therapy:
+        type: keyword
+      current_response_to_therapy:
+        type: keyword
       biospecimen_info:
         type: nested
         properties:
@@ -2286,11 +2292,29 @@ Indices:
         [x IN COLLECT(tt.therapy_category)
           WHERE x IS NOT NULL AND trim(toString(x)) <> ''
           | toLower(trim(toString(x)))
-        ] AS categories
+        ] AS categories,
+        [x IN COLLECT(tt.therapy_type)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | trim(toString(x))
+        ] AS types,
+        [x IN COLLECT(tt.best_response_to_therapy)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | trim(toString(x))
+        ] AS best_responses,
+        [x IN COLLECT(tt.current_response_to_therapy)
+          WHERE x IS NOT NULL AND trim(toString(x)) <> ''
+          | trim(toString(x))
+        ] AS current_responses
         WITH apoc.coll.toSet(ts) AS dedup,
-             apoc.coll.toSet(categories) AS therapy_categories
+             apoc.coll.toSet(categories) AS therapy_categories,
+             apoc.coll.toSet(types) AS therapy_types,
+             apoc.coll.toSet(best_responses) AS therapy_best_responses,
+             apoc.coll.toSet(current_responses) AS therapy_current_responses
         RETURN dedup AS therapy_raw,
                therapy_categories AS therapy_category,
+               therapy_types AS therapy_type,
+               therapy_best_responses AS best_response_to_therapy,
+               therapy_current_responses AS current_response_to_therapy,
                apoc.text.join(apoc.coll.sort(dedup), '|') AS therapy_string
       }
 
@@ -2338,6 +2362,9 @@ Indices:
         CASE WHEN exp IS NOT NULL AND exp.carcinogen_exposure IS NOT NULL THEN [exp.carcinogen_exposure] ELSE [] END AS carcinogen_exposure,
         therapy_raw AS therapy,
         therapy_category AS therapy_category,
+        therapy_type AS therapy_type,
+        best_response_to_therapy AS best_response_to_therapy,
+        current_response_to_therapy AS current_response_to_therapy,
         therapy_string AS therapy_string,
         CASE WHEN spec IS NOT NULL THEN [
           {
@@ -2892,7 +2919,7 @@ Indices:
         properties:
           participant_ids:
             type: keyword
-          type:
+          therapy_type:
             type: keyword
           best_response_to_therapy:
             type: keyword
@@ -3032,7 +3059,7 @@ Indices:
       WITH study,
         [t IN unique_th | {
           participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-          type: toString(COALESCE(t.type, '')),
+          therapy_type: toString(COALESCE(t.therapy_type, '')),
           best_response_to_therapy: toString(COALESCE(t.best_response_to_therapy, '')),
           course_number: toString(COALESCE(t.course_number, '')),
           current_response_to_therapy: toString(COALESCE(t.current_response_to_therapy, '')),

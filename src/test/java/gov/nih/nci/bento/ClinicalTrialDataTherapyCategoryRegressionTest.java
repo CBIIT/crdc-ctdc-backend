@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,6 +53,33 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
                 clinicalTrialDataBlock.contains("trim(toString(COALESCE(x.node.therapy_category, ''))) = 'Non-Targeted' | x.participant_id])) AS nonTargetedTherapyParticipantCount"),
                 "nonTargetedTherapyParticipantCount must only count non-targeted therapy participants"
         );
+        assertTrue(
+                clinicalTrialDataBlock.contains("therapy_type: toString(COALESCE(t.therapy_type, ''))"),
+                "therapyNodeData should emit therapy_type from the therapy node"
+        );
+        assertFalse(
+                clinicalTrialDataBlock.contains("type: toString(COALESCE(t.type, ''))"),
+                "therapyNodeData should not expose the stale generic type projection"
+        );
+
+        int studyFileOverviewStart = yaml.indexOf("- index_name: study_file_overview");
+        int gsListStart = yaml.indexOf("- index_name: gs_list");
+        assertTrue(studyFileOverviewStart >= 0, "study_file_overview block should exist");
+        assertTrue(gsListStart > studyFileOverviewStart, "gs_list should follow study_file_overview");
+
+        String studyFileOverviewBlock = yaml.substring(studyFileOverviewStart, gsListStart);
+        assertTrue(studyFileOverviewBlock.contains("[x IN COLLECT(tt.therapy_type)"),
+                "study_file_overview should collect therapy_type values");
+        assertTrue(studyFileOverviewBlock.contains("[x IN COLLECT(tt.best_response_to_therapy)"),
+                "study_file_overview should collect best_response_to_therapy values");
+        assertTrue(studyFileOverviewBlock.contains("[x IN COLLECT(tt.current_response_to_therapy)"),
+                "study_file_overview should collect current_response_to_therapy values");
+        assertTrue(studyFileOverviewBlock.contains("therapy_type AS therapy_type"),
+                "study_file_overview should return therapy_type values");
+        assertTrue(studyFileOverviewBlock.contains("best_response_to_therapy AS best_response_to_therapy"),
+                "study_file_overview should return best_response_to_therapy values");
+        assertTrue(studyFileOverviewBlock.contains("current_response_to_therapy AS current_response_to_therapy"),
+                "study_file_overview should return current_response_to_therapy values");
     }
 
     @Test
@@ -75,6 +103,37 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
                 clinicalTrialDataType.get().getFieldDefinitions().stream()
                         .anyMatch(fieldDefinition -> "targetedTherapyNodeData".equals(fieldDefinition.getName())),
                 "ClinicalTrialData should not expose targetedTherapyNodeData"
+        );
+
+        Optional<ObjectTypeDefinition> clinicalTherapyType = registry.getType("ClinicalTherapy", ObjectTypeDefinition.class);
+        assertTrue(clinicalTherapyType.isPresent(), "ClinicalTherapy type should exist");
+
+        Set<String> clinicalTherapyFields = clinicalTherapyType.get().getFieldDefinitions().stream()
+                .map(fieldDefinition -> fieldDefinition.getName())
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertTrue(
+                clinicalTherapyFields.containsAll(Set.of(
+                        "therapy_category",
+                        "therapy_type",
+                        "best_response_to_therapy",
+                        "course_number",
+                        "current_response_to_therapy",
+                        "date_of_best_response_to_therapy",
+                        "date_of_current_response_to_therapy",
+                        "dose_changes_delays",
+                        "dose_changes_delays_description",
+                        "number_of_doses",
+                        "off_treatment",
+                        "off_treatment_reason",
+                        "planned_dose",
+                        "planned_dose_units",
+                        "therapy_description",
+                        "therapy_dose_units",
+                        "therapy_start_date",
+                        "therapy_end_date"
+                )),
+                "ClinicalTherapy should expose the indexed therapy node attributes"
         );
     }
 }

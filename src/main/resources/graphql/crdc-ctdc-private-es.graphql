@@ -550,8 +550,26 @@ type ClinicalSpecimen {
 type ClinicalTherapy {
   participant_ids: String
   therapy: String
+  therapy_category: String
+  therapy_type: String
+  best_response_to_therapy: String
+  course_number: String
+  current_response_to_therapy: String
+  date_of_best_response_to_therapy: String
+  date_of_current_response_to_therapy: String
+  dose_changes_delays: String
+  dose_changes_delays_description: String
+  number_of_doses: String
+  off_treatment: String
+  off_treatment_reason: String
+  planned_dose: String
+  planned_dose_units: String
+  therapy_description: String
   therapy_dose: String
+  therapy_dose_units: String
   therapy_frequency: String
+  therapy_start_date: String
+  therapy_end_date: String
   therapy_record_id: String
 }
 
