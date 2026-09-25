@@ -2434,7 +2434,30 @@ Indices:
       carcinogen_exposure:
         type: keyword
       therapy:
-        type: keyword
+        type: nested
+        properties:
+          therapy_record_id:
+            type: keyword
+          therapy:
+            type: keyword
+          therapy_dose:
+            type: keyword
+          therapy_dose_units:
+            type: keyword
+          therapy_frequency:
+            type: keyword
+          therapy_start_date:
+            type: keyword
+          therapy_end_date:
+            type: keyword
+          therapy_category:
+            type: keyword
+          therapy_type:
+            type: keyword
+          best_response_to_therapy:
+            type: keyword
+          current_response_to_therapy:
+            type: keyword
       therapy_category:
         type: keyword
       therapy_record_id:
@@ -2492,7 +2515,6 @@ Indices:
       optional MATCH (target:therapy)-[:of_participant]->(sb)
       WHERE target.therapy_name IS NOT NULL
         AND trim(toString(target.therapy_name)) <> ''
-        AND target.therapy_category = 'Targeted'
       WITH COLLECT(distinct trim(toString(target.therapy_name))) as array,sb,study
       with apoc.coll.sort(array) as array,sb,study
       with apoc.text.join(array,'|') as array,sb,study
@@ -2506,7 +2528,6 @@ Indices:
       with expose,sb,target,diag,demo,file,spec,study,array
       WHERE target.therapy_name IS NOT NULL
         AND trim(toString(target.therapy_name)) <> ''
-        AND target.therapy_category = 'Targeted'
       RETURN DISTINCT
       'participants' as type,
       sb.participant_id as participant_id,
@@ -2522,10 +2543,22 @@ Indices:
       COLLECT(DISTINCT demo.race) as race,
       COLLECT(DISTINCT demo.ethnicity) as ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
-      COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy,
+      COLLECT(DISTINCT {
+        therapy_record_id: target.therapy_record_id,
+        therapy: trim(toString(target.therapy_name)),
+        therapy_dose: target.therapy_dose,
+        therapy_dose_units: target.therapy_dose_units,
+        therapy_frequency: target.therapy_frequency,
+        therapy_start_date: target.therapy_start_date,
+        therapy_end_date: target.therapy_end_date,
+        therapy_category: target.therapy_category,
+        therapy_type: target.therapy_type,
+        best_response_to_therapy: target.best_response_to_therapy,
+        current_response_to_therapy: target.current_response_to_therapy
+      }) as therapy,
       COLLECT(DISTINCT target.therapy_record_id) as therapy_record_id,
       COLLECT(DISTINCT target.best_response_to_therapy) as best_response_to_therapy,
-      COLLECT(DISTINCT target.array) as therapy_string,
+      COLLECT(DISTINCT array) as therapy_string,
       COLLECT(DISTINCT target.current_response_to_therapy) as current_response_to_therapy,
       COLLECT(DISTINCT target.therapy_type) as therapy_type,
       COLLECT(DISTINCT target.therapy_category) as therapy_category,

@@ -83,6 +83,32 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
     }
 
     @Test
+    public void participantTherapyCypher_returnsTherapyObjects() throws IOException {
+        String yaml = Files.readString(Paths.get(YAML_PATH), StandardCharsets.UTF_8);
+
+        int therapyCountStart = yaml.indexOf("- index_name: therapy_count");
+        int studyNodeCountStart = yaml.indexOf("- index_name: study_node_counts");
+
+        assertTrue(therapyCountStart >= 0, "therapy_count block must exist");
+        assertTrue(studyNodeCountStart > therapyCountStart, "study_node_counts must follow therapy_count");
+
+        String therapyCountBlock = yaml.substring(therapyCountStart, studyNodeCountStart);
+
+        assertTrue(therapyCountBlock.contains("COLLECT(DISTINCT {"),
+                "therapy_count should emit therapy objects rather than plain strings");
+        assertTrue(therapyCountBlock.contains("therapy_record_id: target.therapy_record_id"),
+                "therapy objects should include therapy_record_id");
+        assertTrue(therapyCountBlock.contains("therapy: trim(toString(target.therapy_name))"),
+                "therapy objects should include the therapy name");
+        assertTrue(therapyCountBlock.contains("COLLECT(DISTINCT array) as therapy_string"),
+                "therapy_count should populate therapy_string from the locally joined therapy combination");
+        assertFalse(therapyCountBlock.contains("COLLECT(DISTINCT target.array) as therapy_string"),
+                "therapy_count should not read therapy_string from a non-existent target.array property");
+        assertFalse(therapyCountBlock.contains("COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy"),
+                "therapy_count should not return therapy as a plain string list");
+    }
+
+    @Test
     public void clinicalTrialDataSchema_onlyExposesNonTargetedLegacyProjection() throws Exception {
         String schema;
         try (InputStream inputStream = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
