@@ -121,6 +121,10 @@ type targeted_therapy {
 type therapy {
     therapy_id: String
     therapy: String
+    therapy_category: String
+    therapy_type: String
+    best_response_to_therapy: String
+    current_response_to_therapy: String
 }
 
 type surgical_procedure{
@@ -180,7 +184,8 @@ type search_result {
   numberOfBiomarker: Int
   numberOfHistologyImages: Int
   numberOfRadiologyImages: Int
-  specimenCountbyStageOfDisease : [group_count]
+  specimenCountbyStageOfDisease: [group_count]
+  dataFileByType: [group_count]
 }
 
 type group_count {
