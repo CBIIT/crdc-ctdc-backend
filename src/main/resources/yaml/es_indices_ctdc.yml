@@ -2942,23 +2942,6 @@ Indices:
         type: integer
       therapyParticipantCount:
         type: integer
-      targetedTherapyNodeData:
-        type: nested
-        properties:
-          participant_ids:
-            type: keyword
-          targeted_therapy:
-            type: keyword
-          targeted_therapy_dose:
-            type: keyword
-          targeted_therapy_frequency:
-            type: keyword
-          targeted_therapy_record_id:
-            type: keyword
-      targetedTherapyNodeCount:
-        type: integer
-      targetedTherapyParticipantCount:
-        type: integer
       nonTargetedTherapyNodeData:
         type: nested
         properties:
@@ -3074,15 +3057,7 @@ Indices:
           therapy_start_date: toString(COALESCE(t.therapy_start_date, ''))
         }] AS therapyNodeData,
         size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS therapyParticipantCount,
-        [t IN unique_th | {
-          participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
-          targeted_therapy: toString(COALESCE(t.therapy_name, '')),
-          targeted_therapy_dose: toString(COALESCE(t.therapy_dose, '')),
-          targeted_therapy_frequency: toString(COALESCE(t.therapy_frequency, '')),
-          targeted_therapy_record_id: toString(COALESCE(t.therapy_record_id, ''))
-        }] AS targetedTherapyNodeData,
-        size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS targetedTherapyParticipantCount,
-        [t IN unique_th | {
+        [t IN unique_th WHERE trim(toString(COALESCE(t.therapy_category, ''))) = 'Non-Targeted' | {
           participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           non_targeted_therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
           best_response_to_non_targeted_therapy: toString(COALESCE(t.best_response_to_therapy, '')),
@@ -3090,7 +3065,7 @@ Indices:
           non_targeted_therapy_dose: toString(COALESCE(t.therapy_dose, '')),
           non_targeted_therapy_frequency: toString(COALESCE(t.therapy_frequency, ''))
         }] AS nonTargetedTherapyNodeData,
-        size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS nonTargetedTherapyParticipantCount,
+        size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL AND trim(toString(COALESCE(x.node.therapy_category, ''))) = 'Non-Targeted' | x.participant_id])) AS nonTargetedTherapyParticipantCount,
         [r IN unique_rt | {
           participant_ids: apoc.text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           radiation_dose: r.radiation_dose,
@@ -3120,9 +3095,6 @@ Indices:
         therapyNodeData,
         size(apoc.coll.toSet([t IN therapyNodeData | t.therapy_record_id])) AS therapyNodeCount,
         therapyParticipantCount,
-        targetedTherapyNodeData,
-        size(apoc.coll.toSet([t IN targetedTherapyNodeData | t.targeted_therapy_record_id])) AS targetedTherapyNodeCount,
-        targetedTherapyParticipantCount,
         nonTargetedTherapyNodeData,
         size(apoc.coll.toSet([t IN nonTargetedTherapyNodeData | t.non_targeted_therapy_record_id])) AS nonTargetedTherapyNodeCount,
         nonTargetedTherapyParticipantCount,
