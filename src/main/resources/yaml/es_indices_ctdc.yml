@@ -497,7 +497,10 @@ Indices:
 
       MATCH (sp:specimen)-[:of_participant]->(sb:participant)<-[:of_participant]-(diag:diagnosis)
       WITH participantcount, dataFileByType, dataFileCount, countofDiagnoses, TotalTherapy, nonTargetedTherapyCount, targetedTherapyCount,
-          { group: diag.stage_of_disease, subjects: COUNT(diag.stage_of_disease) } AS specimenCountbyStageOfDisease
+          diag.stage_of_disease AS stage_of_disease,
+          COUNT(diag.stage_of_disease) AS stage_subjects
+      WITH participantcount, dataFileByType, dataFileCount, countofDiagnoses, TotalTherapy, nonTargetedTherapyCount, targetedTherapyCount,
+          { group: stage_of_disease, subjects: stage_subjects } AS specimenCountbyStageOfDisease
 
       RETURN DISTINCT
         TotalTherapy AS numberOfTherapies,
@@ -1636,7 +1639,7 @@ Indices:
           data_file_format: f.data_file_format,
           data_file_type:   f.data_file_type }]               AS file_info
       "   
-  # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
+  # # File Table Data, Add files into cart (For Participant Tab, Biospecimen Tab, and File Tab)
   - index_name: cart_data_files
     type: neo4j
     # type mapping for each property of the index
@@ -1875,7 +1878,7 @@ Indices:
           WHEN 'study' IN associations
             AND NOT 'participant' IN associations
             AND NOT 'biospecimen' IN associations
-          THEN ['study', 'study_only']
+          THEN ['study']
           ELSE associations
         END                                                   AS association,
 
@@ -2470,6 +2473,8 @@ Indices:
         type: keyword
       therapy_type:
         type: keyword
+      therapy_name:
+        type: keyword
       anatomical_collection_site:
         type: keyword
       tissue_category:
@@ -2557,6 +2562,7 @@ Indices:
         current_response_to_therapy: target.current_response_to_therapy
       }) as therapy,
       COLLECT(DISTINCT target.therapy_record_id) as therapy_record_id,
+      COLLECT(DISTINCT target.therapy_name) as therapy_name,
       COLLECT(DISTINCT target.best_response_to_therapy) as best_response_to_therapy,
       COLLECT(DISTINCT array) as therapy_string,
       COLLECT(DISTINCT target.current_response_to_therapy) as current_response_to_therapy,

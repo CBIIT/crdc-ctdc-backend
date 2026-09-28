@@ -67,7 +67,7 @@ queries:
           - therapy_count
         filter:
           type: aggregation
-          selectedField: therapy
+          selectedField: therapy_name
         result:
           type: int
           method: count_bucket_keys
