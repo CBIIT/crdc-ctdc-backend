@@ -27,7 +27,7 @@ queries:
             - field: ethnicity
               type: wildcard
               caseInsensitive: true
-            - field: targeted_therapy
+            - field: therapy
               type: wildcard
               caseInsensitive: true
             - field: stage_of_disease
@@ -67,7 +67,7 @@ queries:
             - field: ethnicity
               type: wildcard
               caseInsensitive: true
-            - field: targeted_therapy
+            - field: therapy
               type: wildcard
               caseInsensitive: true
             - field: stage_of_disease
