@@ -274,6 +274,7 @@ queries:
         filter:
           type: aggregation
           selectedField: therapy
+          selectedField: therapy_name
         result:
           type: group_count
       - name: filterParticipantCountByTherapy
@@ -281,7 +282,7 @@ queries:
           - widgets_facets_counts
         filter:
           type: aggregation
-          selectedField: therapy
+          selectedField: therapy_name
           ignoreSelectedField: true
         result:
           type: group_count

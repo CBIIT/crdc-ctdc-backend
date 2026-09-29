@@ -545,6 +545,8 @@ Indices:
         type: keyword
       therapy:
         type: keyword
+      therapy_name:
+        type: keyword
       primary_diagnosis_disease_group:
         type: keyword
       therapy_record_id:
@@ -700,6 +702,7 @@ Indices:
       ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
       therapy,
+      therapy AS therapy_name,
       therapy_record_id,
       therapy_string AS therapy_string,
       therapy_category,
@@ -785,6 +788,8 @@ Indices:
       carcinogen_exposure:
         type: keyword
       therapy:
+        type: keyword
+      therapy_name:
         type: keyword
       therapy_string:
         type: keyword
@@ -991,6 +996,7 @@ Indices:
         )                                                AS data_file_format,
 
         therapy,
+        therapy AS therapy_name,
         best_response_to_therapy,
         current_response_to_therapy,
         therapy_category,
@@ -1121,6 +1127,8 @@ Indices:
       carcinogen_exposure:
         type: keyword
       therapy:
+        type: keyword
+      therapy_name:
         type: keyword
       therapy_string:
         type: keyword
@@ -1265,6 +1273,7 @@ Indices:
       demo.ethnicity AS ethnicity,
       COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
       therapy,
+      therapy AS therapy_name,
       therapy_category,
       therapy_type,
       best_response_to_therapy,
@@ -1337,6 +1346,8 @@ Indices:
       carcinogen_exposure:
         type: keyword
       therapy:
+        type: keyword
+      therapy_name:
         type: keyword
       anatomical_collection_site:
         type: keyword
@@ -1620,6 +1631,7 @@ Indices:
 
         carcinogen_exposure,
         therapy_raw                                            AS therapy,
+        therapy_raw                                            AS therapy_name,
         therapy_category,
         therapy_type,
         best_response_to_therapy,
@@ -1971,6 +1983,8 @@ Indices:
         type: keyword
       therapy:
         type: keyword
+      therapy_name:
+        type: keyword
       therapy_string:
         type: keyword
       therapy_category:
@@ -2066,6 +2080,7 @@ Indices:
 
         carcinogen_exposure                         AS carcinogen_exposure,
         therapy                                     AS therapy,
+        therapy                                     AS therapy_name,
         therapy_category                            AS therapy_category,
         therapy_string                              AS therapy_string,
         therapy_type                                AS therapy_type,
