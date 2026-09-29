@@ -1495,7 +1495,15 @@ Indices:
 
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
-        apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
+        apoc.coll.toSet(COLLECT(
+          CASE
+          WHEN exp IS NOT NULL
+            AND exp.carcinogen_exposure IS NOT NULL
+            AND trim(toString(exp.carcinogen_exposure)) <> ''
+          THEN trim(toString(exp.carcinogen_exposure))
+          ELSE null
+          END
+        ))                                                    AS carcinogen_exposure
 
       CALL {
         WITH effective_subs, associations
