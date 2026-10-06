@@ -31,6 +31,10 @@ public class TabDataFilesCypherRegressionTest {
         assertTrue(tabDataFilesBlock.contains("OPTIONAL MATCH (f)-[:associated_with]-(study_direct:study)"));
         assertTrue(tabDataFilesBlock.contains("OPTIONAL MATCH (study_part:participant)-[:belongs_to]->(study_expand:study)"));
         assertTrue(tabDataFilesBlock.contains("AND size(associations) = 1 AND 'study' IN associations"));
+        assertTrue(tabDataFilesBlock.contains("therapy_raw"));
+        assertTrue(tabDataFilesBlock.contains("AS therapy,"));
+        assertTrue(tabDataFilesBlock.contains("trim(toString(exp.carcinogen_exposure))"));
+        assertTrue(tabDataFilesBlock.contains("CASE\n          WHEN exp IS NOT NULL"));
 
     }
 }
