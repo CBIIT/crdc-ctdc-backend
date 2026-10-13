@@ -435,7 +435,8 @@ type ParticipantOverview {
   study_name: String
   study_type: String
   study_description: String
-  best_response_to_therapy: String
+  best_response_to_therapy: [String]
+  current_response_to_therapy: [String]
   surgical_procedure: String
   surgical_procedure_anatomical_location: String
   surgical_procedure_date: String
@@ -455,10 +456,10 @@ type ParticipantOverview {
   race: String
   ethnicity: String
   carcinogen_exposure: String
-  therapy_name: String
+  therapy_name: [String]
   therapy_string: String
-  therapy_category: String
-  therapy_type: String
+  therapy_category: [String]
+  therapy_type: [String]
   specimen_id: String
   anatomical_collection_site: String
   parent_specimen_id: String
@@ -466,7 +467,7 @@ type ParticipantOverview {
   tissue_category: String
   assessment_timepoint: String
 
-  data_file_uuid: String
+  data_file_uuid: [String]
   data_files: [DataFile] # For Adding Files into Cart
 }
 type ClinicalDiagnosis {
