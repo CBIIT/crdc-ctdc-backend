@@ -436,6 +436,7 @@ type ParticipantOverview {
   study_type: String
   study_description: String
   best_response_to_therapy: String
+  current_response_to_therapy: String
   surgical_procedure: String
   surgical_procedure_anatomical_location: String
   surgical_procedure_date: String
