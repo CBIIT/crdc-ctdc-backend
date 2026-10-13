@@ -126,7 +126,6 @@ queries:
       defaultSortField: specimen_record_id
       alternativeSortField:
         participant_id: participant_id
-        specimen_id: specimen_record_id
     result:
       type: object_array
   - name: fileOverview

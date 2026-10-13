@@ -1020,7 +1020,7 @@ type QueryType {
     data_file_format: [String] = []
     data_file_uuid: [String] = []
 
-    order_by: String = "specimen_id"
+    order_by: String = "specimen_record_id"
     sort_direction: String = "ASC"
     first: Int = 10
     offset: Int = 0
