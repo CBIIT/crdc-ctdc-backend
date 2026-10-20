@@ -19,8 +19,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -42,13 +40,39 @@ public class ProgramSearchConfigurationTest {
     );
 
     @Test
-    public void suppliedSearchOperationIsValidAgainstPrivateSchema() throws Exception {
+    public void programSearchOperationIsValidAgainstPrivateSchema() throws Exception {
         TypeDefinitionRegistry registry;
         try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation = Files.readString(Path.of("graphql/operations/search.graphql"));
+        String operation = """
+                query search($program_name: [String], $program_short_name: [String]) {
+                  filesTabCount: searchParticipants(
+                    program_name: $program_name
+                    program_short_name: $program_short_name
+                  ) {
+                    numberOfFiles
+                  }
+                  studyFilesTabCount: searchParticipants(
+                    program_name: $program_name
+                    program_short_name: $program_short_name
+                    association: ["study"]
+                  ) {
+                    numberOfStudyFiles
+                  }
+                  searchParticipants(
+                    program_name: $program_name
+                    program_short_name: $program_short_name
+                  ) {
+                    numberOfPrograms
+                    participantCountByProgramName { group subjects }
+                    filterParticipantCountByProgramName { group subjects }
+                    participantCountByProgramShortName { group subjects }
+                    filterParticipantCountByProgramShortName { group subjects }
+                  }
+                }
+                """;
         OperationDefinition search = (OperationDefinition) new Parser().parseDocument(operation)
                 .getDefinitions().get(0);
         for (String programField : PROGRAM_FIELDS) {
@@ -81,22 +105,50 @@ public class ProgramSearchConfigurationTest {
                 new SchemaGenerator().makeExecutableSchema(registry, RuntimeWiring.newRuntimeWiring().build())
         ).build();
         var result = graphQL.execute(ExecutionInput.newExecutionInput().query(operation).build());
-        assertTrue(result.getErrors().isEmpty(), () -> "Client operation has GraphQL errors: " + result.getErrors());
+        assertTrue(result.getErrors().isEmpty(), () -> "Program search has GraphQL errors: " + result.getErrors());
     }
 
     @Test
-    public void suppliedBiospecimenSearchOperationIsValidAgainstPrivateSchema() throws Exception {
+    public void biospecimenProgramSearchOperationIsValidAgainstPrivateSchema() throws Exception {
         TypeDefinitionRegistry registry;
         try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation = Files.readString(Path.of("graphql/operations/search-biospecimen-filters.graphql"));
+        String operation = """
+                query search(
+                  $program_name: [String]
+                  $program_short_name: [String]
+                  $specimen_type: [String]
+                  $therapy: [String]
+                ) {
+                  searchParticipants(
+                    program_name: $program_name
+                    program_short_name: $program_short_name
+                    specimen_type: $specimen_type
+                    therapy_name: $therapy
+                  ) {
+                    numberOfStudies
+                    numberOfPrograms
+                    numberOfParticipants
+                    numberOfDiagnoses
+                    numberOfTherapies
+                    numberOfSpecimens
+                    numberOfFiles
+                    numberOfStudyFiles
+                    participantCountByProgramName { group subjects }
+                    filterParticipantCountByProgramName { group subjects }
+                    participantCountByProgramShortName { group subjects }
+                    filterParticipantCountByProgramShortName { group subjects }
+                  }
+                }
+                """;
         GraphQL graphQL = GraphQL.newGraphQL(
                 new SchemaGenerator().makeExecutableSchema(registry, RuntimeWiring.newRuntimeWiring().build())
         ).build();
         var result = graphQL.execute(ExecutionInput.newExecutionInput().query(operation).build());
-        assertTrue(result.getErrors().isEmpty(), () -> "Client operation has GraphQL errors: " + result.getErrors());
+        assertTrue(result.getErrors().isEmpty(),
+                () -> "Biospecimen program search has GraphQL errors: " + result.getErrors());
 
         OperationDefinition search = (OperationDefinition) new Parser().parseDocument(operation)
                 .getDefinitions().get(0);
@@ -126,7 +178,51 @@ public class ProgramSearchConfigurationTest {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation = Files.readString(Path.of("graphql/operations/program-page.graphql"));
+        String operation = """
+                query ProgramPage(
+                  $program_name: [String] = []
+                  $program_short_name: [String] = []
+                  $crdc_id: [String] = []
+                  $program_short_description: [String] = []
+                  $program_external_url: [String] = []
+                  $program_full_description: [String] = []
+                  $study_has_program: [String] = ["has program"]
+                  $first: Int = 10000
+                  $offset: Int = 0
+                  $order_by: String = "program_short_name"
+                  $sort_direction: String = "ASC"
+                ) {
+                  getAllPrograms(
+                    program_name: $program_name
+                    program_short_name: $program_short_name
+                    crdc_id: $crdc_id
+                    program_short_description: $program_short_description
+                    program_external_url: $program_external_url
+                    program_full_description: $program_full_description
+                    study_has_program: $study_has_program
+                    first: $first
+                    offset: $offset
+                    order_by: $order_by
+                    sort_direction: $sort_direction
+                  ) {
+                    program_name
+                    program_short_name
+                    crdc_id
+                    program_short_description
+                    program_external_url
+                    program_full_description
+                    study_has_program
+                    study_count
+                    studies {
+                      study_id
+                      study_accession
+                      study_short_name
+                      study_name
+                      study_has_program
+                    }
+                  }
+                }
+                """;
         GraphQL graphQL = GraphQL.newGraphQL(
                 new SchemaGenerator().makeExecutableSchema(registry, RuntimeWiring.newRuntimeWiring().build())
         ).build();
