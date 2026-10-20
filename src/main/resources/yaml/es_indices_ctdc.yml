@@ -1,5 +1,71 @@
 # Indices settings
 Indices:
+  - index_name: programs
+    type: neo4j
+    mapping:
+      program_name:
+        type: keyword
+      program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
+      study_has_program:
+        type: keyword
+      study_count:
+        type: integer
+      studies:
+        type: nested
+        properties:
+          study_id:
+            type: keyword
+          study_accession:
+            type: keyword
+          study_short_name:
+            type: keyword
+          study_name:
+            type: keyword
+          study_has_program:
+            type: keyword
+    cypher_query: "
+      MATCH (s:study)
+      OPTIONAL MATCH (s)-[:belongs_to]->(p:program)
+      WITH p, COLLECT(DISTINCT {
+        study_id: toString(s.study_id),
+        study_accession: s.study_accession,
+        study_short_name: s.study_short_name,
+        study_name: s.study_name,
+        study_has_program: CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END
+      }) AS studies
+      RETURN
+        p.program_name AS program_name,
+        p.program_short_name AS program_short_name,
+        p.crdc_id AS crdc_id,
+        p.program_short_description AS program_short_description,
+        p.program_external_url AS program_external_url,
+        p.program_full_description AS program_full_description,
+        CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END AS study_has_program,
+        size(studies) AS study_count,
+        studies AS studies
+      UNION
+      MATCH (p:program)
+      WHERE NOT (p)<-[:belongs_to]-(:study)
+      RETURN
+        p.program_name AS program_name,
+        p.program_short_name AS program_short_name,
+        p.crdc_id AS crdc_id,
+        p.program_short_description AS program_short_description,
+        p.program_external_url AS program_external_url,
+        p.program_full_description AS program_full_description,
+        'has program' AS study_has_program,
+        0 AS study_count,
+        [] AS studies
+      "
 #   # First index
 #   # Name of the index to be created, existing index with same name will be deleted
   - index_name: study
@@ -17,6 +83,8 @@ Indices:
       study_description:
         type: keyword
       study_type:
+        type: keyword
+      study_has_program:
         type: keyword
       dates_of_conduct:
         type: keyword
@@ -86,6 +154,14 @@ Indices:
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
       MATCH (s:study)
+      CALL {
+        WITH s
+        OPTIONAL MATCH (s)-[:belongs_to]->(program:program)
+        RETURN CASE
+          WHEN count(program) = 0 THEN 'has no program'
+          ELSE 'has program'
+        END AS study_has_program
+      }
       optional MATCH (s)<-[:associated_with]-(ic:image_collection)
       optional MATCH (s)<-[:associated_with]-(al:associated_link)
       optional MATCH (p:publication)-[:of_study]->(s)
@@ -99,6 +175,7 @@ Indices:
                 s.study_short_name as study_short_name,
                 s.study_accession as study_accession,
                 toString(s.study_id) as study_id,
+                study_has_program AS study_has_program,
                 s.study_description as study_description,
                 s.study_type as study_type,
                 s.dates_of_conduct as dates_of_conduct,
@@ -527,6 +604,14 @@ Indices:
         type: keyword
       program_short_name:
         type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
       ctep_disease_term:
         type: keyword
       snomed_disease_code:
@@ -696,6 +781,10 @@ Indices:
       COLLECT(DISTINCT toString(study.study_id)) as study_id,
       COLLECT(DISTINCT program.program_name) as program_name,
       COLLECT(DISTINCT program.program_short_name) as program_short_name,
+      COLLECT(DISTINCT program.crdc_id) as crdc_id,
+      COLLECT(DISTINCT program.program_short_description) as program_short_description,
+      COLLECT(DISTINCT program.program_external_url) as program_external_url,
+      COLLECT(DISTINCT program.program_full_description) as program_full_description,
 
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
@@ -768,6 +857,14 @@ Indices:
       program_name:
         type: keyword
       program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
         type: keyword
       study_accession:
         type: keyword
@@ -975,6 +1072,10 @@ Indices:
         study.study_id                                   AS study_id,
         COLLECT(DISTINCT program.program_name)           AS program_name,
         COLLECT(DISTINCT program.program_short_name)     AS program_short_name,
+        COLLECT(DISTINCT program.crdc_id)                AS crdc_id,
+        COLLECT(DISTINCT program.program_short_description) AS program_short_description,
+        COLLECT(DISTINCT program.program_external_url)   AS program_external_url,
+        COLLECT(DISTINCT program.program_full_description) AS program_full_description,
         study.study_accession                            AS study_accession,
         study.study_name                                 AS study_name,
         study.study_type                                 AS study_type,
@@ -1070,6 +1171,14 @@ Indices:
       program_name:
         type: keyword
       program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
         type: keyword
       study_accession:
         type: keyword
@@ -1251,6 +1360,10 @@ Indices:
       toString(study.study_id) AS study_id,
       COLLECT(DISTINCT program.program_name) AS program_name,
       COLLECT(DISTINCT program.program_short_name) AS program_short_name,
+      COLLECT(DISTINCT program.crdc_id) AS crdc_id,
+      COLLECT(DISTINCT program.program_short_description) AS program_short_description,
+      COLLECT(DISTINCT program.program_external_url) AS program_external_url,
+      COLLECT(DISTINCT program.program_full_description) AS program_full_description,
       study.study_accession AS study_accession,
       [x IN COLLECT(DISTINCT {
       data_file_uuid: df.data_file_uuid,
@@ -1410,6 +1523,14 @@ Indices:
         type: keyword
       program_short_name:
         type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
       study_accession:
         type: keyword
     cypher_query: "
@@ -1488,13 +1609,19 @@ Indices:
         UNWIND related_studies AS related_study
         OPTIONAL MATCH (related_study)-[:belongs_to]->(program:program)
         RETURN COLLECT(DISTINCT program.program_name) AS program_name,
-               COLLECT(DISTINCT program.program_short_name) AS program_short_name
+               COLLECT(DISTINCT program.program_short_name) AS program_short_name,
+               COLLECT(DISTINCT CASE WHEN program IS NULL THEN null ELSE {
+                 crdc_id: program.crdc_id,
+                 program_short_description: program.program_short_description,
+                 program_external_url: program.program_external_url,
+                 program_full_description: program.program_full_description
+               } END) AS program_info
       }
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
       WHERE dPart IN effective_subs
       WITH
-        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name,
+        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name, program_info,
         COLLECT(DISTINCT diag.ctep_disease_term)              AS ctep_terms,
         COLLECT(DISTINCT diag.primary_diagnosis_disease_group) AS pdg_list,
         COLLECT(DISTINCT diag.stage_of_disease)               AS stage_list,
@@ -1506,7 +1633,7 @@ Indices:
       OPTIONAL MATCH (dmPart:participant)<-[:of_participant]-(demo:demographic)
       WHERE dmPart IN effective_subs
       WITH
-        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name,
+        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name, program_info,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         COLLECT(DISTINCT demo.sex)                            AS sex_list,
         COLLECT(DISTINCT demo.race)                           AS race_list,
@@ -1526,7 +1653,7 @@ Indices:
       WHERE exPart IN effective_subs
       WITH
 
-        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name, ps_latest,
+        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name, program_info, ps_latest,
 
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
@@ -1618,7 +1745,7 @@ Indices:
 
       WITH
 
-        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name, ps_latest,
+        f, associations, effective_subs, file_subs, specs, study_short_names, study_ids, study_accessions, program_name, program_short_name, program_info, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         therapy_raw,
@@ -1634,6 +1761,10 @@ Indices:
         head([s IN study_ids WHERE s IS NOT NULL])                        AS study_id,
         program_name AS program_name,
         program_short_name AS program_short_name,
+        [p IN program_info WHERE p.crdc_id IS NOT NULL | p.crdc_id] AS crdc_id,
+        [p IN program_info WHERE p.program_short_description IS NOT NULL | p.program_short_description] AS program_short_description,
+        [p IN program_info WHERE p.program_external_url IS NOT NULL | p.program_external_url] AS program_external_url,
+        [p IN program_info WHERE p.program_full_description IS NOT NULL | p.program_full_description] AS program_full_description,
         head([s IN study_accessions WHERE s IS NOT NULL])                 AS study_accession,
 
         apoc.coll.toSet([x IN specs WHERE x.anatomical_collection_site IS NOT NULL | apoc.text.capitalizeAll(toLower(x.anatomical_collection_site))]) AS anatomical_collection_site,
@@ -1792,6 +1923,14 @@ Indices:
         type: keyword
       program_short_name:
         type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
       study_accession:
         type: keyword
     cypher_query: "
@@ -1844,13 +1983,19 @@ Indices:
         UNWIND related_studies AS related_study
         OPTIONAL MATCH (related_study)-[:belongs_to]->(program:program)
         RETURN COLLECT(DISTINCT program.program_name) AS program_name,
-               COLLECT(DISTINCT program.program_short_name) AS program_short_name
+               COLLECT(DISTINCT program.program_short_name) AS program_short_name,
+               COLLECT(DISTINCT CASE WHEN program IS NULL THEN null ELSE {
+                 crdc_id: program.crdc_id,
+                 program_short_description: program.program_short_description,
+                 program_external_url: program.program_external_url,
+                 program_full_description: program.program_full_description
+               } END) AS program_info
       }
 
       OPTIONAL MATCH (dPart:participant)<-[:of_participant]-(diag:diagnosis)
       WHERE dPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names, study_accessions, program_name, program_short_name,
+        f, associations, subs, specs, study_short_names, study_accessions, program_name, program_short_name, program_info,
         COLLECT(DISTINCT diag.ctep_disease_term)              AS ctep_terms,
         COLLECT(DISTINCT diag.primary_diagnosis_disease_group) AS pdg_list,
         COLLECT(DISTINCT diag.stage_of_disease)               AS stage_list,
@@ -1862,7 +2007,7 @@ Indices:
       OPTIONAL MATCH (dmPart:participant)<-[:of_participant]-(demo:demographic)
       WHERE dmPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names, study_accessions, program_name, program_short_name,
+        f, associations, subs, specs, study_short_names, study_accessions, program_name, program_short_name, program_info,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         COLLECT(DISTINCT demo.sex)                            AS sex_list,
         COLLECT(DISTINCT demo.race)                           AS race_list,
@@ -1881,7 +2026,7 @@ Indices:
       OPTIONAL MATCH (exPart:participant)<-[:of_participant]-(exp:exposure)
       WHERE exPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names, study_accessions, program_name, program_short_name, ps_latest,
+        f, associations, subs, specs, study_short_names, study_accessions, program_name, program_short_name, program_info, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages,
         apoc.coll.toSet(COLLECT(exp.carcinogen_exposure))     AS carcinogen_exposure
@@ -1889,7 +2034,7 @@ Indices:
        OPTIONAL MATCH (ttPart:participant)<-[:of_participant]-(tt:therapy)
       WHERE ttPart IN subs
       WITH
-        f, associations, subs, specs, study_short_names,study_accessions, program_name, program_short_name, ps_latest,
+        f, associations, subs, specs, study_short_names,study_accessions, program_name, program_short_name, program_info, ps_latest,
         ctep_terms, pdg_list, stage_list, tumor_grades, primary_sites, meddra_codes, histologies,
         sex_list, race_list, ethnicity_list, ages, carcinogen_exposure,
         apoc.coll.toSet([x IN COLLECT(tt.therapy_name)
@@ -1925,6 +2070,10 @@ Indices:
         head([s IN study_short_names WHERE s IS NOT NULL])    AS study_short_name,
         program_name AS program_name,
         program_short_name AS program_short_name,
+        [p IN program_info WHERE p.crdc_id IS NOT NULL | p.crdc_id] AS crdc_id,
+        [p IN program_info WHERE p.program_short_description IS NOT NULL | p.program_short_description] AS program_short_description,
+        [p IN program_info WHERE p.program_external_url IS NOT NULL | p.program_external_url] AS program_external_url,
+        [p IN program_info WHERE p.program_full_description IS NOT NULL | p.program_full_description] AS program_full_description,
         
         head([s IN study_accessions WHERE s IS NOT NULL]) AS study_accession,
 
@@ -2021,6 +2170,14 @@ Indices:
         type: keyword
       program_short_name:
         type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
       study_accession:
         type: keyword
       specimen_id:
@@ -2083,7 +2240,13 @@ Indices:
         WITH study
         OPTIONAL MATCH (study)-[:belongs_to]->(program:program)
         RETURN COLLECT(DISTINCT program.program_name) AS program_name,
-               COLLECT(DISTINCT program.program_short_name) AS program_short_name
+               COLLECT(DISTINCT program.program_short_name) AS program_short_name,
+               COLLECT(DISTINCT CASE WHEN program IS NULL THEN null ELSE {
+                 crdc_id: program.crdc_id,
+                 program_short_description: program.program_short_description,
+                 program_external_url: program.program_external_url,
+                 program_full_description: program.program_full_description
+               } END) AS program_info
       }
 
       CALL {
@@ -2096,7 +2259,7 @@ Indices:
 
       OPTIONAL MATCH (tt:therapy)-[:of_participant]->(sub)
       WITH
-        f, sub, spec, study, program_name, program_short_name, ps_latest,
+        f, sub, spec, study, program_name, program_short_name, program_info, ps_latest,
         apoc.coll.toSet([t IN collect(DISTINCT tt.therapy_name)
                           WHERE t IS NOT NULL AND trim(toString(t)) <> '' | toLower(trim(toString(t)))]) AS therapy,
         apoc.coll.toSet([c IN collect(DISTINCT tt.therapy_category)
@@ -2117,7 +2280,7 @@ Indices:
       OPTIONAL MATCH (sub)<-[:of_participant]-(demo:demographic)
       OPTIONAL MATCH (sub)<-[:of_participant]-(exp:exposure)
       WITH
-        f, sub, spec, study, program_name, program_short_name, diag, demo, ps_latest,
+        f, sub, spec, study, program_name, program_short_name, program_info, diag, demo, ps_latest,
         therapy, therapy_category, therapy_string,therapy_type, best_response_to_therapy, current_response_to_therapy,
         collect(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure
 
@@ -2138,6 +2301,10 @@ Indices:
         toString(study.study_id)                    AS study_id,
         program_name                                AS program_name,
         program_short_name                          AS program_short_name,
+        [p IN program_info WHERE p.crdc_id IS NOT NULL | p.crdc_id] AS crdc_id,
+        [p IN program_info WHERE p.program_short_description IS NOT NULL | p.program_short_description] AS program_short_description,
+        [p IN program_info WHERE p.program_external_url IS NOT NULL | p.program_external_url] AS program_external_url,
+        [p IN program_info WHERE p.program_full_description IS NOT NULL | p.program_full_description] AS program_full_description,
         study.study_accession                       AS study_accession,
 
         diag.ctep_disease_term                      AS ctep_disease_term,
@@ -2179,6 +2346,14 @@ Indices:
       program_name:
         type: keyword
       program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
         type: keyword
       study_accession:
         type: keyword
@@ -2316,7 +2491,13 @@ Indices:
         WITH study
         OPTIONAL MATCH (study)-[:belongs_to]->(program:program)
         RETURN COLLECT(DISTINCT program.program_name) AS program_name,
-               COLLECT(DISTINCT program.program_short_name) AS program_short_name
+               COLLECT(DISTINCT program.program_short_name) AS program_short_name,
+               COLLECT(DISTINCT CASE WHEN program IS NULL THEN null ELSE {
+                 crdc_id: program.crdc_id,
+                 program_short_description: program.program_short_description,
+                 program_external_url: program.program_external_url,
+                 program_full_description: program.program_full_description
+               } END) AS program_info
       }
 
       CALL {
@@ -2343,7 +2524,7 @@ Indices:
         RETURN head(COLLECT(fallback_participant)) AS fallback_participant
       }
 
-      WITH study, program_name, program_short_name, f,associations,
+      WITH study, program_name, program_short_name, program_info, f,associations,
            coalesce(file_participant, specimen_participant, fallback_participant) AS sb
 
       CALL {
@@ -2424,6 +2605,10 @@ Indices:
         toString(study.study_id) AS study_id,
         program_name AS program_name,
         program_short_name AS program_short_name,
+        [p IN program_info WHERE p.crdc_id IS NOT NULL | p.crdc_id] AS crdc_id,
+        [p IN program_info WHERE p.program_short_description IS NOT NULL | p.program_short_description] AS program_short_description,
+        [p IN program_info WHERE p.program_external_url IS NOT NULL | p.program_external_url] AS program_external_url,
+        [p IN program_info WHERE p.program_full_description IS NOT NULL | p.program_full_description] AS program_full_description,
         study.study_accession AS study_accession,
         f.data_file_name AS data_file_name,
         f.data_file_format AS data_file_format,
@@ -2518,6 +2703,14 @@ Indices:
       program_name:
         type: keyword
       program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
         type: keyword
       ctep_disease_term:
         type: keyword
@@ -2644,6 +2837,10 @@ Indices:
       COLLECT(DISTINCT toString(study.study_id)) as study_id,
       COLLECT(DISTINCT program.program_name) as program_name,
       COLLECT(DISTINCT program.program_short_name) as program_short_name,
+      COLLECT(DISTINCT program.crdc_id) as crdc_id,
+      COLLECT(DISTINCT program.program_short_description) as program_short_description,
+      COLLECT(DISTINCT program.program_external_url) as program_external_url,
+      COLLECT(DISTINCT program.program_full_description) as program_full_description,
       COLLECT(DISTINCT diag.ctep_disease_term) as ctep_disease_term,
       COLLECT(DISTINCT diag.primary_diagnosis_disease_group) as primary_diagnosis_disease_group,
       COLLECT(DISTINCT diag.snomed_disease_code) as snomed_disease_code, 

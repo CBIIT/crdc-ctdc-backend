@@ -51,6 +51,10 @@ type GS_participant {
   study_short_name: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
   ctep_disease_term: String
   sex: String
   race: String
@@ -66,6 +70,10 @@ type GS_Biospecimen {
   study_short_name: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
   specimen_record_id: String
   specimen_id: String
   participant_id: String
@@ -244,6 +252,7 @@ type Study {
   study_name: String
   study_description: String
   study_type: String
+  study_has_program: String
   dates_of_conduct: String
   participants: [Participant]
   participant_count: Int
@@ -305,6 +314,10 @@ type StudyFileOverviewInfo {
   study_accession: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
   anatomical_collection_site: String
   specimen_type: String
   tissue_category: String
@@ -440,10 +453,15 @@ type ParticipantOverview {
   study_short_name: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
   study_name: String
   study_type: String
   study_description: String
   best_response_to_therapy: String
+  current_response_to_therapy: String
   surgical_procedure: String
   surgical_procedure_anatomical_location: String
   surgical_procedure_date: String
@@ -660,6 +678,10 @@ type BiospecimenOverview {
   study_accession: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
   ctep_disease_term: String
   primary_diagnosis_disease_group: String
   stage_of_disease: String
@@ -724,6 +746,10 @@ type FileOverview {
   study_accession: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
 }
 
 type FileParticipant {
@@ -733,6 +759,10 @@ type FileParticipant {
   study_accession: String
   program_name: [String]
   program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
   data_file_name: String
   data_file_format: String
   data_file_type: String
@@ -899,18 +929,56 @@ type ProgramArms {
   children: [ArmInfo]
 }
 
+type ProgramStudy {
+  study_id: String
+  study_accession: String
+  study_short_name: String
+  study_name: String
+  """Program affiliation: "has program" or "has no program"."""
+  study_has_program: String
+}
+
+type ProgramNode {
+  program_name: String
+  program_short_name: String
+  crdc_id: String
+  program_short_description: String
+  program_external_url: String
+  program_full_description: String
+  """Program affiliation: "has program" or "has no program"."""
+  study_has_program: String
+  study_count: Int
+  studies: [ProgramStudy]
+}
+
 schema {
   query: QueryType
 }
 
 type QueryType {
+  getAllPrograms(
+    program_name: [String] = []
+    program_short_name: [String] = []
+    crdc_id: [String] = []
+    program_short_description: [String] = []
+    program_external_url: [String] = []
+    program_full_description: [String] = []
+    """Filter by "has program" or "has no program"; an empty list includes both."""
+    study_has_program: [String] = []
+    first: Int = 10000
+    offset: Int = 0
+    order_by: String = "program_short_name"
+    sort_direction: String = "ASC"
+  ): [ProgramNode]
+
   studyByStudyShortName(
     study_short_name: [String] = [],
     study_id: [String] = [],
-    study_accession: [String] = []
+    study_accession: [String] = [],
+    study_has_program: [String] = []
   ): [Study]
 
-  getAllStudies: [Study]
+  getAllStudies(study_has_program: [String] = []): [Study]
 
   studyDiagnosisByStudyShortName(
     study_short_name: [String] = [],
