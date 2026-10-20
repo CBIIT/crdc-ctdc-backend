@@ -392,12 +392,14 @@ public class ProgramSearchConfigurationTest {
                 .filter(entry -> "study".equals(entry.get("index_name")))
                 .findFirst().orElseThrow(() -> new AssertionError("CTDC study index is missing"));
         Map<String, Object> studyMapping = (Map<String, Object>) studyIndex.get("mapping");
-        assertEquals("keyword", ((Map<String, Object>) studyMapping.get("study_has_program")).get("type"));
+        assertTrue(!studyMapping.containsKey("study_has_program"),
+                "Affiliation filtering belongs only to the programs index");
         String studyCypher = (String) studyIndex.get("cypher_query");
-        assertTrue(studyCypher.contains("OPTIONAL MATCH (s)-[:belongs_to]->(program:program)"));
-        assertTrue(studyCypher.contains("THEN 'has no program'"));
-        assertTrue(studyCypher.contains("ELSE 'has program'"));
-        assertTrue(studyCypher.contains("study_has_program AS study_has_program"));
+        assertTrue(!studyCypher.contains("study_has_program"));
+        assertTrue(studyCypher.contains("optional MATCH (participant)<-[*..2]-(f:file)"),
+                "Participant file counting must retain direct files and two-hop specimen-associated files");
+        assertTrue(studyCypher.contains("COUNT( DISTINCT f) as participant_file_count"),
+                "Participant file count must count distinct files from the preserved traversal");
 
         Map<String, Object> queryConfig;
         try (InputStream input = ClassLoader.getSystemResourceAsStream("yaml/single_search_es.yml")) {
@@ -451,10 +453,9 @@ public class ProgramSearchConfigurationTest {
         assertEquals("String", ((TypeName) studyType.getFieldDefinitions().stream()
                 .filter(field -> "study_has_program".equals(field.getName()))
                 .findFirst().orElseThrow().getType()).getName());
-        assertEquals("String", ((TypeName) schema.getType("Study", ObjectTypeDefinition.class).orElseThrow()
+        assertTrue(schema.getType("Study", ObjectTypeDefinition.class).orElseThrow()
                 .getFieldDefinitions().stream()
-                .filter(field -> "study_has_program".equals(field.getName()))
-                .findFirst().orElseThrow().getType()).getName());
+                .noneMatch(field -> "study_has_program".equals(field.getName())));
         FieldDefinition getAllPrograms = queryType.getFieldDefinitions().stream()
                 .filter(field -> "getAllPrograms".equals(field.getName()))
                 .findFirst().orElseThrow(() -> new AssertionError("getAllPrograms is missing"));
@@ -479,11 +480,8 @@ public class ProgramSearchConfigurationTest {
         for (String queryName : List.of("getAllStudies", "studyByStudyShortName")) {
             FieldDefinition studyQuery = queryType.getFieldDefinitions().stream()
                     .filter(field -> queryName.equals(field.getName())).findFirst().orElseThrow();
-            var studyOrphanFilter = studyQuery.getInputValueDefinitions().stream()
-                    .filter(value -> "study_has_program".equals(value.getName())).findFirst().orElseThrow();
-            assertInstanceOf(ListType.class, studyOrphanFilter.getType());
-            assertEquals("String",
-                    ((TypeName) ((ListType) studyOrphanFilter.getType()).getType()).getName());
+            assertTrue(studyQuery.getInputValueDefinitions().stream()
+                    .noneMatch(value -> "study_has_program".equals(value.getName())));
         }
     }
 
