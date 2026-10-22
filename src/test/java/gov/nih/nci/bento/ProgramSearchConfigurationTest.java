@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -359,8 +360,10 @@ public class ProgramSearchConfigurationTest {
                 .filter(entry -> "programs".equals(entry.get("index_name"))).count());
         Map<String, Object> mapping = (Map<String, Object>) programs.get("mapping");
         String cypher = (String) programs.get("cypher_query");
-        assertTrue(!mapping.containsKey("program_sort_order"));
-        assertTrue(!cypher.contains("program_sort_order"));
+        assertEquals("integer", ((Map<String, Object>) mapping.get("program_sort_order")).get("type"));
+        assertEquals(2, cypher.split(Pattern.quote(
+                "toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order"), -1).length - 1,
+                "Both program-index query branches must default missing sort order to integer 100000");
         for (String field : PROGRAM_NODE_INDEX_FIELDS) {
             assertEquals("keyword", ((Map<String, Object>) mapping.get(field)).get("type"), field);
             assertTrue(cypher.contains("AS " + field), "programs index must project " + field);
@@ -426,8 +429,10 @@ public class ProgramSearchConfigurationTest {
         }
         ObjectTypeDefinition queryType = schema.getType("QueryType", ObjectTypeDefinition.class).orElseThrow();
         ObjectTypeDefinition programType = schema.getType("ProgramNode", ObjectTypeDefinition.class).orElseThrow();
-        assertTrue(programType.getFieldDefinitions().stream()
-                .noneMatch(field -> "program_sort_order".equals(field.getName())));
+        FieldDefinition programSortOrder = programType.getFieldDefinitions().stream()
+                .filter(field -> "program_sort_order".equals(field.getName()))
+                .findFirst().orElseThrow(() -> new AssertionError("program_sort_order is missing"));
+        assertEquals("Int", ((TypeName) programSortOrder.getType()).getName());
         for (String field : PROGRAM_NODE_INDEX_FIELDS) {
             FieldDefinition definition = programType.getFieldDefinitions().stream()
                     .filter(value -> field.equals(value.getName())).findFirst().orElseThrow();
@@ -459,8 +464,6 @@ public class ProgramSearchConfigurationTest {
         FieldDefinition getAllPrograms = queryType.getFieldDefinitions().stream()
                 .filter(field -> "getAllPrograms".equals(field.getName()))
                 .findFirst().orElseThrow(() -> new AssertionError("getAllPrograms is missing"));
-        assertTrue(getAllPrograms.getInputValueDefinitions().stream()
-                .noneMatch(argument -> "program_sort_order".equals(argument.getName())));
         var orderBy = getAllPrograms.getInputValueDefinitions().stream()
                 .filter(argument -> "order_by".equals(argument.getName())).findFirst().orElseThrow();
         assertEquals("program_short_name", ((graphql.language.StringValue) orderBy.getDefaultValue()).getValue());

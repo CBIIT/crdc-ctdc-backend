@@ -15,6 +15,8 @@ Indices:
         type: keyword
       program_full_description:
         type: keyword
+      program_sort_order:
+        type: integer
       study_has_program:
         type: keyword
       study_count:
@@ -49,6 +51,7 @@ Indices:
         p.program_short_description AS program_short_description,
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
+        toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
         CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END AS study_has_program,
         size(studies) AS study_count,
         studies AS studies
@@ -62,6 +65,7 @@ Indices:
         p.program_short_description AS program_short_description,
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
+        toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
         'has program' AS study_has_program,
         0 AS study_count,
         [] AS studies

@@ -944,6 +944,7 @@ type ProgramNode {
   program_short_description: String
   program_external_url: String
   program_full_description: String
+  program_sort_order: Int
   """Program affiliation: "has program" or "has no program"."""
   study_has_program: String
   study_count: Int
@@ -959,6 +960,7 @@ type QueryType {
     program_name: [String] = []
     program_short_name: [String] = []
     crdc_id: [String] = []
+    program_sort_order: Int
     program_short_description: [String] = []
     program_external_url: [String] = []
     program_full_description: [String] = []
