@@ -19,6 +19,8 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -179,51 +181,20 @@ public class ProgramSearchConfigurationTest {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation = """
-                query ProgramPage(
-                  $program_name: [String] = []
-                  $program_short_name: [String] = []
-                  $crdc_id: [String] = []
-                  $program_short_description: [String] = []
-                  $program_external_url: [String] = []
-                  $program_full_description: [String] = []
-                  $study_has_program: [String] = ["has program"]
-                  $first: Int = 10000
-                  $offset: Int = 0
-                  $order_by: String = "program_short_name"
-                  $sort_direction: String = "ASC"
-                ) {
-                  getAllPrograms(
-                    program_name: $program_name
-                    program_short_name: $program_short_name
-                    crdc_id: $crdc_id
-                    program_short_description: $program_short_description
-                    program_external_url: $program_external_url
-                    program_full_description: $program_full_description
-                    study_has_program: $study_has_program
-                    first: $first
-                    offset: $offset
-                    order_by: $order_by
-                    sort_direction: $sort_direction
-                  ) {
-                    program_name
-                    program_short_name
-                    crdc_id
-                    program_short_description
-                    program_external_url
-                    program_full_description
-                    study_has_program
-                    study_count
-                    studies {
-                      study_id
-                      study_accession
-                      study_short_name
-                      study_name
-                      study_has_program
-                    }
-                  }
-                }
-                """;
+        String operation = Files.readString(Path.of("graphql/operations/program-page.graphql"),
+                StandardCharsets.UTF_8);
+        OperationDefinition programPage = (OperationDefinition) new Parser().parseDocument(operation)
+                .getDefinitions().get(0);
+        var orderBy = programPage.getVariableDefinitions().stream()
+                .filter(variable -> "order_by".equals(variable.getName())).findFirst().orElseThrow();
+        assertEquals("program_sort_order",
+                ((graphql.language.StringValue) orderBy.getDefaultValue()).getValue());
+        Field call = (Field) programPage.getSelectionSet().getSelections().get(0);
+        assertTrue(call.getArguments().stream().anyMatch(argument ->
+                "order_by".equals(argument.getName())
+                        && argument.getValue() instanceof VariableReference reference
+                        && "order_by".equals(reference.getName())),
+                "ProgramPage must forward $order_by to getAllPrograms");
         GraphQL graphQL = GraphQL.newGraphQL(
                 new SchemaGenerator().makeExecutableSchema(registry, RuntimeWiring.newRuntimeWiring().build())
         ).build();
@@ -418,7 +389,7 @@ public class ProgramSearchConfigurationTest {
         assertEquals(List.of("programs"), query.get("index"));
         Map<String, Object> filter = (Map<String, Object>) query.get("filter");
         assertEquals("pagination", filter.get("type"));
-        assertEquals("program_short_name", filter.get("defaultSortField"));
+        assertEquals("program_sort_order", filter.get("defaultSortField"));
 
         TypeDefinitionRegistry schema;
         try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
@@ -466,7 +437,7 @@ public class ProgramSearchConfigurationTest {
                 .findFirst().orElseThrow(() -> new AssertionError("getAllPrograms is missing"));
         var orderBy = getAllPrograms.getInputValueDefinitions().stream()
                 .filter(argument -> "order_by".equals(argument.getName())).findFirst().orElseThrow();
-        assertEquals("program_short_name", ((graphql.language.StringValue) orderBy.getDefaultValue()).getValue());
+        assertEquals("program_sort_order", ((graphql.language.StringValue) orderBy.getDefaultValue()).getValue());
         for (String field : PROGRAM_NODE_INDEX_FIELDS) {
             var argument = getAllPrograms.getInputValueDefinitions().stream()
                     .filter(value -> field.equals(value.getName()))

@@ -8,7 +8,7 @@ query ProgramPage(
   $study_has_program: [String] = ["has program"]
   $first: Int = 10000
   $offset: Int = 0
-  $order_by: String = "program_short_name"
+  $order_by: String = "program_sort_order"
   $sort_direction: String = "ASC"
 ) {
   getAllPrograms(
