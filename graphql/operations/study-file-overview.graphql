@@ -1,0 +1,75 @@
+query studyFileOverview(
+  $study_short_name: [String]
+  $study_id: [String]
+  $data_file_type: [String]
+  $data_file_format: [String]
+  $data_file_uuid: [String]
+  $study_accession: [String]
+  $association: [String]
+  $program_name: [String]
+  $program_short_name: [String]
+  $first: Int = 10
+  $offset: Int = 0
+  $order_by: String = "data_file_uuid"
+  $sort_direction: String = "asc"
+) {
+  studyFileOverview(
+    study_short_name: $study_short_name
+    study_id: $study_id
+    association: $association
+    study_accession: $study_accession
+    program_name: $program_name
+    program_short_name: $program_short_name
+    data_file_type: $data_file_type
+    data_file_format: $data_file_format
+    data_file_uuid: $data_file_uuid
+    first: $first
+    offset: $offset
+    order_by: $order_by
+    sort_direction: $sort_direction
+  ) {
+    type
+    study_short_name
+    study_id
+    study_accession
+    program_name
+    program_short_name
+    crdc_id
+    program_short_description
+    program_external_url
+    program_full_description
+    anatomical_collection_site
+    specimen_type
+    tissue_category
+    assessment_timepoint
+    specimen_record_id
+    data_file_name
+    data_file_format
+    data_file_type
+    data_file_size
+    data_file_uuid
+    drs_uri
+    data_file_description
+    data_file_checksum_value
+    data_file_checksum_type
+    data_file_location
+    data_file_compression_status
+    association
+    participant_id
+    ctep_disease_term
+    primary_diagnosis_disease_group
+    stage_of_disease
+    tumor_grade
+    primary_disease_site
+    meddra_disease_code
+    histology
+    sex
+    race
+    ethnicity
+    age_at_enrollment
+    carcinogen_exposure
+    therapy_name
+    therapy_string
+    __typename
+  }
+}
