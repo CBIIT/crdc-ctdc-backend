@@ -6,7 +6,8 @@ FROM maven:3.9.9-eclipse-temurin-21@sha256:3a4ab3276a087bf276f79cae96b1af04f5373
 WORKDIR /usr/src/app
 
 # Manual package version control for build stage dependencies.
-# ca-certificates is intentionally NOT pinned so it always gets the latest security updates.
+# Pinned from maven:3.9.9-eclipse-temurin-21 apt candidate versions on 2026-07-08.
+ARG CA_CERTIFICATES_VERSION=20260601~24.04.1
 ARG GIT_VERSION=1:2.43.0-1ubuntu7.3
 
 # Ensure git is available for the existing submodule update step.
@@ -14,9 +15,8 @@ ARG GIT_VERSION=1:2.43.0-1ubuntu7.3
 RUN apt-get update \
 	## list upgradable packages in build log, useful for patching
 	&& apt list --upgradable \
-	## ca-certificates: install latest available (unpinned)
-	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates \
 	## library specific patches (manually controlled versions)
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates=${CA_CERTIFICATES_VERSION} \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git=${GIT_VERSION} \
 	&& update-ca-certificates \
 	&& rm -rf /var/lib/apt/lists/*
