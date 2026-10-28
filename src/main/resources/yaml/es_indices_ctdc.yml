@@ -625,8 +625,6 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      therapy:
-        type: keyword
       therapy_name:
         type: keyword
       primary_diagnosis_disease_group:
@@ -791,7 +789,6 @@ Indices:
       race,
       ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
-      therapy,
       therapy AS therapy_name,
       therapy_record_id,
       therapy_string AS therapy_string,
@@ -1247,8 +1244,6 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      therapy:
-        type: keyword
       therapy_name:
         type: keyword
       therapy_string:
@@ -1400,7 +1395,6 @@ Indices:
       demo.race AS race,
       demo.ethnicity AS ethnicity,
       COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
-      therapy,
       therapy AS therapy_name,
       therapy_category,
       therapy_type,
@@ -2846,7 +2840,7 @@ Indices:
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
       COLLECT(DISTINCT {
         therapy_record_id: target.therapy_record_id,
-        therapy: trim(toString(target.therapy_name)),
+        therapy_name: trim(toString(target.therapy_name)),
         therapy_dose: target.therapy_dose,
         therapy_dose_units: target.therapy_dose_units,
         therapy_frequency: target.therapy_frequency,
@@ -3414,7 +3408,7 @@ Indices:
           therapy_dose_units: toString(COALESCE(t.therapy_dose_units, '')),
           therapy_end_date: toString(COALESCE(t.therapy_end_date, '')),
           therapy_frequency: toString(COALESCE(t.therapy_frequency, '')),
-           therapy: toString(COALESCE(t.therapy_name, '')),
+           therapy_name: toString(COALESCE(t.therapy_name, '')),
           therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
           therapy_start_date: toString(COALESCE(t.therapy_start_date, ''))
         }] AS therapyNodeData,
