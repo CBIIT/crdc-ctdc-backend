@@ -26,6 +26,19 @@ The following file will need to be edited to configure the Bento Backend Code to
 5.  ````Line 9```` - this value is an all lowercase Boolean value to determine if GraphQL queries will be enabled for the application.
 6.  ````Line 10```` - this value is an all lowercase Boolean value to determine if GraphQL mutations will be enabled for the application.
 
+## Building
+Before building the application locally, install the patched graphql-java artifact into your local Maven repository:
+
+````mvn -f patches/graphql-java/pom.xml install````
+
+This repackages graphql-java 21.5 with its shaded Guava upgraded to 33.7.2-jre to remediate CVE-2026-102554. Without this step the build fails to resolve `gov.nih.nci.bento.patched:graphql-java`. The Docker build and the Test workflow run this step automatically.
+
+Then build the application as usual:
+
+````mvn clean package````
+
+This is a temporary workaround. Once a graphql-java release bundles Guava 33.7.2-jre or newer, remove the `patches/` folder and this step, and point `pom.xml` back at `com.graphql-java:graphql-java`.
+
 ## Basic Access Authentication
 The basic access authentication value used in the ````application.properties```` file is of the form ````Basic <base64 encoding of username:password>````. To generate this value generate the base64 encoding of the username and password as shown below and append that to the String “Basic “.
     a

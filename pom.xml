@@ -186,11 +186,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- GraphQL -->
+        <!-- GraphQL: graphql-java 21.5 repackaged with shaded Guava 33.7.2-jre (CVE-2026-102554).
+             Built from patches/graphql-java; see that pom for details. -->
         <dependency>
-            <groupId>com.graphql-java</groupId>
+            <groupId>gov.nih.nci.bento.patched</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>21.5</version>
+            <version>21.5-guava-33.7.2</version>
         </dependency>
 
         <!-- GSON -->

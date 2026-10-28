@@ -7,6 +7,10 @@ COPY .gitmodules .
 COPY .git ./.git
 RUN git submodule update --init --recursive
 
+# build graphql-java with patched shaded Guava (CVE-2026-102554) into the local repository
+COPY patches ./patches
+RUN mvn -B -f patches/graphql-java/pom.xml install
+
 # download dependencies
 COPY pom.xml .
 RUN mvn -B dependency:go-offline dependency:resolve-plugins -DskipTests
