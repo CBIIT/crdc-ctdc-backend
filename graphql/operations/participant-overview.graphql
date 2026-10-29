@@ -1,0 +1,80 @@
+query participantOverview(
+  $participant_id: [String]
+  $ctep_disease_term: [String]
+  $stage_of_disease: [String]
+  $tumor_grade: [String]
+  $sex: [String]
+  $race: [String]
+  $ethnicity: [String]
+  $carcinogen_exposure: [String]
+  $therapy_string: [String]
+  $therapy_category: [String]
+  $best_response_to_therapy: [String]
+  $therapy_type: [String]
+  $current_response_to_therapy: [String]
+  $anatomical_collection_site: [String]
+  $tissue_category: [String]
+  $assessment_timepoint: [String]
+  $survival_status: [String]
+  $data_file_type: [String]
+  $data_file_format: [String]
+  $study_short_name: [String]
+  $study_id: [String]
+  $study_accession: [String]
+  $program_name: [String]
+  $program_short_name: [String]
+  $first: Int = 10
+  $offset: Int = 0
+  $order_by: String = "participant_id"
+  $sort_direction: String = "ASC"
+) {
+  participantOverview(
+    participant_id: $participant_id
+    ctep_disease_term: $ctep_disease_term
+    stage_of_disease: $stage_of_disease
+    tumor_grade: $tumor_grade
+    sex: $sex
+    race: $race
+    ethnicity: $ethnicity
+    carcinogen_exposure: $carcinogen_exposure
+    therapy_string: $therapy_string
+    therapy_category: $therapy_category
+    best_response_to_therapy: $best_response_to_therapy
+    therapy_type: $therapy_type
+    current_response_to_therapy: $current_response_to_therapy
+    anatomical_collection_site: $anatomical_collection_site
+    tissue_category: $tissue_category
+    assessment_timepoint: $assessment_timepoint
+    data_file_type: $data_file_type
+    data_file_format: $data_file_format
+    study_short_name: $study_short_name
+    study_id: $study_id
+    survival_status: $survival_status
+    study_accession: $study_accession
+    program_name: $program_name
+    program_short_name: $program_short_name
+    first: $first
+    offset: $offset
+    order_by: $order_by
+    sort_direction: $sort_direction
+  ) {
+    participant_id
+    program_name
+    program_short_name
+    crdc_id
+    program_short_description
+    program_external_url
+    program_full_description
+    ctep_disease_term
+    stage_of_disease
+    tumor_grade
+    age_at_enrollment
+    sex
+    survival_status
+    race
+    ethnicity
+    carcinogen_exposure
+    data_file_uuid
+    __typename
+  }
+}
