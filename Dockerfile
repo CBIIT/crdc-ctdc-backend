@@ -6,9 +6,9 @@ FROM maven:3.9.9-eclipse-temurin-21@sha256:3a4ab3276a087bf276f79cae96b1af04f5373
 WORKDIR /usr/src/app
 
 # Manual package version control for build stage dependencies.
-# Pinned from maven:3.9.9-eclipse-temurin-21 apt candidate versions on 2026-07-08.
-ARG CA_CERTIFICATES_VERSION=20260601~24.04.1
-ARG GIT_VERSION=1:2.43.0-1ubuntu7.3
+# Pinned from maven:3.9.9-eclipse-temurin-21 apt candidate versions on 2026-10-29.
+ARG CA_CERTIFICATES_VERSION=20260816ubuntu0.24.04.1
+ARG GIT_VERSION=1:2.43.0-1ubuntu7.4
 
 # Ensure git is available for the existing submodule update step.
 
