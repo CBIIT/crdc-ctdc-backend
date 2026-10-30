@@ -22,6 +22,9 @@ RUN mvn -B package -DskipTests
 # Production stage
 FROM tomcat:11.0.26-jdk25-temurin-noble AS fnl_base_image
 
+# Suppress exception details and server-version disclosure in Tomcat error pages.
+RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve" showReport="false" showServerInfo="false" />\n</Host>|' /usr/local/tomcat/conf/server.xml
+
 ENV JAVA_OPTS="-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=70"
 ENV TZ="America/New_York"
 EXPOSE 8080
