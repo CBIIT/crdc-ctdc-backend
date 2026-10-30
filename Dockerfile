@@ -27,7 +27,10 @@ ENV TZ="America/New_York"
 EXPOSE 8080
 
 # Base image patching
-RUN apt update && apt upgrade -y
+RUN apt-get update \
+	&& apt-get upgrade -y \
+	&& apt-get install -y --no-install-recommends wget unzip \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Remove default applications and create the non-root Tomcat account.
 RUN groupadd -r tomcat \
@@ -45,8 +48,9 @@ RUN mkdir -p /usr/local/tomcat/webapps/ROOT \
 	&& jar -xf ../ROOT.war \
 	&& rm ../ROOT.war
 
-# Ensure Tomcat can access the application and write temporary/work files as non-root.
-RUN chown -R tomcat:tomcat \
+# Grant the non-root user write access for startup tasks and Tomcat operation.
+RUN chown tomcat:tomcat /usr/local/tomcat \
+	&& chown -R tomcat:tomcat \
 	/usr/local/tomcat/webapps \
 	/usr/local/tomcat/logs \
 	/usr/local/tomcat/work \
