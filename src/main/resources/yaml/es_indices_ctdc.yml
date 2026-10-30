@@ -148,52 +148,6 @@ Indices:
         type: keyword
       list_type:
         type: keyword
-      study_data_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
-      data_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
@@ -204,31 +158,7 @@ Indices:
         s.study_short_name as study_short_name,
         s.study_accession as study_accession,
         toString(s.study_id) AS study_id,
-        COLLECT(DISTINCT{
-                    data_file_uuid: study_file.data_file_uuid,
-                    data_file_name: study_file.data_file_name,
-                    data_file_type: study_file.data_file_type,
-                    data_file_description: study_file.data_file_description,
-                    data_file_format: study_file.data_file_format,
-                    data_file_size: study_file.data_file_size,
-                    data_file_checksum_value: study_file.data_file_checksum_value,
-                    data_file_checksum_type: study_file.data_file_checksum_type,
-                    data_file_compression_status: study_file.data_file_compression_status,
-                    data_file_location: study_file.data_file_location
-                }) AS study_data_files,
-        COLLECT(DISTINCT{
-                    data_file_uuid: df.data_file_uuid,
-                    data_file_name: df.data_file_name,
-                    data_file_type: df.data_file_type,
-                    data_file_description: df.data_file_description,
-                    data_file_format: df.data_file_format,
-                    data_file_size: df.data_file_size,
-                    data_file_checksum_value: df.data_file_checksum_value,
-                    data_file_checksum_type: df.data_file_checksum_type,
-                    data_file_compression_status: df.data_file_compression_status,
-                    data_file_location: df.data_file_location
-                }) AS data_files,
-         COLLECT(DISTINCT df.data_file_type) as list_type
+        COLLECT(DISTINCT df.data_file_type) as list_type
       "
 
   # Name of the index to be created, existing index with same name will be deleted
