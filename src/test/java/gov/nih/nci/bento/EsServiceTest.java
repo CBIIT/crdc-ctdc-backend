@@ -15,7 +15,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith( SpringRunner.class )
-@SpringBootTest
+@SpringBootTest(properties = {
+    "es.host=localhost",
+    "es.port=9200",
+    "es.scheme=http"
+})
 public class EsServiceTest {
     @Autowired
     private ESService esService;
