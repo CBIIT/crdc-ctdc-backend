@@ -44,6 +44,15 @@ queries:
         result:
           type: int
           method: count_bucket_keys
+      - name: numberOfPrograms
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: program_short_name
+        result:
+          type: int
+          method: count_bucket_keys
       - name: numberOfParticipants
         index:
           - widgets_facets_counts
@@ -392,6 +401,40 @@ queries:
         filter:
           type: aggregation
           selectedField: study_short_name
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountByProgramName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: program_name
+        result:
+          type: group_count
+      - name: filterParticipantCountByProgramName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: program_name
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: participantCountByProgramShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: program_short_name
+        result:
+          type: group_count
+      - name: filterParticipantCountByProgramShortName
+        index:
+          - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: program_short_name
           ignoreSelectedField: true
         result:
           type: group_count

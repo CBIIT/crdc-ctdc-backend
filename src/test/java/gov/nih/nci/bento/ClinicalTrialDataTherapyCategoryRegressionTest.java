@@ -46,9 +46,15 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
         assertFalse(clinicalTrialDataBlock.contains("AS targetedTherapyParticipantCount"),
                 "clinical_trial_data_tab should not retain the targeted therapy participant count");
         assertTrue(
-                clinicalTrialDataBlock.contains("[t IN unique_th WHERE trim(toString(COALESCE(t.therapy_category, ''))) = 'Non-Targeted' | {"),
+                clinicalTrialDataBlock.contains("[t IN unique_th WHERE trim(toString(COALESCE(t.therapy_category, ''))) = 'Non-Targeted' | apoc.map.clean({"),
                 "nonTargetedTherapyNodeData must only project non-targeted therapy nodes"
         );
+        assertTrue(
+                clinicalTrialDataBlock.contains("non_targeted_therapy: toString(COALESCE(t.therapy_name, ''))"),
+                "The legacy non-targeted therapy output must use the shared therapy_name property"
+        );
+        assertFalse(clinicalTrialDataBlock.contains("t.non_targeted_therapy_name"),
+                "Therapy nodes no longer have a separate non-targeted therapy name");
         assertTrue(
                 clinicalTrialDataBlock.contains("trim(toString(COALESCE(x.node.therapy_category, ''))) = 'Non-Targeted' | x.participant_id])) AS nonTargetedTherapyParticipantCount"),
                 "nonTargetedTherapyParticipantCount must only count non-targeted therapy participants"
@@ -98,8 +104,8 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
                 "therapy_count should emit therapy objects rather than plain strings");
         assertTrue(therapyCountBlock.contains("therapy_record_id: target.therapy_record_id"),
                 "therapy objects should include therapy_record_id");
-        assertTrue(therapyCountBlock.contains("therapy: trim(toString(target.therapy_name))"),
-                "therapy objects should include the therapy name");
+        assertTrue(therapyCountBlock.contains("therapy_name: trim(toString(target.therapy_name))"),
+                "therapy objects should expose the shared therapy_name field");
         assertTrue(therapyCountBlock.contains("COLLECT(DISTINCT array) as therapy_string"),
                 "therapy_count should populate therapy_string from the locally joined therapy combination");
         assertFalse(therapyCountBlock.contains("COLLECT(DISTINCT target.array) as therapy_string"),

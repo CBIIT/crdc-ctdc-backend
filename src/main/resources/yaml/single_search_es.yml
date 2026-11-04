@@ -1,4 +1,12 @@
 queries:
+  - name: getAllPrograms
+    index:
+      - programs
+    filter:
+      type: pagination
+      defaultSortField: program_sort_order
+    result:
+      type: object_array
   - name: studyByStudyShortName
     index:
       - study

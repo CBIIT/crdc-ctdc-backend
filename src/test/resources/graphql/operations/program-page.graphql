@@ -1,0 +1,43 @@
+query ProgramPage(
+  $program_name: [String] = []
+  $program_short_name: [String] = []
+  $crdc_id: [String] = []
+  $program_short_description: [String] = []
+  $program_external_url: [String] = []
+  $program_full_description: [String] = []
+  $study_has_program: [String] = ["has program"]
+  $first: Int = 10000
+  $offset: Int = 0
+  $order_by: String = "program_sort_order"
+  $sort_direction: String = "ASC"
+) {
+  getAllPrograms(
+    program_name: $program_name
+    program_short_name: $program_short_name
+    crdc_id: $crdc_id
+    program_short_description: $program_short_description
+    program_external_url: $program_external_url
+    program_full_description: $program_full_description
+    study_has_program: $study_has_program
+    first: $first
+    offset: $offset
+    order_by: $order_by
+    sort_direction: $sort_direction
+  ) {
+    program_name
+    program_short_name
+    crdc_id
+    program_short_description
+    program_external_url
+    program_full_description
+    study_has_program
+    study_count
+    studies {
+      study_id
+      study_accession
+      study_short_name
+      study_name
+      study_has_program
+    }
+  }
+}
