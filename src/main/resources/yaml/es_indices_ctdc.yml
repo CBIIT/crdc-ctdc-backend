@@ -52,7 +52,7 @@ Indices:
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
         toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
-        CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END AS study_has_program,
+        CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS study_has_program,
         size(studies) AS study_count,
         studies AS studies
       UNION
@@ -218,52 +218,6 @@ Indices:
         type: keyword
       list_type:
         type: keyword
-      study_data_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
-      data_files:
-        type: nested
-        properties:
-          data_file_uuid:
-            type: keyword
-          data_file_name:
-            type: keyword
-          data_file_type:
-            type: keyword
-          data_file_description:
-            type: keyword
-          data_file_format:
-            type: keyword
-          data_file_size:
-            type: double
-          data_file_checksum_value:
-            type: keyword
-          data_file_checksum_type:
-            type: keyword
-          data_file_compression_status:
-            type: keyword
-          data_file_location:
-            type: keyword
 
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     cypher_query: "
@@ -274,31 +228,7 @@ Indices:
         s.study_short_name as study_short_name,
         s.study_accession as study_accession,
         toString(s.study_id) AS study_id,
-        COLLECT(DISTINCT{
-                    data_file_uuid: study_file.data_file_uuid,
-                    data_file_name: study_file.data_file_name,
-                    data_file_type: study_file.data_file_type,
-                    data_file_description: study_file.data_file_description,
-                    data_file_format: study_file.data_file_format,
-                    data_file_size: study_file.data_file_size,
-                    data_file_checksum_value: study_file.data_file_checksum_value,
-                    data_file_checksum_type: study_file.data_file_checksum_type,
-                    data_file_compression_status: study_file.data_file_compression_status,
-                    data_file_location: study_file.data_file_location
-                }) AS study_data_files,
-        COLLECT(DISTINCT{
-                    data_file_uuid: df.data_file_uuid,
-                    data_file_name: df.data_file_name,
-                    data_file_type: df.data_file_type,
-                    data_file_description: df.data_file_description,
-                    data_file_format: df.data_file_format,
-                    data_file_size: df.data_file_size,
-                    data_file_checksum_value: df.data_file_checksum_value,
-                    data_file_checksum_type: df.data_file_checksum_type,
-                    data_file_compression_status: df.data_file_compression_status,
-                    data_file_location: df.data_file_location
-                }) AS data_files,
-         COLLECT(DISTINCT df.data_file_type) as list_type
+        COLLECT(DISTINCT df.data_file_type) as list_type
       "
 
   # Name of the index to be created, existing index with same name will be deleted
@@ -748,7 +678,8 @@ Indices:
           [s IN COLLECT(demo.sex) WHERE s IS NOT NULL AND s <> ''] AS sexes,
           [e IN COLLECT(demo.ethnicity) WHERE e IS NOT NULL AND e <> ''] AS ethnicities
         RETURN 
-            apoc.coll.toSet(races) AS race, 
+            apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten(races) | split(value, '|')])
+              WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
             apoc.coll.toSet(sexes) AS sex,
             apoc.coll.toSet(ethnicities) AS ethnicity
       }
@@ -885,8 +816,6 @@ Indices:
       ethnicity:
         type: keyword
       carcinogen_exposure:
-        type: keyword
-      therapy:
         type: keyword
       therapy_name:
         type: keyword
@@ -1080,7 +1009,8 @@ Indices:
 
         demo_latest.age_at_enrollment                    AS age_at_enrollment,
         demo_latest.sex                                  AS sex,
-        demo_latest.race                                 AS race,
+        apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten([coalesce(demo_latest.race, [])]) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
         demo_latest.ethnicity                            AS ethnicity,
 
         apoc.coll.toSet(
@@ -1101,7 +1031,6 @@ Indices:
           [x IN COLLECT(DISTINCT study_zip_file.data_file_format) WHERE x IS NOT NULL]
         )                                                AS data_file_format,
 
-        therapy,
         therapy AS therapy_name,
         best_response_to_therapy,
         current_response_to_therapy,
@@ -1392,7 +1321,8 @@ Indices:
       tumor_grade,
       ps_latest.survival_status AS survival_status,
       demo.sex AS sex,
-      demo.race AS race,
+      apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten([coalesce(demo.race, [])]) | split(value, '|')])
+        WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
       demo.ethnicity AS ethnicity,
       COLLECT(DISTINCT exp.carcinogen_exposure) AS carcinogen_exposure,
       therapy AS therapy_name,
@@ -1466,8 +1396,6 @@ Indices:
       age_at_enrollment:
         type: keyword
       carcinogen_exposure:
-        type: keyword
-      therapy:
         type: keyword
       therapy_name:
         type: keyword
@@ -1788,12 +1716,12 @@ Indices:
         ps_latest.survival_status                              AS survival_status,
 
         apoc.coll.toSet([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
-        apoc.coll.toSet([x IN race_list      WHERE x IS NOT NULL])        AS race,
+        apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten(race_list) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
         apoc.coll.toSet([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
         apoc.coll.toSet([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
 
         carcinogen_exposure,
-        therapy_raw                                            AS therapy,
         therapy_raw                                            AS therapy_name,
         therapy_category,
         therapy_type,
@@ -1871,7 +1799,7 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      therapy:
+      therapy_name:
         type: keyword
       anatomical_collection_site:
         type: keyword
@@ -2102,12 +2030,13 @@ Indices:
         head([x IN histologies   WHERE x IS NOT NULL])         AS histology,
 
         head([x IN sex_list       WHERE x IS NOT NULL])        AS sex,
-        head([x IN race_list      WHERE x IS NOT NULL])        AS race,
+        apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten(race_list) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
         head([x IN ethnicity_list WHERE x IS NOT NULL])        AS ethnicity,
         head([x IN ages           WHERE x IS NOT NULL])        AS age_at_enrollment,
 
         carcinogen_exposure,
-        therapy_raw                                            AS therapy,
+        therapy_raw                                            AS therapy_name,
         therapy_category,
         therapy_type,
         best_response_to_therapy,
@@ -2188,8 +2117,6 @@ Indices:
       ethnicity:
         type: keyword
       carcinogen_exposure:
-        type: keyword
-      therapy:
         type: keyword
       therapy_name:
         type: keyword
@@ -2301,11 +2228,11 @@ Indices:
         ps_latest.survival_status                   AS survival_status,
 
         demo.sex                                    AS sex,
-        demo.race                                   AS race,
+        apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten([coalesce(demo.race, [])]) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
         demo.ethnicity                              AS ethnicity,
 
         carcinogen_exposure                         AS carcinogen_exposure,
-        therapy                                     AS therapy,
         therapy                                     AS therapy_name,
         therapy_category                            AS therapy_category,
         therapy_string                              AS therapy_string,
@@ -2406,7 +2333,7 @@ Indices:
         type: keyword
       carcinogen_exposure:
         type: keyword
-      therapy:
+      therapy_name:
         type: keyword
       therapy_string:
         type: keyword
@@ -2630,11 +2557,12 @@ Indices:
         COALESCE(spec.assessment_timepoint, '') AS assessment_timepoint,
         COALESCE(spec.specimen_record_id, '') AS specimen_record_id,
         demo.sex AS sex,
-        demo.race AS race,
+        apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten([coalesce(demo.race, [])]) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
         demo.ethnicity AS ethnicity,
         demo.age_at_enrollment AS age_at_enrollment,
         CASE WHEN exp IS NOT NULL AND exp.carcinogen_exposure IS NOT NULL THEN [exp.carcinogen_exposure] ELSE [] END AS carcinogen_exposure,
-        therapy_raw AS therapy,
+        therapy_raw AS therapy_name,
         therapy_category AS therapy_category,
         therapy_type AS therapy_type,
         best_response_to_therapy AS best_response_to_therapy,
@@ -2724,7 +2652,7 @@ Indices:
         properties:
           therapy_record_id:
             type: keyword
-          therapy:
+          therapy_name:
             type: keyword
           therapy_dose:
             type: keyword
@@ -2835,7 +2763,8 @@ Indices:
       COLLECT(DISTINCT diag.stage_of_disease) as stage_of_disease,
       COLLECT(DISTINCT diag.diagnosis_id) as diagnosis_id,
       COLLECT(DISTINCT demo.sex) as sex,
-      COLLECT(DISTINCT demo.race) as race,
+      apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten(COLLECT(DISTINCT demo.race)) | split(value, '|')])
+        WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
       COLLECT(DISTINCT demo.ethnicity) as ethnicity,
       COLLECT(DISTINCT expose.carcinogen_exposure) as carcinogen_exposure,
       COLLECT(DISTINCT {
@@ -3170,7 +3099,8 @@ Indices:
           height_unit: dm.height_unit,
           ncbi_taxonomy_id: dm.ncbi_taxonomy_id,
           ncbi_taxonomy_name: dm.ncbi_taxonomy_name,
-          race: dm.race,
+          race: apoc.coll.toSet([r IN apoc.coll.flatten([value IN apoc.coll.flatten([coalesce(dm.race, [])]) | split(value, '|')])
+            WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]),
           sex: dm.sex,
           uuid: dm.uuid,
           weight: dm.weight,
@@ -3386,7 +3316,7 @@ Indices:
         apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL | x.node]) AS unique_surg,
         surg_data
       WITH study,
-        [t IN unique_th | {
+        [t IN unique_th | apoc.map.clean({
           participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           therapy_type: toString(COALESCE(t.therapy_type, '')),
           best_response_to_therapy: toString(COALESCE(t.best_response_to_therapy, '')),
@@ -3411,18 +3341,18 @@ Indices:
            therapy_name: toString(COALESCE(t.therapy_name, '')),
           therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
           therapy_start_date: toString(COALESCE(t.therapy_start_date, ''))
-        }] AS therapyNodeData,
+        }, [], [null, ''])] AS therapyNodeData,
         size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS therapyParticipantCount,
-        [t IN unique_th WHERE trim(toString(COALESCE(t.therapy_category, ''))) = 'Non-Targeted' | {
+        [t IN unique_th WHERE trim(toString(COALESCE(t.therapy_category, ''))) = 'Non-Targeted' | apoc.map.clean({
           participant_ids: apoc.text.join([x IN th_data WHERE x.node = t AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           non_targeted_therapy_record_id: toString(COALESCE(t.therapy_record_id, '')),
           best_response_to_non_targeted_therapy: toString(COALESCE(t.best_response_to_therapy, '')),
           non_targeted_therapy: toString(COALESCE(t.therapy_name, '')),
           non_targeted_therapy_dose: toString(COALESCE(t.therapy_dose, '')),
           non_targeted_therapy_frequency: toString(COALESCE(t.therapy_frequency, ''))
-        }] AS nonTargetedTherapyNodeData,
+        }, [], [null, ''])] AS nonTargetedTherapyNodeData,
         size(apoc.coll.toSet([x IN th_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL AND trim(toString(COALESCE(x.node.therapy_category, ''))) = 'Non-Targeted' | x.participant_id])) AS nonTargetedTherapyParticipantCount,
-        [r IN unique_rt | {
+        [r IN unique_rt | apoc.map.clean({
           participant_ids: apoc.text.join([x IN rt_data WHERE x.node = r AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           radiation_dose: r.radiation_dose,
           radiation_extent: r.radiation_extent,
@@ -3431,9 +3361,9 @@ Indices:
           radiological_procedure_anatomical_location: r.radiological_procedure_anatomical_location,
           radiological_procedure_record_id: r.radiological_procedure_record_id,
           uuid: r.uuid
-        }] AS radiotherapyNodeData,
+        }, [], [null, ''])] AS radiotherapyNodeData,
         size(apoc.coll.toSet([x IN rt_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS radiotherapyParticipantCount,
-        [sg IN unique_surg | {
+        [sg IN unique_surg | apoc.map.clean({
           participant_ids: apoc.text.join([x IN surg_data WHERE x.node = sg AND x.participant_id IS NOT NULL | x.participant_id], '|'),
           extent_of_residual_disease: sg.extent_of_residual_disease,
           surgical_procedure: sg.surgical_procedure,
@@ -3442,7 +3372,7 @@ Indices:
           surgical_procedure_findings: sg.surgical_procedure_findings,
           surgical_procedure_record_id: sg.surgical_procedure_record_id,
           surgical_procedure_therapeutic: sg.surgical_procedure_therapeutic
-        }] AS surgeryNodeData,
+        }, [], [null, ''])] AS surgeryNodeData,
         size(apoc.coll.toSet([x IN surg_data WHERE x.node IS NOT NULL AND x.participant_id IS NOT NULL | x.participant_id])) AS surgeryParticipantCount
       RETURN
         study.study_short_name AS study_short_name,

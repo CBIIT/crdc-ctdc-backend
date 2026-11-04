@@ -57,7 +57,7 @@ type GS_participant {
   program_full_description: [String]
   ctep_disease_term: String
   sex: String
-  race: String
+  race: [String]
   therapy_name: String
   ethnicity: String
   participant_id: String
@@ -132,7 +132,7 @@ type Participant {
 type Demographic {
   demographic_record_id: String
   age_at_enrollment: Float
-  race: String
+  race: [String]
   ethnicity: String
   sex: String
   height: Float
@@ -344,7 +344,7 @@ type StudyFileOverviewInfo {
   meddra_disease_code: String
   histology: String
   sex: String
-  race: String
+  race: [String]
   ethnicity: String
   age_at_enrollment: String
   carcinogen_exposure: [String]
@@ -477,7 +477,7 @@ type ParticipantOverview {
   survival_status: String
   age_at_enrollment: Float
   sex: String
-  race: String
+  race: [String]
   ethnicity: String
   carcinogen_exposure: String
   therapy_name: [String]
@@ -529,7 +529,7 @@ type ClinicalDemographic {
   height_unit: String
   ncbi_taxonomy_id: String
   ncbi_taxonomy_name: String
-  race: String
+  race: [String]
   sex: String
   uuid: String
   weight: String
@@ -690,7 +690,7 @@ type BiospecimenOverview {
   anatomical_collection_site: String
   specimen_type: String
   sex: String
-  race: String
+  race: [String]
   specimen_category: String
   tumor_grade: String
   survival_status: String
@@ -728,7 +728,7 @@ type FileOverview {
   tumor_grade: String
   survival_status: String
   sex: String
-  race: String
+  race: [String]
   ethnicity: String
   age_at_enrollment: String
   carcinogen_exposure: String
