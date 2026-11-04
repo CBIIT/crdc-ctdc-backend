@@ -31,8 +31,12 @@ public class TabDataFilesCypherRegressionTest {
         assertTrue(tabDataFilesBlock.contains("OPTIONAL MATCH (f)-[:associated_with]-(study_direct:study)"));
         assertTrue(tabDataFilesBlock.contains("OPTIONAL MATCH (study_part:participant)-[:belongs_to]->(study_expand:study)"));
         assertTrue(tabDataFilesBlock.contains("AND size(associations) = 1 AND 'study' IN associations"));
-        assertTrue(tabDataFilesBlock.contains("therapy_raw"));
-        assertTrue(tabDataFilesBlock.contains("AS therapy,"));
+        String normalizedCypher = tabDataFilesBlock.replaceAll("\\s+", " ");
+        assertTrue(normalizedCypher.contains("therapy_raw AS therapy_name,"),
+                "The file projection must expose therapy values under the current therapy_name field");
+        assertTrue(normalizedCypher.contains(
+                "CASE WHEN size(associations) = 1 AND 'study' IN associations THEN [] ELSE tt_raw END AS therapy_raw,"),
+                "Study-only files must retain the empty direct-therapy fallback");
         assertTrue(tabDataFilesBlock.contains("trim(toString(exp.carcinogen_exposure))"));
         assertTrue(tabDataFilesBlock.contains("CASE\n          WHEN exp IS NOT NULL"));
 
