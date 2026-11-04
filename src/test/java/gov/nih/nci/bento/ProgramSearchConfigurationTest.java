@@ -346,8 +346,8 @@ public class ProgramSearchConfigurationTest {
                 "Studies without a program must be included");
         assertTrue(cypher.contains("study_has_program: CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END"),
                 "Each indexed study must have a program-affiliation label");
-        assertTrue(cypher.contains("CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END AS study_has_program"),
-                "The orphan group must be identifiable for filtering");
+        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS study_has_program"),
+                "Program-affiliation filtering must recognize missing and Not Applicable program names");
         assertTrue(cypher.contains("WHERE NOT (p)<-[:belongs_to]-(:study)"),
                 "Programs without studies must be preserved");
         assertTrue(cypher.contains("studies AS studies"));
