@@ -19,8 +19,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -181,8 +179,11 @@ public class ProgramSearchConfigurationTest {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation = Files.readString(Path.of("graphql/operations/program-page.graphql"),
-                StandardCharsets.UTF_8);
+        String operation;
+        try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/operations/program-page.graphql")) {
+            assertNotNull(input, "Program page operation should be present in test resources");
+            operation = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
         OperationDefinition programPage = (OperationDefinition) new Parser().parseDocument(operation)
                 .getDefinitions().get(0);
         var orderBy = programPage.getVariableDefinitions().stream()
