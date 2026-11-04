@@ -1,57 +1,63 @@
 # Build stage
-ARG ECR_REPO
-# Version snapshot captured: 2026-07-08 (UTC)
-# Base image digests are pinned for deterministic builds.
-FROM maven:3.9.9-eclipse-temurin-21@sha256:3a4ab3276a087bf276f79cae96b1af04f53731bec53fb2e651aca79e4b10211e as build
+FROM maven:3.9.16-eclipse-temurin-25-noble AS build
 WORKDIR /usr/src/app
 
-# Manual package version control for build stage dependencies.
-# Pinned from maven:3.9.9-eclipse-temurin-21 apt candidate versions on 2026-10-29.
-ARG CA_CERTIFICATES_VERSION=20260816ubuntu0.24.04.1
-ARG GIT_VERSION=1:2.43.0-1ubuntu7.4
+# bento-backend-core is a git submodule in this repo
+COPY .gitmodules .
+COPY .git ./.git
+RUN git submodule update --init --recursive
 
-# Ensure git is available for the existing submodule update step.
+# build graphql-java with patched shaded Guava (CVE-2026-102554) into the local repository
+COPY patches ./patches
+RUN mvn -B -f patches/graphql-java/pom.xml install
 
-RUN apt-get update \
-	## list upgradable packages in build log, useful for patching
-	&& apt list --upgradable \
-	## library specific patches (manually controlled versions)
-	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates=${CA_CERTIFICATES_VERSION} \
-	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git=${GIT_VERSION} \
-	&& update-ca-certificates \
-	&& rm -rf /var/lib/apt/lists/*
-COPY . .
-RUN mvn package -DskipTests
+# download dependencies
+COPY pom.xml .
+RUN mvn -B dependency:go-offline dependency:resolve-plugins -DskipTests
+
+# copy source code and build the project
+COPY src ./src
+RUN mvn -B package -DskipTests
 
 # Production stage
-# FROM ${ECR_REPO}/base-images:backend-jdk21
+FROM tomcat:11.0.26-jdk25-temurin-noble AS fnl_base_image
 
-# FROM tomcat:10.1.13-jdk21
-# RUN apt-get update && apt-get install unzip
-# RUN rm -rf /usr/local/tomcat/webapps.dist
-# RUN rm -rf /usr/local/tomcat/webapps/ROOT
+# Suppress exception details and server-version disclosure in Tomcat error pages.
+RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve" showReport="false" showServerInfo="false" />\n</Host>|' /usr/local/tomcat/conf/server.xml
 
-FROM tomcat:10.1.56-jdk21@sha256:933252904a9ec9da9eeb0d43d053cdf7c9ebe0279f3f839f5376f04075f19dfc AS fnl_base_image
+ENV JAVA_OPTS="-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=70"
+ENV TZ="America/New_York"
+EXPOSE 8080
 
-# Manual package version control for runtime dependencies.
-# Pinned from tomcat:10.1.56-jdk21 apt candidate versions on 2026-07-08.
-ARG UNZIP_VERSION=6.0-28ubuntu4.1
-
-# Install only explicit dependencies (no blanket OS upgrade for deterministic builds)
+# Base image patching
 RUN apt-get update \
-	## list upgradable packages in build log, useful for patching
-	&& apt list --upgradable \
-	## library specific patches (manually controlled versions)
-	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends unzip=${UNZIP_VERSION} \
+	&& apt-get upgrade -y \
+	&& apt-get install -y --no-install-recommends wget unzip \
 	&& rm -rf /var/lib/apt/lists/*
 
-# remove default Tomcat webapps
-RUN rm -rf /usr/local/tomcat/webapps.dist
-RUN rm -rf /usr/local/tomcat/webapps/ROOT
+# Remove default applications and create the non-root Tomcat account.
+RUN groupadd -r tomcat \
+	&& useradd -r -g tomcat -u 1001 tomcat \
+	&& rm -rf /usr/local/tomcat/webapps.dist \
+	&& rm -rf /usr/local/tomcat/webapps/ROOT \
+	&& mkdir -p /usr/local/tomcat/logs /usr/local/tomcat/work /usr/local/tomcat/temp
 
-# Modify the server.xml file to block error reportiing
-RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve"\n               showReport="false"\n               showServerInfo="false" />\n\n      </Host>|' conf/server.xml 
-
-# expose ports
-EXPOSE 8080
+# copy the war file
 COPY --from=build /usr/src/app/target/Bento-0.0.1.war /usr/local/tomcat/webapps/ROOT.war
+
+# Expand the WAR during the image build so Tomcat does not need to create ROOT at startup.
+RUN mkdir -p /usr/local/tomcat/webapps/ROOT \
+	&& cd /usr/local/tomcat/webapps/ROOT \
+	&& jar -xf ../ROOT.war \
+	&& rm ../ROOT.war
+
+# Grant the non-root user write access for startup tasks and Tomcat operation.
+RUN chown tomcat:tomcat /usr/local/tomcat \
+	&& chown -R tomcat:tomcat \
+	/usr/local/tomcat/webapps \
+	/usr/local/tomcat/logs \
+	/usr/local/tomcat/work \
+	/usr/local/tomcat/temp
+
+USER tomcat
+ENTRYPOINT ["catalina.sh", "run"]

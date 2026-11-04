@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Repackaged graphql-java with a patched shaded Guava.
+
+    graphql-java shades Guava into its own jar (relocated to graphql.com.google.common), so the
+    bundled Guava cannot be upgraded with a normal Maven dependency override. Every released
+    graphql-java (up to 26.1) still bundles guava 32.1.2-jre, which is affected by CVE-2026-102554.
+
+    This module rebuilds graphql-java with its shaded Guava replaced by a fixed version, relocated
+    to the same package so graphql-java keeps working unchanged.
+
+    Remove this module (and point pom.xml back at com.graphql-java:graphql-java) once a graphql-java
+    release ships with a fixed Guava.
+
+    Install locally before building the application:
+        mvn -B -f patches/graphql-java/pom.xml install
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>gov.nih.nci.bento.patched</groupId>
+    <artifactId>graphql-java</artifactId>
+    <version>21.5-guava-33.7.2</version>
+    <packaging>jar</packaging>
+    <name>graphql-java (patched shaded Guava)</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <graphql-java.version>21.5</graphql-java.version>
+        <guava.version>33.7.2-jre</guava.version>
+        <failureaccess.version>1.0.3</failureaccess.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+            <version>${graphql-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+            <exclusions>
+                <!-- Only annotation/empty artifacts remain besides failureaccess (declared below). -->
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>failureaccess</artifactId>
+            <version>${failureaccess.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <!-- Keep graphql-java's own runtime deps (java-dataloader, reactive-streams). -->
+                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.graphql-java:graphql-java</include>
+                                    <include>com.google.guava:guava</include>
+                                    <include>com.google.guava:failureaccess</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <!-- Drop the vulnerable Guava copy and its metadata from graphql-java. -->
+                                    <artifact>com.graphql-java:graphql-java</artifact>
+                                    <excludes>
+                                        <exclude>graphql/com/google/**</exclude>
+                                        <exclude>META-INF/maven/com.google.guava/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.google.guava:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.google.common</pattern>
+                                    <shadedPattern>graphql.com.google.common</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.thirdparty</pattern>
+                                    <shadedPattern>graphql.com.google.thirdparty</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
