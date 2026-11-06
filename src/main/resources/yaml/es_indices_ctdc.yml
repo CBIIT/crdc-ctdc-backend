@@ -2598,7 +2598,7 @@ Indices:
       MATCH (study:study)<-[]-(sub:participant)
       optional MATCH (spec:specimen)-[:of_participant]->(sub)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_record_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
+      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_record_id)) as specimenID
       WITH stage,ctep, stage + ctep + participantID + specimenID as list
       UNWIND list as autocomplete_list
       RETURN distinct
