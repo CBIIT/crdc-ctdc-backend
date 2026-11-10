@@ -17,7 +17,7 @@ Indices:
         type: keyword
       program_sort_order:
         type: integer
-      study_has_program:
+      is_program:
         type: keyword
       study_count:
         type: integer
@@ -32,8 +32,6 @@ Indices:
             type: keyword
           study_name:
             type: keyword
-          study_has_program:
-            type: keyword
     cypher_query: "
       MATCH (s:study)
       OPTIONAL MATCH (s)-[:belongs_to]->(p:program)
@@ -41,8 +39,7 @@ Indices:
         study_id: toString(s.study_id),
         study_accession: s.study_accession,
         study_short_name: s.study_short_name,
-        study_name: s.study_name,
-        study_has_program: CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END
+        study_name: s.study_name
       }) AS studies
       RETURN
         p.program_name AS program_name,
@@ -52,7 +49,7 @@ Indices:
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
         toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
-        CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS study_has_program,
+        CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'is not program' ELSE 'is program' END AS is_program,
         size(studies) AS study_count,
         studies AS studies
       UNION
@@ -66,7 +63,7 @@ Indices:
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
         toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
-        'has program' AS study_has_program,
+        'is program' AS is_program,
         0 AS study_count,
         [] AS studies
       "
