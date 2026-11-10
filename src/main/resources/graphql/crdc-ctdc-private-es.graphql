@@ -933,8 +933,6 @@ type ProgramStudy {
   study_accession: String
   study_short_name: String
   study_name: String
-  """Program affiliation: "has program" or "has no program"."""
-  study_has_program: String
 }
 
 type ProgramNode {
@@ -946,7 +944,7 @@ type ProgramNode {
   program_full_description: String
   program_sort_order: Int
   """Program affiliation: "has program" or "has no program"."""
-  study_has_program: String
+  is_program: String
   study_count: Int
   studies: [ProgramStudy]
 }
@@ -965,7 +963,7 @@ type QueryType {
     program_external_url: [String] = []
     program_full_description: [String] = []
     """Filter by "has program" or "has no program"; an empty list includes both."""
-    study_has_program: [String] = []
+    is_program: [String] = []
     first: Int = 10000
     offset: Int = 0
     order_by: String = "program_sort_order"

@@ -201,7 +201,7 @@ public class ProgramSearchConfigurationTest {
         ).build();
         var result = graphQL.execute(ExecutionInput.newExecutionInput()
                 .query(operation)
-                .variables(Map.of("study_has_program", List.of("has program")))
+                .variables(Map.of("is_program", List.of("has program")))
                 .build());
         assertTrue(result.getErrors().isEmpty(),
                 () -> "Program page query with has-program filter has GraphQL errors: " + result.getErrors());
@@ -340,14 +340,18 @@ public class ProgramSearchConfigurationTest {
             assertEquals("keyword", ((Map<String, Object>) mapping.get(field)).get("type"), field);
             assertTrue(cypher.contains("AS " + field), "programs index must project " + field);
         }
-        assertEquals("keyword", ((Map<String, Object>) mapping.get("study_has_program")).get("type"));
+        assertEquals("keyword", ((Map<String, Object>) mapping.get("is_program")).get("type"));
+        assertTrue(!mapping.containsKey("study_has_program"));
+        assertTrue(!cypher.contains("study_has_program"));
         assertTrue(cypher.contains("MATCH (s:study)"));
         assertTrue(cypher.contains("OPTIONAL MATCH (s)-[:belongs_to]->(p:program)"),
                 "Studies without a program must be included");
-        assertTrue(cypher.contains("study_has_program: CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END"),
-                "Each indexed study must have a program-affiliation label");
-        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS study_has_program"),
+        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS is_program"),
                 "Program-affiliation filtering must recognize missing and Not Applicable program names");
+        assertTrue(cypher.contains("'has program' AS is_program"),
+                "Programs without studies must retain their program-affiliation label");
+        assertEquals(2, cypher.split(Pattern.quote("AS is_program"), -1).length - 1,
+                "Both UNION branches must project the renamed program-level field");
         assertTrue(cypher.contains("WHERE NOT (p)<-[:belongs_to]-(:study)"),
                 "Programs without studies must be preserved");
         assertTrue(cypher.contains("studies AS studies"));
@@ -361,7 +365,9 @@ public class ProgramSearchConfigurationTest {
             assertEquals("keyword", ((Map<String, Object>) studyProperties.get(field)).get("type"));
             assertTrue(cypher.contains(field + ":"), "Study projection must contain " + field);
         }
-        assertEquals("keyword", ((Map<String, Object>) studyProperties.get("study_has_program")).get("type"));
+        assertTrue(!studyProperties.containsKey("study_has_program"));
+        assertTrue(!studyProperties.containsKey("is_program"),
+                "Program affiliation must not be stored on nested studies");
 
         Map<String, Object> studyIndex = indices.stream()
                 .filter(entry -> "study".equals(entry.get("index_name")))
@@ -369,8 +375,10 @@ public class ProgramSearchConfigurationTest {
         Map<String, Object> studyMapping = (Map<String, Object>) studyIndex.get("mapping");
         assertTrue(!studyMapping.containsKey("study_has_program"),
                 "Affiliation filtering belongs only to the programs index");
+        assertTrue(!studyMapping.containsKey("is_program"));
         String studyCypher = (String) studyIndex.get("cypher_query");
         assertTrue(!studyCypher.contains("study_has_program"));
+        assertTrue(!studyCypher.contains("is_program"));
         assertTrue(studyCypher.contains("optional MATCH (participant)<-[*..2]-(f:file)"),
                 "Participant file counting must retain direct files and two-hop specimen-associated files");
         assertTrue(studyCypher.contains("COUNT( DISTINCT f) as participant_file_count"),
@@ -412,8 +420,10 @@ public class ProgramSearchConfigurationTest {
                     ((TypeName) definition.getType()).getName());
         }
         assertEquals("String", ((TypeName) programType.getFieldDefinitions().stream()
-                .filter(field -> "study_has_program".equals(field.getName()))
+                .filter(field -> "is_program".equals(field.getName()))
                 .findFirst().orElseThrow().getType()).getName());
+        assertTrue(programType.getFieldDefinitions().stream()
+                .noneMatch(field -> "study_has_program".equals(field.getName())));
         FieldDefinition studies = programType.getFieldDefinitions().stream()
                 .filter(field -> "studies".equals(field.getName())).findFirst().orElseThrow();
         assertInstanceOf(ListType.class, studies.getType());
@@ -427,12 +437,11 @@ public class ProgramSearchConfigurationTest {
                     .filter(value -> field.equals(value.getName())).findFirst().orElseThrow();
             assertEquals("String", ((TypeName) definition.getType()).getName());
         }
-        assertEquals("String", ((TypeName) studyType.getFieldDefinitions().stream()
-                .filter(field -> "study_has_program".equals(field.getName()))
-                .findFirst().orElseThrow().getType()).getName());
+        assertTrue(studyType.getFieldDefinitions().stream()
+                .noneMatch(field -> List.of("study_has_program", "is_program").contains(field.getName())));
         assertTrue(schema.getType("Study", ObjectTypeDefinition.class).orElseThrow()
                 .getFieldDefinitions().stream()
-                .noneMatch(field -> "study_has_program".equals(field.getName())));
+                .noneMatch(field -> List.of("study_has_program", "is_program").contains(field.getName())));
         FieldDefinition getAllPrograms = queryType.getFieldDefinitions().stream()
                 .filter(field -> "getAllPrograms".equals(field.getName()))
                 .findFirst().orElseThrow(() -> new AssertionError("getAllPrograms is missing"));
@@ -448,15 +457,17 @@ public class ProgramSearchConfigurationTest {
             assertEquals("String", ((TypeName) elementType).getName(), field + " filter type");
         }
         var orphanFilter = getAllPrograms.getInputValueDefinitions().stream()
-                .filter(value -> "study_has_program".equals(value.getName())).findFirst().orElseThrow();
+                .filter(value -> "is_program".equals(value.getName())).findFirst().orElseThrow();
         assertInstanceOf(ListType.class, orphanFilter.getType());
         assertEquals("String", ((TypeName) ((ListType) orphanFilter.getType()).getType()).getName());
+        assertTrue(getAllPrograms.getInputValueDefinitions().stream()
+                .noneMatch(value -> "study_has_program".equals(value.getName())));
 
         for (String queryName : List.of("getAllStudies", "studyByStudyShortName")) {
             FieldDefinition studyQuery = queryType.getFieldDefinitions().stream()
                     .filter(field -> queryName.equals(field.getName())).findFirst().orElseThrow();
             assertTrue(studyQuery.getInputValueDefinitions().stream()
-                    .noneMatch(value -> "study_has_program".equals(value.getName())));
+                    .noneMatch(value -> List.of("study_has_program", "is_program").contains(value.getName())));
         }
     }
 
