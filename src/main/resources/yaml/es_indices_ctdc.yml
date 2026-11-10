@@ -1232,7 +1232,7 @@ Indices:
         OPTIONAL MATCH (sub)<-[:of_participant]-(tt:therapy)
         WITH [x IN COLLECT(tt.therapy_name)
           WHERE x IS NOT NULL AND trim(toString(x)) <> ''
-          | toLower(trim(toString(x)))
+          | trim(toString(x))
         ] AS ts,
         [r IN COLLECT(tt.best_response_to_therapy)
           WHERE r IS NOT NULL AND trim(toString(r)) <> ''
@@ -2175,7 +2175,7 @@ Indices:
       WITH
         f, sub, spec, study, program_name, program_short_name, program_info, ps_latest,
         apoc.coll.toSet([t IN collect(DISTINCT tt.therapy_name)
-                          WHERE t IS NOT NULL AND trim(toString(t)) <> '' | toLower(trim(toString(t)))]) AS therapy,
+                          WHERE t IS NOT NULL AND trim(toString(t)) <> '' | trim(toString(t))]) AS therapy,
         apoc.coll.toSet([c IN collect(DISTINCT tt.therapy_category)
                           WHERE c IS NOT NULL AND trim(toString(c)) <> '' | trim(toString(c))]) AS therapy_category,
         apoc.coll.toSet([t IN collect(DISTINCT tt.therapy_type)
@@ -2186,7 +2186,7 @@ Indices:
                           WHERE s IS NOT NULL AND trim(toString(s)) <> '' | trim(toString(s))]) AS current_response_to_therapy,
         apoc.text.join(
           apoc.coll.sort([t IN collect(DISTINCT tt.therapy_name)
-                          WHERE t IS NOT NULL AND trim(toString(t)) <> '' | toLower(trim(toString(t))) ]),
+                          WHERE t IS NOT NULL AND trim(toString(t)) <> '' | trim(toString(t)) ]),
           '|'
         )                                                                      AS therapy_string
 
@@ -2240,7 +2240,7 @@ Indices:
         best_response_to_therapy                    AS best_response_to_therapy,
         current_response_to_therapy                 AS current_response_to_therapy,
 
-        toLower(spec.anatomical_collection_site)    AS anatomical_collection_site,
+        apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)) AS anatomical_collection_site,
         spec.specimen_type                          AS specimen_type,
         spec.tissue_category                        AS tissue_category,
         spec.assessment_timepoint                   AS assessment_timepoint
@@ -2482,11 +2482,11 @@ Indices:
         OPTIONAL MATCH (sb)<-[:of_participant]-(tt:therapy)
         WITH [x IN COLLECT(tt.therapy_name)
           WHERE x IS NOT NULL AND trim(toString(x)) <> ''
-          | toLower(trim(toString(x)))
+          | trim(toString(x))
         ] AS ts,
         [x IN COLLECT(tt.therapy_category)
           WHERE x IS NOT NULL AND trim(toString(x)) <> ''
-          | toLower(trim(toString(x)))
+          | trim(toString(x))
         ] AS categories,
         [x IN COLLECT(tt.therapy_type)
           WHERE x IS NOT NULL AND trim(toString(x)) <> ''
@@ -2781,13 +2781,17 @@ Indices:
         current_response_to_therapy: target.current_response_to_therapy
       }) as therapy,
       COLLECT(DISTINCT target.therapy_record_id) as therapy_record_id,
-      COLLECT(DISTINCT target.therapy_name) as therapy_name,
-      COLLECT(DISTINCT target.best_response_to_therapy) as best_response_to_therapy,
+      COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy_name,
+      apoc.coll.toSet([r IN COLLECT(target.best_response_to_therapy)
+        WHERE r IS NOT NULL AND trim(toString(r)) <> '' | trim(toString(r))]) as best_response_to_therapy,
       COLLECT(DISTINCT array) as therapy_string,
-      COLLECT(DISTINCT target.current_response_to_therapy) as current_response_to_therapy,
-      COLLECT(DISTINCT target.therapy_type) as therapy_type,
-      COLLECT(DISTINCT target.therapy_category) as therapy_category,
-      COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+      apoc.coll.toSet([s IN COLLECT(target.current_response_to_therapy)
+        WHERE s IS NOT NULL AND trim(toString(s)) <> '' | trim(toString(s))]) as current_response_to_therapy,
+      apoc.coll.toSet([t IN COLLECT(target.therapy_type)
+        WHERE t IS NOT NULL AND trim(toString(t)) <> '' | trim(toString(t))]) as therapy_type,
+      apoc.coll.toSet([c IN COLLECT(target.therapy_category)
+        WHERE c IS NOT NULL AND trim(toString(c)) <> '' | trim(toString(c))]) as therapy_category,
+      COLLECT(DISTINCT apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))) AS anatomical_collection_site,
       COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
       COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
@@ -2797,7 +2801,7 @@ Indices:
       COLLECT(DISTINCT file.data_file_format) AS data_file_format,
       COLLECT(DISTINCT{
         specimen_id: spec.specimen_id,
-        anatomical_collection_site: spec.anatomical_collection_site,
+        anatomical_collection_site: apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)),
         tissue_category: spec.tissue_category,
         assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,
