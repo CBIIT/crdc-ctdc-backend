@@ -17,7 +17,7 @@ Indices:
         type: keyword
       program_sort_order:
         type: integer
-      study_has_program:
+      is_program:
         type: keyword
       study_count:
         type: integer
@@ -32,8 +32,6 @@ Indices:
             type: keyword
           study_name:
             type: keyword
-          study_has_program:
-            type: keyword
     cypher_query: "
       MATCH (s:study)
       OPTIONAL MATCH (s)-[:belongs_to]->(p:program)
@@ -41,8 +39,7 @@ Indices:
         study_id: toString(s.study_id),
         study_accession: s.study_accession,
         study_short_name: s.study_short_name,
-        study_name: s.study_name,
-        study_has_program: CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END
+        study_name: s.study_name
       }) AS studies
       RETURN
         p.program_name AS program_name,
@@ -52,7 +49,7 @@ Indices:
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
         toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
-        CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS study_has_program,
+        CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'is not program' ELSE 'is program' END AS is_program,
         size(studies) AS study_count,
         studies AS studies
       UNION
@@ -66,7 +63,7 @@ Indices:
         p.program_external_url AS program_external_url,
         p.program_full_description AS program_full_description,
         toInteger(coalesce(p.program_sort_order, 100000)) AS program_sort_order,
-        'has program' AS study_has_program,
+        'is program' AS is_program,
         0 AS study_count,
         [] AS studies
       "
@@ -761,6 +758,785 @@ Indices:
         data_file_type: study_zip_file.data_file_type
       }) WHERE x.data_file_uuid IS NOT NULL] AS file_info
       " 
+
+  # Therapy Table Data: one document per participant and distinct therapy dose.
+  - index_name: tab_therapies
+    type: neo4j
+    mapping:
+      type:
+        type: keyword
+      participant_id:
+        type: keyword
+      course_number:
+        type: keyword
+      therapy_name:
+        type: keyword
+      therapy_name_key:
+        type: keyword
+      therapy_type:
+        type: keyword
+      therapy_category:
+        type: keyword
+      therapy_dose:
+        type: keyword
+      therapy_dose_units:
+        type: keyword
+      therapy_frequency:
+        type: keyword
+      current_response_to_therapy:
+        type: keyword
+      best_response_to_therapy:
+        type: keyword
+      number_of_doses:
+        type: keyword
+      planned_dose:
+        type: keyword
+      dose_records:
+        type: integer
+      therapy_record_id:
+        type: keyword
+      therapy_string:
+        type: keyword
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      study_accession:
+        type: keyword
+      study_name:
+        type: keyword
+      study_type:
+        type: keyword
+      study_description:
+        type: keyword
+      dates_of_conduct:
+        type: keyword
+      program_name:
+        type: keyword
+      program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
+      ctep_disease_term:
+        type: keyword
+      primary_diagnosis_disease_group:
+        type: keyword
+      stage_of_disease:
+        type: keyword
+      tumor_grade:
+        type: keyword
+      primary_disease_site:
+        type: keyword
+      snomed_disease_code:
+        type: keyword
+      diagnosis_id:
+        type: keyword
+      meddra_disease_code:
+        type: keyword
+      histology:
+        type: keyword
+      survival_status:
+        type: keyword
+      age_at_enrollment:
+        type: integer
+      sex:
+        type: keyword
+      race:
+        type: keyword
+      ethnicity:
+        type: keyword
+      carcinogen_exposure:
+        type: keyword
+      specimen_id:
+        type: keyword
+      specimen_record_id:
+        type: keyword
+      specimen_category:
+        type: keyword
+      specimen_type:
+        type: keyword
+      anatomical_collection_site:
+        type: keyword
+      tissue_category:
+        type: keyword
+      assessment_timepoint:
+        type: keyword
+      surgical_procedure:
+        type: keyword
+      surgical_procedure_anatomical_location:
+        type: keyword
+      surgical_procedure_date:
+        type: keyword
+      surgical_procedure_findings:
+        type: keyword
+      surgical_procedure_id:
+        type: keyword
+      surgical_procedure_therapeutic:
+        type: keyword
+      extent_of_residual_disease:
+        type: keyword
+      data_file_uuid:
+        type: keyword
+      data_file_type:
+        type: keyword
+      data_file_format:
+        type: keyword
+      biospecimen_info:
+        type: nested
+        properties:
+          specimen_id:
+            type: keyword
+          specimen_record_id:
+            type: keyword
+          specimen_category:
+            type: keyword
+          specimen_type:
+            type: keyword
+          anatomical_collection_site:
+            type: keyword
+          tissue_category:
+            type: keyword
+          assessment_timepoint:
+            type: keyword
+      file_info:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_format:
+            type: keyword
+      data_files:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_name:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_description:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_size:
+            type: double
+          data_file_checksum_value:
+            type: keyword
+          data_file_checksum_type:
+            type: keyword
+          data_file_compression_status:
+            type: keyword
+          data_file_location:
+            type: keyword
+    cypher_query: "
+      CALL {
+      MATCH (participant:participant)<-[:of_participant]-(therapy:therapy)
+      WITH
+        participant.participant_id AS participant_id,
+        CASE
+          WHEN trim(coalesce(toString(therapy.course_number), '')) = ''
+          THEN 'Not Applicable'
+          ELSE toString(therapy.course_number)
+        END AS course_number,
+        therapy.therapy_name AS therapy_name,
+        therapy.therapy_category AS therapy_category,
+        therapy.therapy_dose AS therapy_dose,
+        therapy.therapy_dose_units AS therapy_dose_units,
+        therapy.therapy_frequency AS therapy_frequency,
+        therapy.current_response_to_therapy AS current_response_to_therapy,
+        therapy.best_response_to_therapy AS best_response_to_therapy,
+        collect(DISTINCT toString(therapy.number_of_doses)) AS number_of_doses,
+        collect(DISTINCT toString(therapy.planned_dose)) AS planned_dose,
+        collect(DISTINCT therapy.therapy_record_id) AS therapy_record_id,
+        count(DISTINCT therapy) AS dose_records,
+        collect(DISTINCT therapy.therapy_type) AS therapy_types
+      WITH *,
+        [drug IN split(coalesce(therapy_name, ''), ',')
+          WHERE trim(drug) <> '' | trim(drug)] AS drugs
+      RETURN
+        'therapies' AS type,
+        participant_id,
+        course_number,
+        therapy_name,
+        CASE WHEN size(drugs) = 0 THEN null
+          ELSE apoc.convert.toJson(apoc.coll.sort(drugs))
+        END AS therapy_name_key,
+        [value IN therapy_types WHERE trim(value) <> ''] AS therapy_type,
+        therapy_category,
+        therapy_dose,
+        therapy_dose_units,
+        therapy_frequency,
+        current_response_to_therapy,
+        best_response_to_therapy,
+        number_of_doses,
+        planned_dose,
+        therapy_record_id,
+        dose_records
+      }
+
+      CALL {
+        WITH participant_id
+        MATCH (participant:participant {participant_id: participant_id})
+        OPTIONAL MATCH (participant)-[:belongs_to]->(study:study)
+        OPTIONAL MATCH (study)-[:belongs_to]->(program:program)
+        RETURN collect(DISTINCT participant) AS participants,
+          collect(DISTINCT study) AS studies,
+          collect(DISTINCT program) AS programs
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(diagnosis:diagnosis)
+        RETURN collect(DISTINCT diagnosis) AS diagnoses
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(demo:demographic)
+        RETURN collect(DISTINCT demo) AS demographics
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(status:participant_status)
+        WITH status
+        ORDER BY coalesce(datetime(status.updated), datetime(status.created)) DESC, id(status) DESC
+        RETURN head(collect(status)) AS latest_status
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(exposure:exposure)
+        RETURN collect(DISTINCT exposure.carcinogen_exposure) AS carcinogen_exposure
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(specimen:specimen)
+        RETURN collect(DISTINCT specimen) AS specimens
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(surgery:surgery)
+        RETURN collect(DISTINCT surgery) AS surgeries
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:associated_with]-(direct_file:file)
+        WITH participants, collect(DISTINCT direct_file) AS direct_files
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(:specimen)<-[:associated_with]-(specimen_file:file)
+        RETURN apoc.coll.toSet(direct_files + collect(DISTINCT specimen_file)) AS participant_files
+      }
+      CALL {
+        WITH studies
+        UNWIND studies AS study
+        OPTIONAL MATCH (study)<-[:associated_with]-(study_file:file)
+        WHERE toLower(coalesce(study_file.data_file_format, '')) = 'zip'
+          AND NOT (study_file)--(:participant)
+          AND NOT (study_file)-[:associated_with]->(:specimen)
+        RETURN collect(DISTINCT study_file) AS study_files
+      }
+      WITH *, [file IN apoc.coll.toSet(participant_files + study_files)
+        WHERE file.data_file_uuid IS NOT NULL] AS files
+      RETURN type, participant_id, course_number, therapy_name,
+        therapy_name_key, therapy_type, therapy_category, therapy_dose,
+        therapy_dose_units, therapy_frequency, current_response_to_therapy,
+        best_response_to_therapy, number_of_doses, planned_dose, therapy_record_id,
+        dose_records, therapy_name AS therapy_string,
+        apoc.coll.toSet([s IN studies | s.study_short_name]) AS study_short_name,
+        apoc.coll.toSet([s IN studies | toString(s.study_id)]) AS study_id,
+        apoc.coll.toSet([s IN studies | s.study_accession]) AS study_accession,
+        apoc.coll.toSet([s IN studies | s.study_name]) AS study_name,
+        apoc.coll.toSet([s IN studies | s.study_type]) AS study_type,
+        apoc.coll.toSet([s IN studies | s.study_description]) AS study_description,
+        apoc.coll.toSet([s IN studies | s.dates_of_conduct]) AS dates_of_conduct,
+        apoc.coll.toSet([p IN programs | p.program_name]) AS program_name,
+        apoc.coll.toSet([p IN programs | p.program_short_name]) AS program_short_name,
+        apoc.coll.toSet([p IN programs | p.crdc_id]) AS crdc_id,
+        apoc.coll.toSet([p IN programs | p.program_short_description]) AS program_short_description,
+        apoc.coll.toSet([p IN programs | p.program_external_url]) AS program_external_url,
+        apoc.coll.toSet([p IN programs | p.program_full_description]) AS program_full_description,
+        apoc.coll.toSet([d IN diagnoses | d.ctep_disease_term]) AS ctep_disease_term,
+        apoc.coll.toSet([d IN diagnoses | d.primary_diagnosis_disease_group]) AS primary_diagnosis_disease_group,
+        apoc.coll.toSet([d IN diagnoses | d.stage_of_disease]) AS stage_of_disease,
+        apoc.coll.toSet([d IN diagnoses | d.tumor_grade]) AS tumor_grade,
+        apoc.coll.toSet([d IN diagnoses WHERE d.primary_disease_site IS NOT NULL |
+          apoc.text.capitalizeAll(toLower(d.primary_disease_site))]) AS primary_disease_site,
+        apoc.coll.toSet([d IN diagnoses | d.snomed_disease_code]) AS snomed_disease_code,
+        apoc.coll.toSet([d IN diagnoses | d.diagnosis_id]) AS diagnosis_id,
+        apoc.coll.toSet([d IN diagnoses | d.meddra_disease_code]) AS meddra_disease_code,
+        apoc.coll.toSet([d IN diagnoses | d.histology]) AS histology,
+        latest_status.survival_status AS survival_status,
+        apoc.coll.toSet([d IN demographics | d.age_at_enrollment]) AS age_at_enrollment,
+        apoc.coll.toSet([d IN demographics | d.sex]) AS sex,
+        apoc.coll.toSet([r IN apoc.coll.flatten(
+          [value IN apoc.coll.flatten([d IN demographics | d.race]) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
+        apoc.coll.toSet([d IN demographics | d.ethnicity]) AS ethnicity,
+        carcinogen_exposure,
+        apoc.coll.toSet([s IN specimens | s.specimen_id]) AS specimen_id,
+        apoc.coll.toSet([s IN specimens | s.specimen_record_id]) AS specimen_record_id,
+        apoc.coll.toSet([s IN specimens | s.specimen_category]) AS specimen_category,
+        apoc.coll.toSet([s IN specimens | s.specimen_type]) AS specimen_type,
+        apoc.coll.toSet([s IN specimens WHERE s.anatomical_collection_site IS NOT NULL |
+          apoc.text.capitalizeAll(toLower(s.anatomical_collection_site))]) AS anatomical_collection_site,
+        apoc.coll.toSet([s IN specimens | s.tissue_category]) AS tissue_category,
+        apoc.coll.toSet([s IN specimens | s.assessment_timepoint]) AS assessment_timepoint,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure]) AS surgical_procedure,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_anatomical_location]) AS surgical_procedure_anatomical_location,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_date]) AS surgical_procedure_date,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_findings]) AS surgical_procedure_findings,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_id]) AS surgical_procedure_id,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_therapeutic]) AS surgical_procedure_therapeutic,
+        apoc.coll.toSet([s IN surgeries | s.extent_of_residual_disease]) AS extent_of_residual_disease,
+        [file IN files | file.data_file_uuid] AS data_file_uuid,
+        apoc.coll.toSet([file IN files | file.data_file_type]) AS data_file_type,
+        apoc.coll.toSet([file IN files | file.data_file_format]) AS data_file_format,
+        [s IN specimens | {
+          specimen_id: s.specimen_id,
+          specimen_record_id: s.specimen_record_id,
+          specimen_category: s.specimen_category,
+          specimen_type: s.specimen_type,
+          anatomical_collection_site: CASE WHEN s.anatomical_collection_site IS NOT NULL
+            THEN apoc.text.capitalizeAll(toLower(s.anatomical_collection_site)) END,
+          tissue_category: s.tissue_category,
+          assessment_timepoint: s.assessment_timepoint
+        }] AS biospecimen_info,
+        [file IN files | {
+          data_file_uuid: file.data_file_uuid,
+          data_file_type: file.data_file_type,
+          data_file_format: file.data_file_format
+        }] AS file_info,
+        [file IN files | {
+          data_file_uuid: file.data_file_uuid,
+          data_file_name: file.data_file_name,
+          data_file_type: file.data_file_type,
+          data_file_description: file.data_file_description,
+          data_file_format: file.data_file_format,
+          data_file_size: file.data_file_size,
+          data_file_checksum_value: file.data_file_checksum_value,
+          data_file_checksum_type: file.data_file_checksum_type,
+          data_file_compression_status: file.data_file_compression_status,
+          data_file_location: file.data_file_location
+        }] AS data_files
+      "
+
+  # Files available through each therapy dose's participant and study.
+  - index_name: therapy_data_file
+    type: neo4j
+    mapping:
+      type:
+        type: keyword
+      participant_id:
+        type: keyword
+      course_number:
+        type: keyword
+      therapy_name:
+        type: keyword
+      therapy_name_key:
+        type: keyword
+      therapy_type:
+        type: keyword
+      therapy_category:
+        type: keyword
+      therapy_dose:
+        type: keyword
+      therapy_dose_units:
+        type: keyword
+      therapy_frequency:
+        type: keyword
+      current_response_to_therapy:
+        type: keyword
+      best_response_to_therapy:
+        type: keyword
+      number_of_doses:
+        type: keyword
+      planned_dose:
+        type: keyword
+      dose_records:
+        type: integer
+      therapy_record_id:
+        type: keyword
+      therapy_string:
+        type: keyword
+      study_short_name:
+        type: keyword
+      study_id:
+        type: keyword
+      study_accession:
+        type: keyword
+      study_name:
+        type: keyword
+      study_type:
+        type: keyword
+      study_description:
+        type: keyword
+      dates_of_conduct:
+        type: keyword
+      program_name:
+        type: keyword
+      program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
+      program_external_url:
+        type: keyword
+      program_full_description:
+        type: keyword
+      ctep_disease_term:
+        type: keyword
+      primary_diagnosis_disease_group:
+        type: keyword
+      stage_of_disease:
+        type: keyword
+      tumor_grade:
+        type: keyword
+      primary_disease_site:
+        type: keyword
+      snomed_disease_code:
+        type: keyword
+      diagnosis_id:
+        type: keyword
+      meddra_disease_code:
+        type: keyword
+      histology:
+        type: keyword
+      survival_status:
+        type: keyword
+      age_at_enrollment:
+        type: integer
+      sex:
+        type: keyword
+      race:
+        type: keyword
+      ethnicity:
+        type: keyword
+      carcinogen_exposure:
+        type: keyword
+      specimen_id:
+        type: keyword
+      specimen_record_id:
+        type: keyword
+      specimen_category:
+        type: keyword
+      specimen_type:
+        type: keyword
+      anatomical_collection_site:
+        type: keyword
+      tissue_category:
+        type: keyword
+      assessment_timepoint:
+        type: keyword
+      surgical_procedure:
+        type: keyword
+      surgical_procedure_anatomical_location:
+        type: keyword
+      surgical_procedure_date:
+        type: keyword
+      surgical_procedure_findings:
+        type: keyword
+      surgical_procedure_id:
+        type: keyword
+      surgical_procedure_therapeutic:
+        type: keyword
+      extent_of_residual_disease:
+        type: keyword
+      data_file_uuid:
+        type: keyword
+      data_file_type:
+        type: keyword
+      data_file_format:
+        type: keyword
+      data_file_name:
+        type: keyword
+      data_file_size:
+        type: double
+      data_file_description:
+        type: keyword
+      data_file_checksum_value:
+        type: keyword
+      data_file_checksum_type:
+        type: keyword
+      data_file_location:
+        type: keyword
+      data_file_compression_status:
+        type: keyword
+      drs_uri:
+        type: keyword
+      association:
+        type: keyword
+      biospecimen_info:
+        type: nested
+        properties:
+          specimen_id:
+            type: keyword
+          specimen_record_id:
+            type: keyword
+          specimen_category:
+            type: keyword
+          specimen_type:
+            type: keyword
+          anatomical_collection_site:
+            type: keyword
+          tissue_category:
+            type: keyword
+          assessment_timepoint:
+            type: keyword
+      file_info:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_format:
+            type: keyword
+      data_files:
+        type: nested
+        properties:
+          data_file_uuid:
+            type: keyword
+          data_file_name:
+            type: keyword
+          data_file_type:
+            type: keyword
+          data_file_description:
+            type: keyword
+          data_file_format:
+            type: keyword
+          data_file_size:
+            type: double
+          data_file_checksum_value:
+            type: keyword
+          data_file_checksum_type:
+            type: keyword
+          data_file_compression_status:
+            type: keyword
+          data_file_location:
+            type: keyword
+    cypher_query: "
+      CALL {
+      MATCH (participant:participant)<-[:of_participant]-(therapy:therapy)
+      WITH
+        participant.participant_id AS participant_id,
+        CASE
+          WHEN trim(coalesce(toString(therapy.course_number), '')) = ''
+          THEN 'Not Applicable'
+          ELSE toString(therapy.course_number)
+        END AS course_number,
+        therapy.therapy_name AS therapy_name,
+        therapy.therapy_category AS therapy_category,
+        therapy.therapy_dose AS therapy_dose,
+        therapy.therapy_dose_units AS therapy_dose_units,
+        therapy.therapy_frequency AS therapy_frequency,
+        therapy.current_response_to_therapy AS current_response_to_therapy,
+        therapy.best_response_to_therapy AS best_response_to_therapy,
+        collect(DISTINCT toString(therapy.number_of_doses)) AS number_of_doses,
+        collect(DISTINCT toString(therapy.planned_dose)) AS planned_dose,
+        collect(DISTINCT therapy.therapy_record_id) AS therapy_record_id,
+        count(DISTINCT therapy) AS dose_records,
+        collect(DISTINCT therapy.therapy_type) AS therapy_types
+      WITH *,
+        [drug IN split(coalesce(therapy_name, ''), ',')
+          WHERE trim(drug) <> '' | trim(drug)] AS drugs
+      RETURN
+        'therapies' AS type,
+        participant_id,
+        course_number,
+        therapy_name,
+        CASE WHEN size(drugs) = 0 THEN null
+          ELSE apoc.convert.toJson(apoc.coll.sort(drugs))
+        END AS therapy_name_key,
+        [value IN therapy_types WHERE trim(value) <> ''] AS therapy_type,
+        therapy_category,
+        therapy_dose,
+        therapy_dose_units,
+        therapy_frequency,
+        current_response_to_therapy,
+        best_response_to_therapy,
+        number_of_doses,
+        planned_dose,
+        therapy_record_id,
+        dose_records
+      }
+
+      CALL {
+        WITH participant_id
+        MATCH (participant:participant {participant_id: participant_id})
+        OPTIONAL MATCH (participant)-[:belongs_to]->(study:study)
+        OPTIONAL MATCH (study)-[:belongs_to]->(program:program)
+        RETURN collect(DISTINCT participant) AS participants,
+          collect(DISTINCT study) AS studies,
+          collect(DISTINCT program) AS programs
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(diagnosis:diagnosis)
+        RETURN collect(DISTINCT diagnosis) AS diagnoses
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(demo:demographic)
+        RETURN collect(DISTINCT demo) AS demographics
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(status:participant_status)
+        WITH status
+        ORDER BY coalesce(datetime(status.updated), datetime(status.created)) DESC, id(status) DESC
+        RETURN head(collect(status)) AS latest_status
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(exposure:exposure)
+        RETURN collect(DISTINCT exposure.carcinogen_exposure) AS carcinogen_exposure
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(specimen:specimen)
+        RETURN collect(DISTINCT specimen) AS specimens
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(surgery:surgery)
+        RETURN collect(DISTINCT surgery) AS surgeries
+      }
+      CALL {
+        WITH participants
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:associated_with]-(direct_file:file)
+        WITH participants, collect(DISTINCT direct_file) AS direct_files
+        UNWIND participants AS participant
+        OPTIONAL MATCH (participant)<-[:of_participant]-(:specimen)<-[:associated_with]-(specimen_file:file)
+        RETURN apoc.coll.toSet(direct_files + collect(DISTINCT specimen_file)) AS participant_files
+      }
+      CALL {
+        WITH studies
+        UNWIND studies AS study
+        OPTIONAL MATCH (study)<-[:associated_with]-(study_file:file)
+        WHERE toLower(coalesce(study_file.data_file_format, '')) = 'zip'
+          AND NOT (study_file)--(:participant)
+          AND NOT (study_file)-[:associated_with]->(:specimen)
+        RETURN collect(DISTINCT study_file) AS study_files
+      }
+      WITH *, [file IN apoc.coll.toSet(participant_files + study_files)
+        WHERE file.data_file_uuid IS NOT NULL] AS files
+      UNWIND files AS file
+      RETURN 'data file' AS type, participant_id, course_number, therapy_name,
+        therapy_name_key, therapy_type, therapy_category, therapy_dose,
+        therapy_dose_units, therapy_frequency, current_response_to_therapy,
+        best_response_to_therapy, number_of_doses, planned_dose, therapy_record_id,
+        dose_records, therapy_name AS therapy_string,
+        apoc.coll.toSet([s IN studies | s.study_short_name]) AS study_short_name,
+        apoc.coll.toSet([s IN studies | toString(s.study_id)]) AS study_id,
+        apoc.coll.toSet([s IN studies | s.study_accession]) AS study_accession,
+        apoc.coll.toSet([s IN studies | s.study_name]) AS study_name,
+        apoc.coll.toSet([s IN studies | s.study_type]) AS study_type,
+        apoc.coll.toSet([s IN studies | s.study_description]) AS study_description,
+        apoc.coll.toSet([s IN studies | s.dates_of_conduct]) AS dates_of_conduct,
+        apoc.coll.toSet([p IN programs | p.program_name]) AS program_name,
+        apoc.coll.toSet([p IN programs | p.program_short_name]) AS program_short_name,
+        apoc.coll.toSet([p IN programs | p.crdc_id]) AS crdc_id,
+        apoc.coll.toSet([p IN programs | p.program_short_description]) AS program_short_description,
+        apoc.coll.toSet([p IN programs | p.program_external_url]) AS program_external_url,
+        apoc.coll.toSet([p IN programs | p.program_full_description]) AS program_full_description,
+        apoc.coll.toSet([d IN diagnoses | d.ctep_disease_term]) AS ctep_disease_term,
+        apoc.coll.toSet([d IN diagnoses | d.primary_diagnosis_disease_group]) AS primary_diagnosis_disease_group,
+        apoc.coll.toSet([d IN diagnoses | d.stage_of_disease]) AS stage_of_disease,
+        apoc.coll.toSet([d IN diagnoses | d.tumor_grade]) AS tumor_grade,
+        apoc.coll.toSet([d IN diagnoses WHERE d.primary_disease_site IS NOT NULL |
+          apoc.text.capitalizeAll(toLower(d.primary_disease_site))]) AS primary_disease_site,
+        apoc.coll.toSet([d IN diagnoses | d.snomed_disease_code]) AS snomed_disease_code,
+        apoc.coll.toSet([d IN diagnoses | d.diagnosis_id]) AS diagnosis_id,
+        apoc.coll.toSet([d IN diagnoses | d.meddra_disease_code]) AS meddra_disease_code,
+        apoc.coll.toSet([d IN diagnoses | d.histology]) AS histology,
+        latest_status.survival_status AS survival_status,
+        apoc.coll.toSet([d IN demographics | d.age_at_enrollment]) AS age_at_enrollment,
+        apoc.coll.toSet([d IN demographics | d.sex]) AS sex,
+        apoc.coll.toSet([r IN apoc.coll.flatten(
+          [value IN apoc.coll.flatten([d IN demographics | d.race]) | split(value, '|')])
+          WHERE r IS NOT NULL AND trim(r) <> '' | trim(r)]) AS race,
+        apoc.coll.toSet([d IN demographics | d.ethnicity]) AS ethnicity,
+        carcinogen_exposure,
+        apoc.coll.toSet([s IN specimens | s.specimen_id]) AS specimen_id,
+        apoc.coll.toSet([s IN specimens | s.specimen_record_id]) AS specimen_record_id,
+        apoc.coll.toSet([s IN specimens | s.specimen_category]) AS specimen_category,
+        apoc.coll.toSet([s IN specimens | s.specimen_type]) AS specimen_type,
+        apoc.coll.toSet([s IN specimens WHERE s.anatomical_collection_site IS NOT NULL |
+          apoc.text.capitalizeAll(toLower(s.anatomical_collection_site))]) AS anatomical_collection_site,
+        apoc.coll.toSet([s IN specimens | s.tissue_category]) AS tissue_category,
+        apoc.coll.toSet([s IN specimens | s.assessment_timepoint]) AS assessment_timepoint,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure]) AS surgical_procedure,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_anatomical_location]) AS surgical_procedure_anatomical_location,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_date]) AS surgical_procedure_date,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_findings]) AS surgical_procedure_findings,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_id]) AS surgical_procedure_id,
+        apoc.coll.toSet([s IN surgeries | s.surgical_procedure_therapeutic]) AS surgical_procedure_therapeutic,
+        apoc.coll.toSet([s IN surgeries | s.extent_of_residual_disease]) AS extent_of_residual_disease,
+        file.data_file_uuid AS data_file_uuid,
+        file.data_file_type AS data_file_type,
+        file.data_file_format AS data_file_format,
+        file.data_file_name AS data_file_name,
+        file.data_file_size AS data_file_size,
+        file.data_file_description AS data_file_description,
+        file.data_file_checksum_value AS data_file_checksum_value,
+        file.data_file_checksum_type AS data_file_checksum_type,
+        file.data_file_location AS data_file_location,
+        file.data_file_compression_status AS data_file_compression_status,
+        'drs://nci-crdc.datacommons.io/' + file.data_file_uuid AS drs_uri,
+        CASE WHEN file IN study_files THEN ['study']
+          ELSE [association IN [
+            CASE WHEN (file)-[:associated_with]-(:participant) THEN 'participant' END,
+            CASE WHEN (file)-[:associated_with]-(:specimen) THEN 'biospecimen' END
+          ] WHERE association IS NOT NULL]
+        END AS association,
+        [s IN specimens | {
+          specimen_id: s.specimen_id,
+          specimen_record_id: s.specimen_record_id,
+          specimen_category: s.specimen_category,
+          specimen_type: s.specimen_type,
+          anatomical_collection_site: CASE WHEN s.anatomical_collection_site IS NOT NULL
+            THEN apoc.text.capitalizeAll(toLower(s.anatomical_collection_site)) END,
+          tissue_category: s.tissue_category,
+          assessment_timepoint: s.assessment_timepoint
+        }] AS biospecimen_info,
+        [{
+          data_file_uuid: file.data_file_uuid,
+          data_file_type: file.data_file_type,
+          data_file_format: file.data_file_format
+        }] AS file_info,
+        [{
+          data_file_uuid: file.data_file_uuid,
+          data_file_name: file.data_file_name,
+          data_file_type: file.data_file_type,
+          data_file_description: file.data_file_description,
+          data_file_format: file.data_file_format,
+          data_file_size: file.data_file_size,
+          data_file_checksum_value: file.data_file_checksum_value,
+          data_file_checksum_type: file.data_file_checksum_type,
+          data_file_compression_status: file.data_file_compression_status,
+          data_file_location: file.data_file_location
+        }] AS data_files
+      "
 
   # Participant Table Data
   - index_name: tab_participants
@@ -2595,10 +3371,10 @@ Indices:
       autocomplete_list:
         type: keyword
     cypher_query: "
-      MATCH (study:study)<-[]-(sub:participant)
-      optional MATCH (spec:specimen)-[:of_participant]->(sub)
+      MATCH (spec:specimen)-[:of_participant]->(sub:participant)
+      optional MATCH (study:study)<-[:belongs_to]-(sub)
       optional MATCH (sub)<-[:of_participant]-(diag:diagnosis)
-      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_record_id)) as specimenID
+      WITH COLLECT(diag.stage_of_disease) as stage,COLLECT(diag.ctep_disease_term) as ctep,COLLECT(Distinct(sub.participant_id)) as participantID,COLLECT(Distinct(spec.specimen_id)) as specimenID
       WITH stage,ctep, stage + ctep + participantID + specimenID as list
       UNWIND list as autocomplete_list
       RETURN distinct

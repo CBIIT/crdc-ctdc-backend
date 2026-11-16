@@ -173,17 +173,37 @@ public class ProgramSearchConfigurationTest {
     }
 
     @Test
-    public void programPageOperationAcceptsHasProgramFilter() throws Exception {
+    public void programPageOperationAcceptsIsProgramFilter() throws Exception {
         TypeDefinitionRegistry registry;
         try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation;
-        try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/operations/program-page.graphql")) {
-            assertNotNull(input, "Program page operation should be present in test resources");
-            operation = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-        }
+        String operation = """
+                query ProgramPage(
+                  $program_short_name: [String] = []
+                  $is_program: [String] = ["is program"]
+                  $first: Int = 10000
+                  $offset: Int = 0
+                  $order_by: String = "program_sort_order"
+                  $sort_direction: String = "ASC"
+                ) {
+                  getAllPrograms(
+                    program_short_name: $program_short_name
+                    is_program: $is_program
+                    first: $first
+                    offset: $offset
+                    order_by: $order_by
+                    sort_direction: $sort_direction
+                  ) {
+                    program_name
+                    program_short_name
+                    is_program
+                    study_count
+                    studies { study_id study_accession study_short_name study_name }
+                  }
+                }
+                """;
         OperationDefinition programPage = (OperationDefinition) new Parser().parseDocument(operation)
                 .getDefinitions().get(0);
         var orderBy = programPage.getVariableDefinitions().stream()
@@ -201,10 +221,10 @@ public class ProgramSearchConfigurationTest {
         ).build();
         var result = graphQL.execute(ExecutionInput.newExecutionInput()
                 .query(operation)
-                .variables(Map.of("study_has_program", List.of("has program")))
+                .variables(Map.of("is_program", List.of("is program")))
                 .build());
         assertTrue(result.getErrors().isEmpty(),
-                () -> "Program page query with has-program filter has GraphQL errors: " + result.getErrors());
+                () -> "Program page query with is-program filter has GraphQL errors: " + result.getErrors());
     }
 
     @Test
@@ -340,14 +360,17 @@ public class ProgramSearchConfigurationTest {
             assertEquals("keyword", ((Map<String, Object>) mapping.get(field)).get("type"), field);
             assertTrue(cypher.contains("AS " + field), "programs index must project " + field);
         }
-        assertEquals("keyword", ((Map<String, Object>) mapping.get("study_has_program")).get("type"));
+        assertEquals("keyword", ((Map<String, Object>) mapping.get("is_program")).get("type"));
+        assertTrue(!mapping.containsKey("study_has_program"), "study_has_program was renamed to is_program");
         assertTrue(cypher.contains("MATCH (s:study)"));
         assertTrue(cypher.contains("OPTIONAL MATCH (s)-[:belongs_to]->(p:program)"),
                 "Studies without a program must be included");
-        assertTrue(cypher.contains("study_has_program: CASE WHEN p IS NULL THEN 'has no program' ELSE 'has program' END"),
-                "Each indexed study must have a program-affiliation label");
-        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS study_has_program"),
+        assertTrue(!cypher.contains("study_has_program"),
+                "Nested studies no longer carry a program-affiliation label");
+        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'is not program' ELSE 'is program' END AS is_program"),
                 "Program-affiliation filtering must recognize missing and Not Applicable program names");
+        assertTrue(cypher.contains("'is program' AS is_program"),
+                "Programs without studies must be labelled as programs");
         assertTrue(cypher.contains("WHERE NOT (p)<-[:belongs_to]-(:study)"),
                 "Programs without studies must be preserved");
         assertTrue(cypher.contains("studies AS studies"));
@@ -361,16 +384,16 @@ public class ProgramSearchConfigurationTest {
             assertEquals("keyword", ((Map<String, Object>) studyProperties.get(field)).get("type"));
             assertTrue(cypher.contains(field + ":"), "Study projection must contain " + field);
         }
-        assertEquals("keyword", ((Map<String, Object>) studyProperties.get("study_has_program")).get("type"));
+        assertTrue(!studyProperties.containsKey("study_has_program"));
 
         Map<String, Object> studyIndex = indices.stream()
                 .filter(entry -> "study".equals(entry.get("index_name")))
                 .findFirst().orElseThrow(() -> new AssertionError("CTDC study index is missing"));
         Map<String, Object> studyMapping = (Map<String, Object>) studyIndex.get("mapping");
-        assertTrue(!studyMapping.containsKey("study_has_program"),
+        assertTrue(!studyMapping.containsKey("is_program"),
                 "Affiliation filtering belongs only to the programs index");
         String studyCypher = (String) studyIndex.get("cypher_query");
-        assertTrue(!studyCypher.contains("study_has_program"));
+        assertTrue(!studyCypher.contains("is_program"));
         assertTrue(studyCypher.contains("optional MATCH (participant)<-[*..2]-(f:file)"),
                 "Participant file counting must retain direct files and two-hop specimen-associated files");
         assertTrue(studyCypher.contains("COUNT( DISTINCT f) as participant_file_count"),
@@ -412,7 +435,7 @@ public class ProgramSearchConfigurationTest {
                     ((TypeName) definition.getType()).getName());
         }
         assertEquals("String", ((TypeName) programType.getFieldDefinitions().stream()
-                .filter(field -> "study_has_program".equals(field.getName()))
+                .filter(field -> "is_program".equals(field.getName()))
                 .findFirst().orElseThrow().getType()).getName());
         FieldDefinition studies = programType.getFieldDefinitions().stream()
                 .filter(field -> "studies".equals(field.getName())).findFirst().orElseThrow();
@@ -427,12 +450,11 @@ public class ProgramSearchConfigurationTest {
                     .filter(value -> field.equals(value.getName())).findFirst().orElseThrow();
             assertEquals("String", ((TypeName) definition.getType()).getName());
         }
-        assertEquals("String", ((TypeName) studyType.getFieldDefinitions().stream()
-                .filter(field -> "study_has_program".equals(field.getName()))
-                .findFirst().orElseThrow().getType()).getName());
+        assertTrue(studyType.getFieldDefinitions().stream()
+                .noneMatch(field -> "study_has_program".equals(field.getName()) || "is_program".equals(field.getName())));
         assertTrue(schema.getType("Study", ObjectTypeDefinition.class).orElseThrow()
                 .getFieldDefinitions().stream()
-                .noneMatch(field -> "study_has_program".equals(field.getName())));
+                .noneMatch(field -> "is_program".equals(field.getName())));
         FieldDefinition getAllPrograms = queryType.getFieldDefinitions().stream()
                 .filter(field -> "getAllPrograms".equals(field.getName()))
                 .findFirst().orElseThrow(() -> new AssertionError("getAllPrograms is missing"));
@@ -448,15 +470,17 @@ public class ProgramSearchConfigurationTest {
             assertEquals("String", ((TypeName) elementType).getName(), field + " filter type");
         }
         var orphanFilter = getAllPrograms.getInputValueDefinitions().stream()
-                .filter(value -> "study_has_program".equals(value.getName())).findFirst().orElseThrow();
+                .filter(value -> "is_program".equals(value.getName())).findFirst().orElseThrow();
         assertInstanceOf(ListType.class, orphanFilter.getType());
         assertEquals("String", ((TypeName) ((ListType) orphanFilter.getType()).getType()).getName());
+        assertTrue(getAllPrograms.getInputValueDefinitions().stream()
+                .noneMatch(value -> "study_has_program".equals(value.getName())));
 
         for (String queryName : List.of("getAllStudies", "studyByStudyShortName")) {
             FieldDefinition studyQuery = queryType.getFieldDefinitions().stream()
                     .filter(field -> queryName.equals(field.getName())).findFirst().orElseThrow();
             assertTrue(studyQuery.getInputValueDefinitions().stream()
-                    .noneMatch(value -> "study_has_program".equals(value.getName())));
+                    .noneMatch(value -> "is_program".equals(value.getName())));
         }
     }
 

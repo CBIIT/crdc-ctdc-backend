@@ -73,13 +73,12 @@ queries:
           method: count_bucket_keys
       - name: numberOfTherapies
         index:
-          - therapy_count
+          - tab_therapies
         filter:
           type: aggregation
-          selectedField: therapy_name
+          selectedField: participant_id
         result:
-          type: int
-          method: count_bucket_keys
+          type: int_total_count
       - name: numberOfSpecimens
         index:
           - tab_biospecimens
@@ -359,6 +358,40 @@ queries:
         filter:
           type: aggregation
           selectedField: current_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyDoseUnits
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_dose_units
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyDoseUnits
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_dose_units
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyFrequency
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_frequency
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyFrequency
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_frequency
           ignoreSelectedField: true
         result:
           type: group_count

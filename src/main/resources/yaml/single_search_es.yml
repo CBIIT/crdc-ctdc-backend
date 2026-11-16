@@ -136,6 +136,16 @@ queries:
         participant_id: participant_id
     result:
       type: object_array
+  - name: therapyOverview
+    index:
+      - tab_therapies
+    filter:
+      type: pagination
+      defaultSortField: participant_id
+      alternativeSortField:
+        participant_id: participant_id
+    result:
+      type: object_array
   - name: fileOverview
     index:
       - tab_data_files
@@ -189,6 +199,16 @@ queries:
       defaultSortField: data_file_uuid
       alternativeSortField:
         specimen_record_id: specimen_record_id
+        participant_id: participant_id
+    result:
+      type: object_array
+  - name: therapy_data_files
+    index:
+      - therapy_data_file
+    filter:
+      type: pagination
+      defaultSortField: data_file_name
+      alternativeSortField:
         participant_id: participant_id
     result:
       type: object_array
