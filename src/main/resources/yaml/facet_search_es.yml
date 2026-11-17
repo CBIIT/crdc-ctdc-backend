@@ -73,12 +73,22 @@ queries:
           method: count_bucket_keys
       - name: numberOfTherapies
         index:
+          - therapy_count
+        filter:
+          type: aggregation
+          selectedField: therapy_name
+        result:
+          type: int
+          method: count_bucket_keys
+      - name: numberOfTherapyByDose
+        index:
           - tab_therapies
         filter:
           type: aggregation
-          selectedField: participant_id
+          selectedField: therapy_name
         result:
-          type: int_total_count
+          type: int
+          method: count_bucket_keys
       - name: numberOfSpecimens
         index:
           - tab_biospecimens

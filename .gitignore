@@ -13,6 +13,7 @@ target/
 *.iml
 .sts4-cache/*
 src/main/resources/application.properties
+/config/application.properties
 logs/
 .metadata
 bin/

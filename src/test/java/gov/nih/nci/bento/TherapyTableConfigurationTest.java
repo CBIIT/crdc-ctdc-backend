@@ -1,5 +1,8 @@
 package gov.nih.nci.bento;
 
+import gov.nih.nci.bento.model.search.MultipleRequests;
+import gov.nih.nci.bento.service.ESService;
+import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.language.FieldDefinition;
@@ -12,18 +15,27 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import org.junit.jupiter.api.Test;
+import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.TermsQueryBuilder;
+import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TherapyTableConfigurationTest {
 
@@ -35,8 +47,7 @@ public class TherapyTableConfigurationTest {
             "current_response_to_therapy", "best_response_to_therapy", "survival_status");
     private static final List<String> LIST_THERAPY_FIELDS = List.of(
             "therapy_type", "number_of_doses", "planned_dose", "therapy_record_id",
-            "study_short_name", "study_id", "program_name", "program_short_name", "ctep_disease_term",
-            "race", "specimen_type", "anatomical_collection_site");
+            "study_id", "race", "specimen_type", "anatomical_collection_site");
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> index(String name) {
@@ -128,16 +139,24 @@ public class TherapyTableConfigurationTest {
                 .filter(q -> "searchParticipants".equals(q.get("name"))).findFirst().orElseThrow();
         List<Map<String, Object>> fields = (List<Map<String, Object>>) searchParticipants.get("returnFields");
 
-        Map<String, Object> count = fields.stream().filter(f -> "numberOfTherapies".equals(f.get("name")))
-                .findFirst().orElseThrow();
-        assertEquals(List.of("tab_therapies"), count.get("index"));
-        assertEquals("int_total_count", ((Map<String, Object>) count.get("result")).get("type"),
-                "Therapy rows must be counted by total hits, not capped terms buckets");
+        ObjectTypeDefinition searchResult = schema().getType("SearchResult", ObjectTypeDefinition.class).orElseThrow();
+        Map<String, String> counts = Map.of(
+                "numberOfTherapies", "therapy_count",
+                "numberOfTherapyByDose", "tab_therapies");
+        counts.forEach((name, index) -> {
+            Map<String, Object> count = fields.stream().filter(f -> name.equals(f.get("name")))
+                    .findFirst().orElseThrow(() -> new AssertionError(name + " is missing"));
+            assertEquals(List.of(index), count.get("index"), name);
+            assertEquals("therapy_name", ((Map<String, Object>) count.get("filter")).get("selectedField"), name);
+            Map<String, Object> result = (Map<String, Object>) count.get("result");
+            assertEquals("int", result.get("type"), name);
+            assertEquals("count_bucket_keys", result.get("method"), name);
+            assertEquals("Int", ((TypeName) field(searchResult, name).getType()).getName(), name);
+        });
 
         Map<String, String> facets = Map.of(
                 "therapyCountByTherapyDoseUnits", "therapy_dose_units",
                 "therapyCountByTherapyFrequency", "therapy_frequency");
-        ObjectTypeDefinition searchResult = schema().getType("SearchResult", ObjectTypeDefinition.class).orElseThrow();
         facets.forEach((name, selectedField) -> {
             for (String facetName : List.of(name, "filter" + Character.toUpperCase(name.charAt(0)) + name.substring(1))) {
                 Map<String, Object> facet = fields.stream().filter(f -> facetName.equals(f.get("name")))
@@ -152,6 +171,102 @@ public class TherapyTableConfigurationTest {
                 assertEquals("GroupCount", ((TypeName) ((ListType) definition.getType()).getType()).getName());
             }
         });
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void currentResponseFacetMatchesBestResponseAndExcludesItsOwnSelection() throws Exception {
+        Map<String, Object> widgetIndex = index("widgets_facets_counts");
+        Map<String, Object> mapping = (Map<String, Object>) widgetIndex.get("mapping");
+        String cypher = (String) widgetIndex.get("cypher_query");
+        for (String field : List.of("current_response_to_therapy", "best_response_to_therapy")) {
+            assertEquals("keyword", ((Map<String, Object>) mapping.get(field)).get("type"), field);
+            assertTrue(cypher.contains("tt." + field), field + " must be collected");
+            assertTrue(cypher.contains(" AS " + field), field + " must be returned");
+        }
+
+        ESService esService = mock(ESService.class);
+        AtomicReference<List<MultipleRequests>> requests = new AtomicReference<>();
+        List<Map<String, Object>> current = List.of(Map.of("group", "Complete Response", "subjects", 2));
+        List<Map<String, Object>> best = List.of(Map.of("group", "Partial Response", "subjects", 2));
+        List<Map<String, Object>> available = List.of(
+                Map.of("group", "Complete Response", "subjects", 2),
+                Map.of("group", "Partial Response", "subjects", 1));
+        List<Map<String, Object>> bestAvailable = List.of(
+                Map.of("group", "Partial Response", "subjects", 2),
+                Map.of("group", "Stable Disease", "subjects", 1));
+        when(esService.<Object>elasticMultiSend(anyList())).thenAnswer(invocation -> {
+            requests.set(invocation.getArgument(0));
+            return Map.of(
+                    "participantCountByCurrentResponseToTherapy", current,
+                    "filterParticipantCountByCurrentResponseToTherapy", available,
+                    "participantCountByBestResponseToTherapy", best,
+                    "filterParticipantCountByBestResponseToTherapy", bestAvailable);
+        });
+
+        GraphQL graphQL = GraphQL.newGraphQL(new SchemaGenerator().makeExecutableSchema(
+                schema(), new PrivateESDataFetcher(esService).buildRuntimeWiring())).build();
+        var result = graphQL.execute("""
+                {
+                  searchParticipants(
+                    sex: ["Female"]
+                    current_response_to_therapy: ["Complete Response", "Stable Disease"]
+                    best_response_to_therapy: ["Partial Response"]
+                  ) {
+                    participantCountByCurrentResponseToTherapy { group subjects }
+                    filterParticipantCountByCurrentResponseToTherapy { group subjects }
+                    participantCountByBestResponseToTherapy { group subjects }
+                    filterParticipantCountByBestResponseToTherapy { group subjects }
+                  }
+                }
+                """);
+
+        assertTrue(result.getErrors().isEmpty(), () -> result.getErrors().toString());
+        Map<?, ?> data = result.getData();
+        Map<?, ?> search = assertInstanceOf(Map.class, data.get("searchParticipants"));
+        assertEquals(current, search.get("participantCountByCurrentResponseToTherapy"));
+        assertEquals(available, search.get("filterParticipantCountByCurrentResponseToTherapy"));
+        assertEquals(best, search.get("participantCountByBestResponseToTherapy"));
+        assertEquals(bestAvailable, search.get("filterParticipantCountByBestResponseToTherapy"));
+
+        assertNotNull(requests.get());
+        Map<String, List<String>> allFilters = Map.of(
+                "sex", List.of("Female"),
+                "current_response_to_therapy", List.of("Complete Response", "Stable Disease"),
+                "best_response_to_therapy", List.of("Partial Response"));
+        assertResponseFacetRequest(requests.get(), "participantCountByCurrentResponseToTherapy",
+                "current_response_to_therapy", allFilters);
+        assertResponseFacetRequest(requests.get(), "filterParticipantCountByCurrentResponseToTherapy",
+                "current_response_to_therapy", Map.of(
+                        "sex", List.of("Female"),
+                        "best_response_to_therapy", List.of("Partial Response")));
+        assertResponseFacetRequest(requests.get(), "participantCountByBestResponseToTherapy",
+                "best_response_to_therapy", allFilters);
+        assertResponseFacetRequest(requests.get(), "filterParticipantCountByBestResponseToTherapy",
+                "best_response_to_therapy", Map.of(
+                        "sex", List.of("Female"),
+                        "current_response_to_therapy", List.of("Complete Response", "Stable Disease")));
+    }
+
+    private static void assertResponseFacetRequest(List<MultipleRequests> requests, String name,
+                                                   String field, Map<String, List<String>> expectedFilters) {
+        MultipleRequests request = requests.stream().filter(candidate -> name.equals(candidate.getName()))
+                .findFirst().orElseThrow(() -> new AssertionError(name + " is missing"));
+        assertArrayEquals(new String[]{"widgets_facets_counts"}, request.getRequest().indices(), name);
+        var source = request.getRequest().source();
+        assertEquals(0, source.size(), name);
+        assertEquals(1, source.aggregations().getAggregatorFactories().size(), name);
+        TermsAggregationBuilder aggregation = assertInstanceOf(TermsAggregationBuilder.class,
+                source.aggregations().getAggregatorFactories().iterator().next());
+        assertEquals(field, aggregation.field(), name);
+        BoolQueryBuilder query = assertInstanceOf(BoolQueryBuilder.class, source.query());
+        assertEquals(expectedFilters.size(), query.filter().size(), name);
+        Map<String, List<Object>> filters = new HashMap<>();
+        query.filter().forEach(filter -> {
+            TermsQueryBuilder terms = assertInstanceOf(TermsQueryBuilder.class, filter);
+            filters.put(terms.fieldName(), terms.values());
+        });
+        assertEquals(expectedFilters, filters, name);
     }
 
     @Test
@@ -191,6 +306,13 @@ public class TherapyTableConfigurationTest {
         ObjectTypeDefinition overview = registry.getType("TherapyOverview", ObjectTypeDefinition.class).orElseThrow();
         assertInstanceOf(ListType.class, field(overview, "data_file_uuid").getType());
         ObjectTypeDefinition dataFile = registry.getType("TherapyDataFile", ObjectTypeDefinition.class).orElseThrow();
+        for (String name : List.of("study_short_name", "program_name", "program_short_name", "ctep_disease_term")) {
+            assertEquals("String", assertInstanceOf(TypeName.class, field(overview, name).getType()).getName(),
+                    "TherapyOverview." + name);
+            assertEquals("String", assertInstanceOf(TypeName.class,
+                    assertInstanceOf(ListType.class, field(dataFile, name).getType()).getType()).getName(),
+                    "TherapyDataFile." + name);
+        }
         assertEquals("String", ((TypeName) field(dataFile, "data_file_uuid").getType()).getName());
         assertEquals("Float", ((TypeName) field(dataFile, "data_file_size").getType()).getName());
         assertInstanceOf(ListType.class, field(dataFile, "association").getType());
@@ -212,6 +334,7 @@ public class TherapyTableConfigurationTest {
                   }
                   searchParticipants(therapy_name: $therapy_name) {
                     numberOfTherapies
+                    numberOfTherapyByDose
                     therapyCountByTherapyDoseUnits { group subjects }
                     filterTherapyCountByTherapyFrequency { group subjects }
                   }
