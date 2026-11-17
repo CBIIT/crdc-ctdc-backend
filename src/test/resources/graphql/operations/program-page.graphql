@@ -5,7 +5,7 @@ query ProgramPage(
   $program_short_description: [String] = []
   $program_external_url: [String] = []
   $program_full_description: [String] = []
-  $is_program: [String] = ["has program"]
+  $is_program: [String] = ["is program"]
   $first: Int = 10000
   $offset: Int = 0
   $order_by: String = "program_sort_order"

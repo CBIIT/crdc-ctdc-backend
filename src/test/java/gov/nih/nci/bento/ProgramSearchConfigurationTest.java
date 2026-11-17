@@ -173,7 +173,7 @@ public class ProgramSearchConfigurationTest {
     }
 
     @Test
-    public void programPageOperationAcceptsHasProgramFilter() throws Exception {
+    public void programPageOperationAcceptsIsProgramFilter() throws Exception {
         TypeDefinitionRegistry registry;
         try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/crdc-ctdc-private-es.graphql")) {
             assertNotNull(input);
@@ -190,6 +190,12 @@ public class ProgramSearchConfigurationTest {
                 .filter(variable -> "order_by".equals(variable.getName())).findFirst().orElseThrow();
         assertEquals("program_sort_order",
                 ((graphql.language.StringValue) orderBy.getDefaultValue()).getValue());
+        var affiliation = programPage.getVariableDefinitions().stream()
+                .filter(variable -> "is_program".equals(variable.getName())).findFirst().orElseThrow();
+        var affiliationDefault = assertInstanceOf(graphql.language.ArrayValue.class, affiliation.getDefaultValue());
+        assertEquals(1, affiliationDefault.getValues().size());
+        assertEquals("is program",
+                assertInstanceOf(graphql.language.StringValue.class, affiliationDefault.getValues().get(0)).getValue());
         Field call = (Field) programPage.getSelectionSet().getSelections().get(0);
         assertTrue(call.getArguments().stream().anyMatch(argument ->
                 "order_by".equals(argument.getName())
@@ -201,10 +207,10 @@ public class ProgramSearchConfigurationTest {
         ).build();
         var result = graphQL.execute(ExecutionInput.newExecutionInput()
                 .query(operation)
-                .variables(Map.of("is_program", List.of("has program")))
+                .variables(Map.of("is_program", List.of("is program")))
                 .build());
         assertTrue(result.getErrors().isEmpty(),
-                () -> "Program page query with has-program filter has GraphQL errors: " + result.getErrors());
+                () -> "Program page query with is_program filter has GraphQL errors: " + result.getErrors());
     }
 
     @Test
@@ -346,9 +352,9 @@ public class ProgramSearchConfigurationTest {
         assertTrue(cypher.contains("MATCH (s:study)"));
         assertTrue(cypher.contains("OPTIONAL MATCH (s)-[:belongs_to]->(p:program)"),
                 "Studies without a program must be included");
-        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'has no program' ELSE 'has program' END AS is_program"),
+        assertTrue(cypher.contains("CASE WHEN p.program_name IS NULL OR p.program_name = 'Not Applicable' THEN 'is not program' ELSE 'is program' END AS is_program"),
                 "Program-affiliation filtering must recognize missing and Not Applicable program names");
-        assertTrue(cypher.contains("'has program' AS is_program"),
+        assertTrue(cypher.contains("'is program' AS is_program"),
                 "Programs without studies must retain their program-affiliation label");
         assertEquals(2, cypher.split(Pattern.quote("AS is_program"), -1).length - 1,
                 "Both UNION branches must project the renamed program-level field");
