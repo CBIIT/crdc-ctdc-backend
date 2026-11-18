@@ -40,8 +40,23 @@ public class TherapyOverviewScalarFieldsTest {
         }
     }
 
+    private void verifyFilters(ESService esService, String queryName,
+                               Map<String, List<String>> expected) throws Exception {
+        verify(esService).elasticMultiSend(argThat(requests -> {
+            if (requests.size() != 1 || !queryName.equals(requests.get(0).getName())) return false;
+            QueryBuilder query = requests.get(0).getRequest().source().query();
+            if (!(query instanceof BoolQueryBuilder bool)) return false;
+            Map<String, List<Object>> filters = new HashMap<>();
+            for (QueryBuilder filter : bool.filter()) {
+                if (!(filter instanceof TermsQueryBuilder terms)) return false;
+                filters.put(terms.fieldName(), terms.values());
+            }
+            return filters.equals(expected);
+        }));
+    }
+
     @Test
-    public void therapyOverviewReturnsStringsAndKeepsTherapyFileListsAndFilters() throws Exception {
+    public void therapyDisplaysReturnStringsAndKeepOtherFileListsAndFilters() throws Exception {
         Map<String, Object> indexedRow = Map.of(
                 "study_short_name", List.of("CMB"),
                 "program_name", List.of("Not Applicable"),
@@ -65,10 +80,10 @@ public class TherapyOverviewScalarFieldsTest {
                     program_short_name
                     ctep_disease_term
                   }
-                  therapy_data_files {
-                    study_short_name
+                  therapy_data_files(study_short_name: ["CMB"], program_short_name: ["NA"]) {
+                    display_study: study_short_name
                     program_name
-                    program_short_name
+                    display_short_program: program_short_name
                     ctep_disease_term
                   }
                 }
@@ -83,27 +98,24 @@ public class TherapyOverviewScalarFieldsTest {
                 "program_short_name", "NA",
                 "ctep_disease_term", "Plasma Cell Myeloma"), overview.get(0));
         List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
-        assertEquals(indexedRow, files.get(0));
+        assertEquals(Map.of(
+                "display_study", "CMB",
+                "program_name", List.of("Not Applicable"),
+                "display_short_program", "NA",
+                "ctep_disease_term", List.of("Plasma Cell Myeloma")), files.get(0));
 
-        verify(esService).elasticMultiSend(argThat(requests -> {
-            if (requests.size() != 1 || !"therapyOverview".equals(requests.get(0).getName())) return false;
-            QueryBuilder query = requests.get(0).getRequest().source().query();
-            if (!(query instanceof BoolQueryBuilder bool)) return false;
-            Map<String, List<Object>> filters = new HashMap<>();
-            for (QueryBuilder filter : bool.filter()) {
-                if (!(filter instanceof TermsQueryBuilder terms)) return false;
-                filters.put(terms.fieldName(), terms.values());
-            }
-            return filters.equals(Map.of(
-                    "study_short_name", List.of("CMB"),
-                    "program_name", List.of("Not Applicable"),
-                    "program_short_name", List.of("NA"),
-                    "ctep_disease_term", List.of("Plasma Cell Myeloma")));
-        }));
+        verifyFilters(esService, "therapyOverview", Map.of(
+                "study_short_name", List.of("CMB"),
+                "program_name", List.of("Not Applicable"),
+                "program_short_name", List.of("NA"),
+                "ctep_disease_term", List.of("Plasma Cell Myeloma")));
+        verifyFilters(esService, "therapy_data_files", Map.of(
+                "study_short_name", List.of("CMB"),
+                "program_short_name", List.of("NA")));
     }
 
     @Test
-    public void therapyOverviewHandlesScalarMissingAndMultipleIndexedValues() throws Exception {
+    public void therapyDisplaysHandleScalarMissingAndMultipleIndexedValues() throws Exception {
         Map<String, Object> firstRow = new HashMap<>();
         firstRow.put("study_short_name", List.of("Zulu", "Alpha"));
         firstRow.put("program_name", "Already scalar");
@@ -112,12 +124,19 @@ public class TherapyOverviewScalarFieldsTest {
         Map<String, Object> secondRow = Map.of(
                 "study_short_name", List.of("Alpha", "Zulu"),
                 "ctep_disease_term", List.of());
+        Map<String, Object> thirdRow = Map.of(
+                "study_short_name", "Single",
+                "program_short_name", Arrays.asList(null, "NA", "NA"));
         ESService esService = mock(ESService.class);
-        when(esService.<Object>elasticMultiSend(anyList())).thenReturn(
-                Map.of("therapyOverview", List.of(firstRow, secondRow)));
+        when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
+                "therapyOverview", List.of(firstRow, secondRow, thirdRow),
+                "therapy_data_files", List.of(firstRow, secondRow, thirdRow)));
 
         ExecutionResult result = graphQL(esService).execute("""
-                { therapyOverview { study_short_name program_name program_short_name ctep_disease_term } }
+                {
+                  therapyOverview { study_short_name program_name program_short_name ctep_disease_term }
+                  therapy_data_files { study_short_name program_short_name }
+                }
                 """);
 
         assertTrue(result.getErrors().isEmpty(), () -> result.getErrors().toString());
@@ -132,17 +151,42 @@ public class TherapyOverviewScalarFieldsTest {
         assertNull(second.get("program_name"));
         assertEquals("One", first.get("ctep_disease_term"));
         assertNull(second.get("ctep_disease_term"));
+        Map<?, ?> third = assertInstanceOf(Map.class, rows.get(2));
+        assertEquals("Single", third.get("study_short_name"));
+        assertEquals("NA", third.get("program_short_name"));
+        List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
+        for (Object file : files.subList(0, 2)) {
+            Map<?, ?> row = assertInstanceOf(Map.class, file);
+            assertEquals("Alpha", row.get("study_short_name"));
+            assertNull(row.get("program_short_name"));
+        }
+        assertEquals(Map.of("study_short_name", "Single", "program_short_name", "NA"), files.get(2));
     }
 
     @Test
-    public void therapyOverviewReportsUnexpectedIndexedValueTypes() throws Exception {
+    public void therapyDisplaysReportUnexpectedIndexedValueTypes() throws Exception {
         ESService esService = mock(ESService.class);
+        Map<String, Object> invalidRow = Map.of(
+                "study_short_name", List.of(17),
+                "program_short_name", 17);
         when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
-                "therapyOverview", List.of(Map.of("study_short_name", List.of(17)))));
+                "therapyOverview", List.of(invalidRow),
+                "therapy_data_files", List.of(invalidRow)));
 
-        ExecutionResult result = graphQL(esService).execute("{ therapyOverview { study_short_name } }");
+        ExecutionResult result = graphQL(esService).execute("""
+                {
+                  therapyOverview { study_short_name program_short_name }
+                  therapy_data_files { study_short_name program_short_name }
+                }
+                """);
 
-        assertTrue(result.getErrors().stream().anyMatch(error -> error.getMessage().contains("study_short_name")),
-                () -> "Unexpected value type should produce a GraphQL error: " + result.getErrors());
+        assertEquals(4, result.getErrors().size(), () -> result.getErrors().toString());
+        for (String type : List.of("TherapyOverview", "TherapyDataFile")) {
+            for (String field : List.of("study_short_name", "program_short_name")) {
+                assertTrue(result.getErrors().stream()
+                                .anyMatch(error -> error.getMessage().contains(type + "." + field)),
+                        () -> "Unexpected value type should produce a GraphQL error: " + result.getErrors());
+            }
+        }
     }
 }

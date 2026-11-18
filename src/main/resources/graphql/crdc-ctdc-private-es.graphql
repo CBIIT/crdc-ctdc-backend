@@ -857,7 +857,10 @@ type TherapyOverview {
   data_files: [DataFile]
 }
 
-"""One row per therapy dose and associated file (therapy_data_file index)."""
+"""
+One row per therapy dose and associated file (therapy_data_file index).
+study_short_name and program_short_name return the first sorted value when multiple values exist.
+"""
 type TherapyDataFile {
   type: String
   participant_id: String
@@ -876,7 +879,7 @@ type TherapyDataFile {
   planned_dose: [String]
   dose_records: Int
   therapy_record_id: [String]
-  study_short_name: [String]
+  study_short_name: String
   study_id: [String]
   study_accession: [String]
   study_name: [String]
@@ -884,7 +887,7 @@ type TherapyDataFile {
   study_description: [String]
   dates_of_conduct: [String]
   program_name: [String]
-  program_short_name: [String]
+  program_short_name: String
   crdc_id: [String]
   program_short_description: [String]
   program_external_url: [String]
@@ -945,7 +948,7 @@ type SearchResult {
   numberOfDiagnoses: Int
   """Number of distinct therapy names in therapy_count matching the filters."""
   numberOfTherapies: Int
-  """Therapy tab count: number of distinct therapy names in tab_therapies matching the filters."""
+  """Therapy tab count: number of tab_therapies rows (therapy-dose entries) matching the filters."""
   numberOfTherapyByDose: Int
   numberOfSpecimens: Int
   numberOfFiles: Int
@@ -963,6 +966,16 @@ type SearchResult {
   participantCountByTherapyType: [GroupCount]
   participantCountByBestResponseToTherapy: [GroupCount]
   participantCountByCurrentResponseToTherapy: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapy: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapyCategory: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapyType: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByBestResponseToTherapy: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByCurrentResponseToTherapy: [GroupCount]
   """Counts therapy-dose rows (tab_therapies), not participants."""
   therapyCountByTherapyDoseUnits: [GroupCount]
   """Counts therapy-dose rows (tab_therapies), not participants."""
@@ -1009,6 +1022,11 @@ type SearchResult {
   filterParticipantCountByTherapyType: [GroupCount]
   filterParticipantCountByBestResponseToTherapy: [GroupCount]
   filterParticipantCountByCurrentResponseToTherapy: [GroupCount]
+  filterTherapyCountByTherapy: [GroupCount]
+  filterTherapyCountByTherapyCategory: [GroupCount]
+  filterTherapyCountByTherapyType: [GroupCount]
+  filterTherapyCountByBestResponseToTherapy: [GroupCount]
+  filterTherapyCountByCurrentResponseToTherapy: [GroupCount]
   filterTherapyCountByTherapyDoseUnits: [GroupCount]
   filterTherapyCountByTherapyFrequency: [GroupCount]
   filterParticipantCountBySingleTherapyCombination: [GroupCount]

@@ -140,21 +140,26 @@ public class TherapyTableConfigurationTest {
         List<Map<String, Object>> fields = (List<Map<String, Object>>) searchParticipants.get("returnFields");
 
         ObjectTypeDefinition searchResult = schema().getType("SearchResult", ObjectTypeDefinition.class).orElseThrow();
-        Map<String, String> counts = Map.of(
-                "numberOfTherapies", "therapy_count",
-                "numberOfTherapyByDose", "tab_therapies");
-        counts.forEach((name, index) -> {
+        Map<String, Map<String, Object>> counts = Map.of(
+                "numberOfTherapies", Map.of("index", "therapy_count", "type", "int", "method", "count_bucket_keys"),
+                "numberOfTherapyByDose", Map.of("index", "tab_therapies", "type", "int_total_count"));
+        counts.forEach((name, expected) -> {
             Map<String, Object> count = fields.stream().filter(f -> name.equals(f.get("name")))
                     .findFirst().orElseThrow(() -> new AssertionError(name + " is missing"));
-            assertEquals(List.of(index), count.get("index"), name);
+            assertEquals(List.of(expected.get("index")), count.get("index"), name);
             assertEquals("therapy_name", ((Map<String, Object>) count.get("filter")).get("selectedField"), name);
             Map<String, Object> result = (Map<String, Object>) count.get("result");
-            assertEquals("int", result.get("type"), name);
-            assertEquals("count_bucket_keys", result.get("method"), name);
+            assertEquals(expected.get("type"), result.get("type"), name);
+            assertEquals(expected.get("method"), result.get("method"), name);
             assertEquals("Int", ((TypeName) field(searchResult, name).getType()).getName(), name);
         });
 
         Map<String, String> facets = Map.of(
+                "therapyCountByTherapy", "therapy_name",
+                "therapyCountByTherapyCategory", "therapy_category",
+                "therapyCountByTherapyType", "therapy_type",
+                "therapyCountByBestResponseToTherapy", "best_response_to_therapy",
+                "therapyCountByCurrentResponseToTherapy", "current_response_to_therapy",
                 "therapyCountByTherapyDoseUnits", "therapy_dose_units",
                 "therapyCountByTherapyFrequency", "therapy_frequency");
         facets.forEach((name, selectedField) -> {
@@ -309,9 +314,14 @@ public class TherapyTableConfigurationTest {
         for (String name : List.of("study_short_name", "program_name", "program_short_name", "ctep_disease_term")) {
             assertEquals("String", assertInstanceOf(TypeName.class, field(overview, name).getType()).getName(),
                     "TherapyOverview." + name);
-            assertEquals("String", assertInstanceOf(TypeName.class,
-                    assertInstanceOf(ListType.class, field(dataFile, name).getType()).getType()).getName(),
-                    "TherapyDataFile." + name);
+            if (Set.of("study_short_name", "program_short_name").contains(name)) {
+                assertEquals("String", assertInstanceOf(TypeName.class, field(dataFile, name).getType()).getName(),
+                        "TherapyDataFile." + name);
+            } else {
+                assertEquals("String", assertInstanceOf(TypeName.class,
+                        assertInstanceOf(ListType.class, field(dataFile, name).getType()).getType()).getName(),
+                        "TherapyDataFile." + name);
+            }
         }
         assertEquals("String", ((TypeName) field(dataFile, "data_file_uuid").getType()).getName());
         assertEquals("Float", ((TypeName) field(dataFile, "data_file_size").getType()).getName());
@@ -344,5 +354,20 @@ public class TherapyTableConfigurationTest {
                 .makeExecutableSchema(schema(), RuntimeWiring.newRuntimeWiring().build())).build();
         var result = graphQL.execute(ExecutionInput.newExecutionInput().query(operation).build());
         assertTrue(result.getErrors().isEmpty(), () -> "Therapy operation has GraphQL errors: " + result.getErrors());
+    }
+
+    @Test
+    public void operationFixturesAreValidAgainstPrivateSchema() throws Exception {
+        GraphQL graphQL = GraphQL.newGraphQL(new SchemaGenerator()
+                .makeExecutableSchema(schema(), RuntimeWiring.newRuntimeWiring().build())).build();
+        for (String file : List.of("search.graphql", "therapy-overview.graphql", "therapy-data-files.graphql")) {
+            String operation;
+            try (InputStream in = getClass().getClassLoader().getResourceAsStream("graphql/operations/" + file)) {
+                assertNotNull(in, file + " is missing");
+                operation = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            var result = graphQL.execute(ExecutionInput.newExecutionInput().query(operation).build());
+            assertTrue(result.getErrors().isEmpty(), () -> file + " has GraphQL errors: " + result.getErrors());
+        }
     }
 }

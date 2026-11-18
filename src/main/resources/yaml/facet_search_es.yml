@@ -85,7 +85,7 @@ queries:
           - tab_therapies
         filter:
           type: aggregation
-          selectedField: therapy_name
+          selectedField: therapy_record_id
         result:
           type: int
           method: count_bucket_keys
@@ -365,6 +365,91 @@ queries:
       - name: filterParticipantCountByCurrentResponseToTherapy
         index:
           - widgets_facets_counts
+        filter:
+          type: aggregation
+          selectedField: current_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_name
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_name
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyCategory
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_category
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyCategory
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_category
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyType
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_type
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyType
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_type
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByBestResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: best_response_to_therapy
+        result:
+          type: group_count
+      - name: filterTherapyCountByBestResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: best_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByCurrentResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: current_response_to_therapy
+        result:
+          type: group_count
+      - name: filterTherapyCountByCurrentResponseToTherapy
+        index:
+          - tab_therapies
         filter:
           type: aggregation
           selectedField: current_response_to_therapy

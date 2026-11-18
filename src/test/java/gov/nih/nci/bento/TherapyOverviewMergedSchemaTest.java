@@ -30,16 +30,21 @@ public class TherapyOverviewMergedSchemaTest {
     private RedisService redisService;
 
     @Test
-    public void mergedPrivateSchemaUsesTherapyOverviewFieldFetchers() throws Exception {
+    public void mergedPrivateSchemaUsesTherapyDisplayFieldFetchers() throws Exception {
+        Map<String, Object> indexedRow = Map.of(
+                "study_short_name", List.of("CMB"),
+                "program_name", List.of("Not Applicable"),
+                "program_short_name", List.of("NA"),
+                "ctep_disease_term", List.of("Plasma Cell Myeloma"));
         when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
-                "therapyOverview", List.of(Map.of(
-                        "study_short_name", List.of("CMB"),
-                        "program_name", List.of("Not Applicable"),
-                        "program_short_name", List.of("NA"),
-                        "ctep_disease_term", List.of("Plasma Cell Myeloma")))));
+                "therapyOverview", List.of(indexedRow),
+                "therapy_data_files", List.of(indexedRow)));
 
         ExecutionResult result = bentoGraphQL.getPrivateGraphQL().execute("""
-                { therapyOverview { study_short_name program_name program_short_name ctep_disease_term } }
+                {
+                  therapyOverview { study_short_name program_name program_short_name ctep_disease_term }
+                  therapy_data_files { study_short_name program_name program_short_name ctep_disease_term }
+                }
                 """);
 
         assertTrue(result.getErrors().isEmpty(), () -> result.getErrors().toString());
@@ -50,5 +55,11 @@ public class TherapyOverviewMergedSchemaTest {
                 "program_name", "Not Applicable",
                 "program_short_name", "NA",
                 "ctep_disease_term", "Plasma Cell Myeloma"), rows.get(0));
+        List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
+        assertEquals(Map.of(
+                "study_short_name", "CMB",
+                "program_name", List.of("Not Applicable"),
+                "program_short_name", "NA",
+                "ctep_disease_term", List.of("Plasma Cell Myeloma")), files.get(0));
     }
 }
