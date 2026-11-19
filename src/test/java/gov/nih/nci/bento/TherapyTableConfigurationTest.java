@@ -311,9 +311,15 @@ public class TherapyTableConfigurationTest {
         ObjectTypeDefinition overview = registry.getType("TherapyOverview", ObjectTypeDefinition.class).orElseThrow();
         assertInstanceOf(ListType.class, field(overview, "data_file_uuid").getType());
         ObjectTypeDefinition dataFile = registry.getType("TherapyDataFile", ObjectTypeDefinition.class).orElseThrow();
-        for (String name : List.of("study_short_name", "program_name", "program_short_name", "ctep_disease_term")) {
-            assertEquals("String", assertInstanceOf(TypeName.class, field(overview, name).getType()).getName(),
+        assertEquals("String", assertInstanceOf(TypeName.class,
+                field(overview, "ctep_disease_term").getType()).getName(),
+                "TherapyOverview.ctep_disease_term");
+        for (String name : List.of("study_short_name", "program_name", "program_short_name")) {
+            assertEquals("String", assertInstanceOf(TypeName.class,
+                    assertInstanceOf(ListType.class, field(overview, name).getType()).getType()).getName(),
                     "TherapyOverview." + name);
+        }
+        for (String name : List.of("study_short_name", "program_name", "program_short_name", "ctep_disease_term")) {
             if (Set.of("study_short_name", "program_short_name").contains(name)) {
                 assertEquals("String", assertInstanceOf(TypeName.class, field(dataFile, name).getType()).getName(),
                         "TherapyDataFile." + name);
@@ -360,7 +366,8 @@ public class TherapyTableConfigurationTest {
     public void operationFixturesAreValidAgainstPrivateSchema() throws Exception {
         GraphQL graphQL = GraphQL.newGraphQL(new SchemaGenerator()
                 .makeExecutableSchema(schema(), RuntimeWiring.newRuntimeWiring().build())).build();
-        for (String file : List.of("search.graphql", "therapy-overview.graphql", "therapy-data-files.graphql")) {
+        for (String file : List.of("search.graphql", "therapy-overview.graphql", "therapy-data-files.graphql",
+                "participant-data-files.graphql")) {
             String operation;
             try (InputStream in = getClass().getClassLoader().getResourceAsStream("graphql/operations/" + file)) {
                 assertNotNull(in, file + " is missing");

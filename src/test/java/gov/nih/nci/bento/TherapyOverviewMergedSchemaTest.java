@@ -51,9 +51,9 @@ public class TherapyOverviewMergedSchemaTest {
         Map<?, ?> data = result.getData();
         List<?> rows = assertInstanceOf(List.class, data.get("therapyOverview"));
         assertEquals(Map.of(
-                "study_short_name", "CMB",
-                "program_name", "Not Applicable",
-                "program_short_name", "NA",
+                "study_short_name", List.of("CMB"),
+                "program_name", List.of("Not Applicable"),
+                "program_short_name", List.of("NA"),
                 "ctep_disease_term", "Plasma Cell Myeloma"), rows.get(0));
         List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
         assertEquals(Map.of(

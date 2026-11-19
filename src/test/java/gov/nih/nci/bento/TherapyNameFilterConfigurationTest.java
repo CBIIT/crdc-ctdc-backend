@@ -1,6 +1,7 @@
 package gov.nih.nci.bento;
 
 import graphql.language.FieldDefinition;
+import graphql.language.ListType;
 import graphql.language.ObjectTypeDefinition;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -36,8 +37,18 @@ public class TherapyNameFilterConfigurationTest {
         assertQueryUsesTherapyNameFilter(queryType.get(), "biospecimenOverview");
         assertQueryUsesTherapyNameFilter(queryType.get(), "fileOverview");
         assertQueryUsesTherapyNameFilter(queryType.get(), "participant_data_files");
+        assertQueryUsesTherapyRecordIdFilter(queryType.get(), "participant_data_files");
         assertQueryUsesTherapyNameFilter(queryType.get(), "biospecimen_data_files");
         assertQueryUsesTherapyNameFilter(queryType.get(), "searchParticipants");
+
+        ObjectTypeDefinition fileParticipant = registry.getType("FileParticipant", ObjectTypeDefinition.class)
+                .orElseThrow(() -> new AssertionError("FileParticipant type should exist"));
+        FieldDefinition therapyRecordId = fileParticipant.getFieldDefinitions().stream()
+                .filter(fieldDefinition -> "therapy_record_id".equals(fieldDefinition.getName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("FileParticipant should expose therapy_record_id"));
+        assertTrue(therapyRecordId.getType() instanceof ListType,
+                "FileParticipant.therapy_record_id should be a list");
     }
 
     @Test
@@ -60,6 +71,7 @@ public class TherapyNameFilterConfigurationTest {
         assertIndexPropagatesTherapyName(indices, "tab_biospecimens", "AS therapy_name");
         assertIndexPropagatesTherapyName(indices, "tab_data_files", "AS therapy_name");
         assertIndexPropagatesTherapyName(indices, "biospecimen_data_file", "AS therapy_name");
+        assertIndexPropagatesTherapyRecordId(indices, "tab_data_files");
     }
 
     @Test
@@ -105,6 +117,19 @@ public class TherapyNameFilterConfigurationTest {
         );
     }
 
+    private static void assertQueryUsesTherapyRecordIdFilter(ObjectTypeDefinition queryType, String queryName) {
+        FieldDefinition queryField = queryType.getFieldDefinitions().stream()
+                .filter(fieldDefinition -> queryName.equals(fieldDefinition.getName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(queryName + " query should exist"));
+
+        assertTrue(
+                queryField.getInputValueDefinitions().stream()
+                        .anyMatch(argument -> "therapy_record_id".equals(argument.getName())),
+                queryName + " should accept therapy_record_id"
+        );
+    }
+
     @SuppressWarnings("unchecked")
     private static void assertIndexPropagatesTherapyName(List<Map<String, Object>> indices, String indexName, String cypherFragment) {
         Map<String, Object> index = indices.stream()
@@ -118,6 +143,23 @@ public class TherapyNameFilterConfigurationTest {
 
         String cypherQuery = (String) index.get("cypher_query");
         assertTrue(cypherQuery.contains(cypherFragment), indexName + " cypher should return therapy_name");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertIndexPropagatesTherapyRecordId(List<Map<String, Object>> indices, String indexName) {
+        Map<String, Object> index = indices.stream()
+                .filter(candidate -> indexName.equals(candidate.get("index_name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(indexName + " index is missing"));
+
+        Map<String, Object> mapping = (Map<String, Object>) index.get("mapping");
+        assertTrue(mapping.containsKey("therapy_record_id"),
+                indexName + " mapping should contain therapy_record_id");
+        assertEquals("keyword", ((Map<String, Object>) mapping.get("therapy_record_id")).get("type"));
+
+        String cypherQuery = (String) index.get("cypher_query");
+        assertTrue(cypherQuery.contains("AS therapy_record_id"),
+                indexName + " cypher should return therapy_record_id");
     }
 
     @SuppressWarnings("unchecked")

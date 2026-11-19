@@ -56,7 +56,7 @@ public class TherapyOverviewScalarFieldsTest {
     }
 
     @Test
-    public void therapyDisplaysReturnStringsAndKeepOtherFileListsAndFilters() throws Exception {
+    public void therapyOverviewProgramFieldsRemainListsAndFileFiltersArePreserved() throws Exception {
         Map<String, Object> indexedRow = Map.of(
                 "study_short_name", List.of("CMB"),
                 "program_name", List.of("Not Applicable"),
@@ -80,7 +80,11 @@ public class TherapyOverviewScalarFieldsTest {
                     program_short_name
                     ctep_disease_term
                   }
-                  therapy_data_files(study_short_name: ["CMB"], program_short_name: ["NA"]) {
+                  therapy_data_files(
+                    participant_id: ["CTDC-TEST-1"]
+                    study_short_name: ["CMB"]
+                    program_short_name: ["NA"]
+                  ) {
                     display_study: study_short_name
                     program_name
                     display_short_program: program_short_name
@@ -93,9 +97,9 @@ public class TherapyOverviewScalarFieldsTest {
         Map<?, ?> data = result.getData();
         List<?> overview = assertInstanceOf(List.class, data.get("therapyOverview"));
         assertEquals(Map.of(
-                "study_short_name", "CMB",
-                "display_program", "Not Applicable",
-                "program_short_name", "NA",
+                "study_short_name", List.of("CMB"),
+                "display_program", List.of("Not Applicable"),
+                "program_short_name", List.of("NA"),
                 "ctep_disease_term", "Plasma Cell Myeloma"), overview.get(0));
         List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
         assertEquals(Map.of(
@@ -110,6 +114,7 @@ public class TherapyOverviewScalarFieldsTest {
                 "program_short_name", List.of("NA"),
                 "ctep_disease_term", List.of("Plasma Cell Myeloma")));
         verifyFilters(esService, "therapy_data_files", Map.of(
+                "participant_id", List.of("CTDC-TEST-1"),
                 "study_short_name", List.of("CMB"),
                 "program_short_name", List.of("NA")));
     }
@@ -118,19 +123,21 @@ public class TherapyOverviewScalarFieldsTest {
     public void therapyDisplaysHandleScalarMissingAndMultipleIndexedValues() throws Exception {
         Map<String, Object> firstRow = new HashMap<>();
         firstRow.put("study_short_name", List.of("Zulu", "Alpha"));
-        firstRow.put("program_name", "Already scalar");
+        firstRow.put("program_name", List.of("Already scalar"));
         firstRow.put("program_short_name", List.of());
         firstRow.put("ctep_disease_term", Arrays.asList(null, "One"));
         Map<String, Object> secondRow = Map.of(
                 "study_short_name", List.of("Alpha", "Zulu"),
                 "ctep_disease_term", List.of());
         Map<String, Object> thirdRow = Map.of(
-                "study_short_name", "Single",
+                "study_short_name", List.of("Single"),
                 "program_short_name", Arrays.asList(null, "NA", "NA"));
         ESService esService = mock(ESService.class);
         when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
                 "therapyOverview", List.of(firstRow, secondRow, thirdRow),
-                "therapy_data_files", List.of(firstRow, secondRow, thirdRow)));
+                "therapy_data_files", List.of(firstRow, secondRow, Map.of(
+                        "study_short_name", "Single",
+                        "program_short_name", Arrays.asList(null, "NA", "NA")))));
 
         ExecutionResult result = graphQL(esService).execute("""
                 {
@@ -144,16 +151,16 @@ public class TherapyOverviewScalarFieldsTest {
         List<?> rows = assertInstanceOf(List.class, data.get("therapyOverview"));
         Map<?, ?> first = assertInstanceOf(Map.class, rows.get(0));
         Map<?, ?> second = assertInstanceOf(Map.class, rows.get(1));
-        assertEquals("Alpha", first.get("study_short_name"));
-        assertEquals("Alpha", second.get("study_short_name"));
-        assertEquals("Already scalar", first.get("program_name"));
-        assertNull(first.get("program_short_name"));
+        assertEquals(List.of("Zulu", "Alpha"), first.get("study_short_name"));
+        assertEquals(List.of("Alpha", "Zulu"), second.get("study_short_name"));
+        assertEquals(List.of("Already scalar"), first.get("program_name"));
+        assertEquals(List.of(), first.get("program_short_name"));
         assertNull(second.get("program_name"));
         assertEquals("One", first.get("ctep_disease_term"));
         assertNull(second.get("ctep_disease_term"));
         Map<?, ?> third = assertInstanceOf(Map.class, rows.get(2));
-        assertEquals("Single", third.get("study_short_name"));
-        assertEquals("NA", third.get("program_short_name"));
+        assertEquals(List.of("Single"), third.get("study_short_name"));
+        assertEquals(Arrays.asList(null, "NA", "NA"), third.get("program_short_name"));
         List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
         for (Object file : files.subList(0, 2)) {
             Map<?, ?> row = assertInstanceOf(Map.class, file);
@@ -166,23 +173,29 @@ public class TherapyOverviewScalarFieldsTest {
     @Test
     public void therapyDisplaysReportUnexpectedIndexedValueTypes() throws Exception {
         ESService esService = mock(ESService.class);
-        Map<String, Object> invalidRow = Map.of(
+        Map<String, Object> invalidOverviewRow = Map.of(
+                "ctep_disease_term", List.of(17),
+                "program_short_name", List.of("NA"));
+        Map<String, Object> invalidFileRow = Map.of(
                 "study_short_name", List.of(17),
                 "program_short_name", 17);
         when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
-                "therapyOverview", List.of(invalidRow),
-                "therapy_data_files", List.of(invalidRow)));
+                "therapyOverview", List.of(invalidOverviewRow),
+                "therapy_data_files", List.of(invalidFileRow)));
 
         ExecutionResult result = graphQL(esService).execute("""
                 {
-                  therapyOverview { study_short_name program_short_name }
+                  therapyOverview { ctep_disease_term program_short_name }
                   therapy_data_files { study_short_name program_short_name }
                 }
                 """);
 
-        assertEquals(4, result.getErrors().size(), () -> result.getErrors().toString());
+        assertEquals(3, result.getErrors().size(), () -> result.getErrors().toString());
         for (String type : List.of("TherapyOverview", "TherapyDataFile")) {
-            for (String field : List.of("study_short_name", "program_short_name")) {
+            List<String> fields = "TherapyOverview".equals(type)
+                    ? List.of("ctep_disease_term")
+                    : List.of("study_short_name", "program_short_name");
+            for (String field : fields) {
                 assertTrue(result.getErrors().stream()
                                 .anyMatch(error -> error.getMessage().contains(type + "." + field)),
                         () -> "Unexpected value type should produce a GraphQL error: " + result.getErrors());

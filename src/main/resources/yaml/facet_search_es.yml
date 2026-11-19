@@ -73,7 +73,7 @@ queries:
           method: count_bucket_keys
       - name: numberOfTherapies
         index:
-          - therapy_count
+          - widgets_facets_counts
         filter:
           type: aggregation
           selectedField: therapy_name
@@ -490,31 +490,6 @@ queries:
           ignoreSelectedField: true
         result:
           type: group_count
-      - name: participantCountBySingleTherapyCombination
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: therapy_string
-        result:
-          type: group_count
-      - name: filterParticipantCountBySingleTherapyCombination
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: therapy_string
-          ignoreSelectedField: true
-        result:
-          type: group_count
-      - name: participantCountBySingleTherapyCombinationForFacet
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: therapy_string
-        result:
-          type: group_count
       - name: participantCountByStudyShortName
         index:
           - widgets_facets_counts
@@ -563,15 +538,6 @@ queries:
         filter:
           type: aggregation
           selectedField: program_short_name
-          ignoreSelectedField: true
-        result:
-          type: group_count
-      - name: filterParticipantCountBySingleTherapyCombinationForFacet
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: therapy_string
           ignoreSelectedField: true
         result:
           type: group_count

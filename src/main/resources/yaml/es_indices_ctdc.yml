@@ -2145,6 +2145,8 @@ Indices:
         type: keyword
       participant_id:
         type: keyword
+      therapy_record_id:
+        type: keyword
       ctep_disease_term:
         type: keyword
       primary_diagnosis_disease_group:
@@ -2383,6 +2385,10 @@ Indices:
             WHERE t IS NOT NULL AND trim(toString(t)) <> ''
             | trim(toString(t))
           ] AS part_types,
+          [record_id IN COLLECT(tt.therapy_record_id)
+            WHERE record_id IS NOT NULL AND trim(toString(record_id)) <> ''
+            | toString(record_id)
+          ] AS part_therapy_record_ids,
           associations
         WITH COLLECT(
           apoc.text.join(
@@ -2410,6 +2416,11 @@ Indices:
               acc + [x IN p WHERE x IS NOT NULL AND x <> '']
             )
           ) AS tt_types,
+          apoc.coll.toSet(
+            reduce(acc = [], ids IN COLLECT(part_therapy_record_ids) |
+              acc + ids
+            )
+          ) AS tt_record_ids,
           associations
         WITH apoc.coll.toSet([x IN all_per_part WHERE x IS NOT NULL AND x <> '']) AS tt_strings,
           apoc.coll.toSet(
@@ -2421,6 +2432,7 @@ Indices:
           tt_best_responses,
           tt_current_responses,
           tt_types,
+          tt_record_ids,
           associations
         RETURN
           CASE WHEN size(associations) = 1 AND 'study' IN associations
@@ -2431,7 +2443,11 @@ Indices:
           tt_categories                                        AS therapy_category,
           tt_types                                             AS therapy_type,
           tt_best_responses                                     AS best_response_to_therapy,
-          tt_current_responses                                  AS current_response_to_therapy
+          tt_current_responses                                  AS current_response_to_therapy,
+          CASE WHEN size(associations) = 1 AND 'study' IN associations
+            THEN []
+            ELSE tt_record_ids
+          END                                                  AS therapy_record_id
       }
 
       WITH
@@ -2444,7 +2460,8 @@ Indices:
         therapy_type,
         best_response_to_therapy,
         current_response_to_therapy,
-        therapy_string
+        therapy_string,
+        therapy_record_id
 
       RETURN
         'data file' AS type,
@@ -2503,6 +2520,7 @@ Indices:
         therapy_type,
         best_response_to_therapy,
         current_response_to_therapy,
+        therapy_record_id,
         therapy_string                                         AS therapy_string,
 
         [x IN specs | {
