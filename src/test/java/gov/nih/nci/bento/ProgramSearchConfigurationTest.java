@@ -179,31 +179,11 @@ public class ProgramSearchConfigurationTest {
             assertNotNull(input);
             registry = new SchemaParser().parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        String operation = """
-                query ProgramPage(
-                  $program_short_name: [String] = []
-                  $is_program: [String] = ["is program"]
-                  $first: Int = 10000
-                  $offset: Int = 0
-                  $order_by: String = "program_sort_order"
-                  $sort_direction: String = "ASC"
-                ) {
-                  getAllPrograms(
-                    program_short_name: $program_short_name
-                    is_program: $is_program
-                    first: $first
-                    offset: $offset
-                    order_by: $order_by
-                    sort_direction: $sort_direction
-                  ) {
-                    program_name
-                    program_short_name
-                    is_program
-                    study_count
-                    studies { study_id study_accession study_short_name study_name }
-                  }
-                }
-                """;
+        String operation;
+        try (InputStream input = ClassLoader.getSystemResourceAsStream("graphql/operations/program-page.graphql")) {
+            assertNotNull(input);
+            operation = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
         OperationDefinition programPage = (OperationDefinition) new Parser().parseDocument(operation)
                 .getDefinitions().get(0);
         var orderBy = programPage.getVariableDefinitions().stream()
