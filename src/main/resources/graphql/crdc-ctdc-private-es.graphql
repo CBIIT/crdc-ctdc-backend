@@ -1536,6 +1536,8 @@ type QueryType {
     therapy_string: [String] = []
     therapy_category: [String] = []
     therapy_type: [String] = []
+    therapy_dose_units: [String] = []
+    therapy_frequency: [String] = []
     best_response_to_therapy: [String] = []
     current_response_to_therapy: [String] = []
     anatomical_collection_site: [String] = []

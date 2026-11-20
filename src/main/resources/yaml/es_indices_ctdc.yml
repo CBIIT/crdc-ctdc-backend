@@ -564,6 +564,10 @@ Indices:
         type: keyword
       therapy_type:
         type: keyword
+      therapy_dose_units:
+        type: keyword
+      therapy_frequency:
+        type: keyword
       best_response_to_therapy:
         type: keyword
       current_response_to_therapy:
@@ -637,16 +641,24 @@ Indices:
           [t IN COLLECT(tt.therapy_type)
           WHERE t IS NOT NULL AND trim(toString(t)) <> ''
           | trim(toString(t))
-          ] AS types
-        WITH apoc.map.groupBy(tt_items, 'name') AS byName, responses, current_responses, categories, types
+          ] AS types,
+          [u IN COLLECT(tt.therapy_dose_units)
+          WHERE u IS NOT NULL
+          ] AS dose_units,
+          [f IN COLLECT(tt.therapy_frequency)
+          WHERE f IS NOT NULL
+          ] AS frequencies
+        WITH apoc.map.groupBy(tt_items, 'name') AS byName, responses, current_responses, categories, types, dose_units, frequencies
         WITH [k IN keys(byName) |
-          {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses, current_responses, categories, types
+          {name: k, id: head([e IN byName[k] WHERE e.id IS NOT NULL | e.id])}] AS grouped, responses, current_responses, categories, types, dose_units, frequencies
         WITH grouped,
           [e IN grouped | e.name] AS names,
           responses,
           current_responses,
           categories,
-          types
+          types,
+          dose_units,
+          frequencies
         RETURN
           names AS therapy,
           [e IN grouped | e.id] AS therapy_record_id,
@@ -657,7 +669,9 @@ Indices:
         apoc.coll.toSet(responses) AS best_response_to_therapy,
         apoc.coll.toSet(current_responses) AS current_response_to_therapy,
         apoc.coll.toSet(categories) AS therapy_category,
-        apoc.coll.toSet(types) AS therapy_type
+        apoc.coll.toSet(types) AS therapy_type,
+        apoc.coll.toSet(dose_units) AS therapy_dose_units,
+        apoc.coll.toSet(frequencies) AS therapy_frequency
       }
 
       CALL {
@@ -722,6 +736,8 @@ Indices:
       therapy_string AS therapy_string,
       therapy_category,
       therapy_type,
+      therapy_dose_units,
+      therapy_frequency,
       best_response_to_therapy,
       current_response_to_therapy,
       anatomical_collection_site,
@@ -1957,6 +1973,10 @@ Indices:
         type: keyword
       therapy_type:
         type: keyword
+      therapy_dose_units:
+        type: keyword
+      therapy_frequency:
+        type: keyword
       best_response_to_therapy:
         type: keyword
       current_response_to_therapy:
@@ -2025,14 +2045,22 @@ Indices:
         [t IN COLLECT(tt.therapy_type)
           WHERE t IS NOT NULL AND trim(toString(t)) <> ''
           | trim(toString(t))
-        ] AS types
-        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses, apoc.coll.toSet(current_responses) AS current_responses_set, apoc.coll.toSet(categories) AS therapy_categories, apoc.coll.toSet(types) AS therapy_types
+        ] AS types,
+        [u IN COLLECT(tt.therapy_dose_units)
+          WHERE u IS NOT NULL
+        ] AS dose_units,
+        [f IN COLLECT(tt.therapy_frequency)
+          WHERE f IS NOT NULL
+        ] AS frequencies
+        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses, apoc.coll.toSet(current_responses) AS current_responses_set, apoc.coll.toSet(categories) AS therapy_categories, apoc.coll.toSet(types) AS therapy_types, apoc.coll.toSet(dose_units) AS therapy_dose_units, apoc.coll.toSet(frequencies) AS therapy_frequencies
         RETURN
           dedup                                                      AS therapy,
           best_responses                                             AS best_response_to_therapy,
           current_responses_set                                      AS current_response_to_therapy,
           therapy_categories                                         AS therapy_category,
           therapy_types                                              AS therapy_type,
+          therapy_dose_units                                         AS therapy_dose_units,
+          therapy_frequencies                                        AS therapy_frequency,
           apoc.text.join(apoc.coll.sort(dedup), '|')                 AS therapy_string
       }
 
@@ -2104,6 +2132,8 @@ Indices:
       therapy AS therapy_name,
       therapy_category,
       therapy_type,
+      therapy_dose_units,
+      therapy_frequency,
       best_response_to_therapy,
       current_response_to_therapy,
       therapy_string AS therapy_string,
@@ -2190,6 +2220,10 @@ Indices:
       therapy_category:
         type: keyword
       therapy_type:
+        type: keyword
+      therapy_dose_units:
+        type: keyword
+      therapy_frequency:
         type: keyword
       best_response_to_therapy:
         type: keyword
@@ -2385,6 +2419,12 @@ Indices:
             WHERE t IS NOT NULL AND trim(toString(t)) <> ''
             | trim(toString(t))
           ] AS part_types,
+          [u IN COLLECT(tt.therapy_dose_units)
+            WHERE u IS NOT NULL
+          ] AS part_dose_units,
+          [freq IN COLLECT(tt.therapy_frequency)
+            WHERE freq IS NOT NULL
+          ] AS part_frequencies,
           [record_id IN COLLECT(tt.therapy_record_id)
             WHERE record_id IS NOT NULL AND trim(toString(record_id)) <> ''
             | toString(record_id)
@@ -2417,6 +2457,16 @@ Indices:
             )
           ) AS tt_types,
           apoc.coll.toSet(
+            reduce(acc = [], p IN COLLECT(part_dose_units) |
+              acc + [x IN p WHERE x IS NOT NULL]
+            )
+          ) AS tt_dose_units,
+          apoc.coll.toSet(
+            reduce(acc = [], p IN COLLECT(part_frequencies) |
+              acc + [x IN p WHERE x IS NOT NULL]
+            )
+          ) AS tt_frequencies,
+          apoc.coll.toSet(
             reduce(acc = [], ids IN COLLECT(part_therapy_record_ids) |
               acc + ids
             )
@@ -2432,6 +2482,8 @@ Indices:
           tt_best_responses,
           tt_current_responses,
           tt_types,
+          tt_dose_units,
+          tt_frequencies,
           tt_record_ids,
           associations
         RETURN
@@ -2442,6 +2494,8 @@ Indices:
           tt_strings                                           AS therapy_string,
           tt_categories                                        AS therapy_category,
           tt_types                                             AS therapy_type,
+          tt_dose_units                                        AS therapy_dose_units,
+          tt_frequencies                                       AS therapy_frequency,
           tt_best_responses                                     AS best_response_to_therapy,
           tt_current_responses                                  AS current_response_to_therapy,
           CASE WHEN size(associations) = 1 AND 'study' IN associations
@@ -2458,6 +2512,8 @@ Indices:
         therapy_raw,
         therapy_category,
         therapy_type,
+        therapy_dose_units,
+        therapy_frequency,
         best_response_to_therapy,
         current_response_to_therapy,
         therapy_string,
@@ -2518,6 +2574,8 @@ Indices:
         therapy_raw                                            AS therapy_name,
         therapy_category,
         therapy_type,
+        therapy_dose_units,
+        therapy_frequency,
         best_response_to_therapy,
         current_response_to_therapy,
         therapy_record_id,

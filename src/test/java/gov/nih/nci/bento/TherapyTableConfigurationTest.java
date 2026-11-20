@@ -182,6 +182,30 @@ public class TherapyTableConfigurationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void therapyDoseFiltersAreAvailableToSearchAndItsIndices() {
+        ObjectTypeDefinition query = schema().getType("QueryType", ObjectTypeDefinition.class).orElseThrow();
+        FieldDefinition search = field(query, "searchParticipants");
+        for (String name : List.of("therapy_dose_units", "therapy_frequency")) {
+            InputValueDefinition argument = search.getInputValueDefinitions().stream()
+                    .filter(value -> name.equals(value.getName())).findFirst()
+                    .orElseThrow(() -> new AssertionError("searchParticipants." + name + " is missing"));
+            assertEquals("String", ((TypeName) ((ListType) argument.getType()).getType()).getName(), name);
+        }
+
+        for (String indexName : List.of("widgets_facets_counts", "tab_therapies", "tab_biospecimens", "tab_data_files")) {
+            Map<String, Object> mapping = (Map<String, Object>) index(indexName).get("mapping");
+            String cypher = (String) index(indexName).get("cypher_query");
+            for (String name : List.of("therapy_dose_units", "therapy_frequency")) {
+                assertEquals("keyword", ((Map<String, Object>) mapping.get(name)).get("type"),
+                        indexName + "." + name);
+                assertTrue(cypher.matches("(?s).*(AS " + name + "\\b|[\\s,]" + name + "[\\s,]).*"),
+                        indexName + " cypher must return " + name);
+            }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void currentResponseFacetMatchesBestResponseAndExcludesItsOwnSelection() throws Exception {
         Map<String, Object> widgetIndex = index("widgets_facets_counts");
         Map<String, Object> mapping = (Map<String, Object>) widgetIndex.get("mapping");
