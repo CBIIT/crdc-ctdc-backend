@@ -141,13 +141,15 @@ public class TherapyTableConfigurationTest {
 
         ObjectTypeDefinition searchResult = schema().getType("SearchResult", ObjectTypeDefinition.class).orElseThrow();
         Map<String, Map<String, Object>> counts = Map.of(
-                "numberOfTherapies", Map.of("index", "therapy_count", "type", "int", "method", "count_bucket_keys"),
-                "numberOfTherapyByDose", Map.of("index", "tab_therapies", "type", "int_total_count"));
+                "numberOfTherapies", Map.of("index", "widgets_facets_counts", "selectedField", "therapy_name",
+                        "type", "int", "method", "count_bucket_keys"),
+                "numberOfTherapyByDose", Map.of("index", "tab_therapies", "selectedField", "therapy_record_id",
+                        "type", "int", "method", "count_bucket_keys"));
         counts.forEach((name, expected) -> {
             Map<String, Object> count = fields.stream().filter(f -> name.equals(f.get("name")))
                     .findFirst().orElseThrow(() -> new AssertionError(name + " is missing"));
             assertEquals(List.of(expected.get("index")), count.get("index"), name);
-            assertEquals("therapy_name", ((Map<String, Object>) count.get("filter")).get("selectedField"), name);
+            assertEquals(expected.get("selectedField"), ((Map<String, Object>) count.get("filter")).get("selectedField"), name);
             Map<String, Object> result = (Map<String, Object>) count.get("result");
             assertEquals(expected.get("type"), result.get("type"), name);
             assertEquals(expected.get("method"), result.get("method"), name);
