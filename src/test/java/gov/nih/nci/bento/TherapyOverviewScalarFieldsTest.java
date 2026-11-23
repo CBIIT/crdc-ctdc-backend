@@ -56,6 +56,27 @@ public class TherapyOverviewScalarFieldsTest {
     }
 
     @Test
+    public void participantOverviewForwardsTherapyDoseFilters() throws Exception {
+        ESService esService = mock(ESService.class);
+        when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
+                "participantOverview", List.of(Map.of("participant_id", "CTDC-TEST-1"))));
+        ExecutionResult result = graphQL(esService).execute("""
+                {
+                  participantOverview(therapy_dose_units: ["mg"], therapy_frequency: ["Daily"]) {
+                    participant_id
+                  }
+                }
+                """);
+
+        assertTrue(result.getErrors().isEmpty(), () -> result.getErrors().toString());
+        Map<?, ?> data = result.getData();
+        assertEquals(List.of(Map.of("participant_id", "CTDC-TEST-1")), data.get("participantOverview"));
+        verifyFilters(esService, "participantOverview", Map.of(
+                "therapy_dose_units", List.of("mg"),
+                "therapy_frequency", List.of("Daily")));
+    }
+
+    @Test
     public void therapyOverviewProgramFieldsRemainListsAndFileFiltersArePreserved() throws Exception {
         Map<String, Object> indexedRow = Map.of(
                 "study_short_name", List.of("CMB"),
@@ -83,7 +104,9 @@ public class TherapyOverviewScalarFieldsTest {
                   therapy_data_files(
                     participant_id: ["CTDC-TEST-1"]
                     study_short_name: ["CMB"]
+                    program_name: ["Not Applicable"]
                     program_short_name: ["NA"]
+                    ctep_disease_term: ["Plasma Cell Myeloma"]
                   ) {
                     display_study: study_short_name
                     program_name
@@ -104,9 +127,9 @@ public class TherapyOverviewScalarFieldsTest {
         List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
         assertEquals(Map.of(
                 "display_study", "CMB",
-                "program_name", List.of("Not Applicable"),
+                "program_name", "Not Applicable",
                 "display_short_program", "NA",
-                "ctep_disease_term", List.of("Plasma Cell Myeloma")), files.get(0));
+                "ctep_disease_term", "Plasma Cell Myeloma"), files.get(0));
 
         verifyFilters(esService, "therapyOverview", Map.of(
                 "study_short_name", List.of("CMB"),
@@ -116,16 +139,18 @@ public class TherapyOverviewScalarFieldsTest {
         verifyFilters(esService, "therapy_data_files", Map.of(
                 "participant_id", List.of("CTDC-TEST-1"),
                 "study_short_name", List.of("CMB"),
-                "program_short_name", List.of("NA")));
+                "program_name", List.of("Not Applicable"),
+                "program_short_name", List.of("NA"),
+                "ctep_disease_term", List.of("Plasma Cell Myeloma")));
     }
 
     @Test
     public void therapyDisplaysHandleScalarMissingAndMultipleIndexedValues() throws Exception {
         Map<String, Object> firstRow = new HashMap<>();
         firstRow.put("study_short_name", List.of("Zulu", "Alpha"));
-        firstRow.put("program_name", List.of("Already scalar"));
+        firstRow.put("program_name", List.of("Zulu", "Already scalar"));
         firstRow.put("program_short_name", List.of());
-        firstRow.put("ctep_disease_term", Arrays.asList(null, "One"));
+        firstRow.put("ctep_disease_term", Arrays.asList(null, "Zulu", "One"));
         Map<String, Object> secondRow = Map.of(
                 "study_short_name", List.of("Alpha", "Zulu"),
                 "ctep_disease_term", List.of());
@@ -142,7 +167,7 @@ public class TherapyOverviewScalarFieldsTest {
         ExecutionResult result = graphQL(esService).execute("""
                 {
                   therapyOverview { study_short_name program_name program_short_name ctep_disease_term }
-                  therapy_data_files { study_short_name program_short_name }
+                  therapy_data_files { study_short_name program_name program_short_name ctep_disease_term }
                 }
                 """);
 
@@ -153,7 +178,7 @@ public class TherapyOverviewScalarFieldsTest {
         Map<?, ?> second = assertInstanceOf(Map.class, rows.get(1));
         assertEquals(List.of("Zulu", "Alpha"), first.get("study_short_name"));
         assertEquals(List.of("Alpha", "Zulu"), second.get("study_short_name"));
-        assertEquals(List.of("Already scalar"), first.get("program_name"));
+        assertEquals(List.of("Zulu", "Already scalar"), first.get("program_name"));
         assertEquals(List.of(), first.get("program_short_name"));
         assertNull(second.get("program_name"));
         assertEquals("One", first.get("ctep_disease_term"));
@@ -167,7 +192,17 @@ public class TherapyOverviewScalarFieldsTest {
             assertEquals("Alpha", row.get("study_short_name"));
             assertNull(row.get("program_short_name"));
         }
-        assertEquals(Map.of("study_short_name", "Single", "program_short_name", "NA"), files.get(2));
+        Map<?, ?> firstFile = assertInstanceOf(Map.class, files.get(0));
+        assertEquals("Already scalar", firstFile.get("program_name"));
+        assertEquals("One", firstFile.get("ctep_disease_term"));
+        Map<?, ?> secondFile = assertInstanceOf(Map.class, files.get(1));
+        assertNull(secondFile.get("program_name"));
+        assertNull(secondFile.get("ctep_disease_term"));
+        Map<?, ?> thirdFile = assertInstanceOf(Map.class, files.get(2));
+        assertEquals("Single", thirdFile.get("study_short_name"));
+        assertEquals("NA", thirdFile.get("program_short_name"));
+        assertNull(thirdFile.get("program_name"));
+        assertNull(thirdFile.get("ctep_disease_term"));
     }
 
     @Test
@@ -178,7 +213,9 @@ public class TherapyOverviewScalarFieldsTest {
                 "program_short_name", List.of("NA"));
         Map<String, Object> invalidFileRow = Map.of(
                 "study_short_name", List.of(17),
-                "program_short_name", 17);
+                "program_name", List.of(17),
+                "program_short_name", 17,
+                "ctep_disease_term", 17);
         when(esService.<Object>elasticMultiSend(anyList())).thenReturn(Map.of(
                 "therapyOverview", List.of(invalidOverviewRow),
                 "therapy_data_files", List.of(invalidFileRow)));
@@ -186,15 +223,15 @@ public class TherapyOverviewScalarFieldsTest {
         ExecutionResult result = graphQL(esService).execute("""
                 {
                   therapyOverview { ctep_disease_term program_short_name }
-                  therapy_data_files { study_short_name program_short_name }
+                  therapy_data_files { study_short_name program_name program_short_name ctep_disease_term }
                 }
                 """);
 
-        assertEquals(3, result.getErrors().size(), () -> result.getErrors().toString());
+        assertEquals(5, result.getErrors().size(), () -> result.getErrors().toString());
         for (String type : List.of("TherapyOverview", "TherapyDataFile")) {
             List<String> fields = "TherapyOverview".equals(type)
                     ? List.of("ctep_disease_term")
-                    : List.of("study_short_name", "program_short_name");
+                    : List.of("study_short_name", "program_name", "program_short_name", "ctep_disease_term");
             for (String field : fields) {
                 assertTrue(result.getErrors().stream()
                                 .anyMatch(error -> error.getMessage().contains(type + "." + field)),

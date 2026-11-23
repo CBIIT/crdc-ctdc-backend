@@ -72,6 +72,17 @@ public class TherapyNameFilterConfigurationTest {
         assertIndexPropagatesTherapyName(indices, "tab_data_files", "AS therapy_name");
         assertIndexPropagatesTherapyName(indices, "biospecimen_data_file", "AS therapy_name");
         assertIndexPropagatesTherapyRecordId(indices, "tab_data_files");
+
+        Map<String, Object> participants = indices.stream()
+                .filter(index -> "tab_participants".equals(index.get("index_name")))
+                .findFirst().orElseThrow(() -> new AssertionError("tab_participants index is missing"));
+        String cypher = (String) participants.get("cypher_query");
+        assertTrue(cypher.contains("apoc.coll.sort(cleaned_tt) AS therapy"),
+                "participant therapy_name should use the same sorted names as therapy_string");
+        assertTrue(cypher.contains("apoc.text.join(apoc.coll.sort(cleaned_tt), '|')"),
+                "participant therapy_string should join the sorted names");
+        assertTrue(cypher.contains("therapy AS therapy_name"),
+                "participant therapy_name should project the sorted list");
     }
 
     @Test

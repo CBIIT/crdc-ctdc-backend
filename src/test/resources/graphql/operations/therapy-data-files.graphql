@@ -86,7 +86,9 @@ query therapy_data_files(
     therapy_dose
     therapy_dose_units
     study_short_name
+    program_name
     program_short_name
+    ctep_disease_term
     __typename
   }
 }

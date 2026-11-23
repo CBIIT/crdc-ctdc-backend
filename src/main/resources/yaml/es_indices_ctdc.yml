@@ -1617,6 +1617,10 @@ Indices:
         type: keyword
       therapy_type:
         type: keyword
+      therapy_dose_units:
+        type: keyword
+      therapy_frequency:
+        type: keyword
       best_response_to_therapy:
         type: keyword
       current_response_to_therapy:
@@ -1727,8 +1731,14 @@ Indices:
         [t IN COLLECT(tt.therapy_type)
           WHERE t IS NOT NULL AND trim(toString(t)) <> ''
           | trim(toString(t))
-        ] AS types
-        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses, apoc.coll.toSet(current_responses) AS current_responses_set, apoc.coll.toSet(categories) AS therapy_categories, apoc.coll.toSet(types) AS therapy_types
+        ] AS types,
+        [u IN COLLECT(tt.therapy_dose_units)
+          WHERE u IS NOT NULL
+        ] AS dose_units,
+        [f IN COLLECT(tt.therapy_frequency)
+          WHERE f IS NOT NULL
+        ] AS frequencies
+        WITH apoc.coll.toSet(ts) AS dedup, apoc.coll.toSet(responses) AS best_responses, apoc.coll.toSet(current_responses) AS current_responses_set, apoc.coll.toSet(categories) AS therapy_categories, apoc.coll.toSet(types) AS therapy_types, apoc.coll.toSet(dose_units) AS therapy_dose_units, apoc.coll.toSet(frequencies) AS therapy_frequencies
         WITH CASE
           WHEN size(dedup) > 1 AND size([t IN dedup WHERE toLower(t) <> 'not reported']) > 0
             THEN [t IN dedup WHERE toLower(t) <> 'not reported']
@@ -1737,12 +1747,16 @@ Indices:
         best_responses AS cleaned_responses,
         current_responses_set AS cleaned_current_responses,
         therapy_categories AS cleaned_categories,
-        therapy_types AS cleaned_types
-        RETURN cleaned_tt AS therapy,
+        therapy_types AS cleaned_types,
+        therapy_dose_units,
+        therapy_frequencies
+        RETURN apoc.coll.sort(cleaned_tt) AS therapy,
           cleaned_responses AS best_response_to_therapy,
           cleaned_current_responses AS current_response_to_therapy,
           cleaned_categories AS therapy_category,
           cleaned_types AS therapy_type,
+          therapy_dose_units,
+          therapy_frequencies AS therapy_frequency,
           CASE
             WHEN size(cleaned_tt) > 0 THEN apoc.text.join(apoc.coll.sort(cleaned_tt), '|')
             ELSE null
@@ -1828,6 +1842,8 @@ Indices:
         current_response_to_therapy,
         therapy_category,
         therapy_type,
+        therapy_dose_units,
+        therapy_frequency,
         therapy_string AS therapy_string,
 
 

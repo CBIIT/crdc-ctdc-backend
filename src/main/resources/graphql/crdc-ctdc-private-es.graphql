@@ -860,7 +860,7 @@ type TherapyOverview {
 
 """
 One row per therapy dose and associated file (therapy_data_file index).
-study_short_name and program_short_name return the first sorted value when multiple values exist.
+study_short_name, program_name, program_short_name and ctep_disease_term return the first sorted value when multiple values exist.
 """
 type TherapyDataFile {
   type: String
@@ -887,13 +887,13 @@ type TherapyDataFile {
   study_type: [String]
   study_description: [String]
   dates_of_conduct: [String]
-  program_name: [String]
+  program_name: String
   program_short_name: String
   crdc_id: [String]
   program_short_description: [String]
   program_external_url: [String]
   program_full_description: [String]
-  ctep_disease_term: [String]
+  ctep_disease_term: String
   primary_diagnosis_disease_group: [String]
   stage_of_disease: [String]
   tumor_grade: [String]
@@ -1253,6 +1253,8 @@ type QueryType {
     therapy_string: [String] = []
     therapy_category: [String] = []
     therapy_type: [String] = []
+    therapy_dose_units: [String] = []
+    therapy_frequency: [String] = []
     best_response_to_therapy: [String] = []
     current_response_to_therapy: [String] = []
 

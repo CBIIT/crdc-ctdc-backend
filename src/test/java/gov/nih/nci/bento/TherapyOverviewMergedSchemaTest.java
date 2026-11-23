@@ -58,8 +58,8 @@ public class TherapyOverviewMergedSchemaTest {
         List<?> files = assertInstanceOf(List.class, data.get("therapy_data_files"));
         assertEquals(Map.of(
                 "study_short_name", "CMB",
-                "program_name", List.of("Not Applicable"),
+                "program_name", "Not Applicable",
                 "program_short_name", "NA",
-                "ctep_disease_term", List.of("Plasma Cell Myeloma")), files.get(0));
+                "ctep_disease_term", "Plasma Cell Myeloma"), files.get(0));
     }
 }

@@ -70,7 +70,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 )
                 .type(newTypeWiring("TherapyDataFile")
                         .dataFetcher("study_short_name", THERAPY_DISPLAY_FIELD_FETCHER)
+                        .dataFetcher("program_name", THERAPY_DISPLAY_FIELD_FETCHER)
                         .dataFetcher("program_short_name", THERAPY_DISPLAY_FIELD_FETCHER)
+                        .dataFetcher("ctep_disease_term", THERAPY_DISPLAY_FIELD_FETCHER)
                 )
                 .build();
     }

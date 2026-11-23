@@ -206,6 +206,25 @@ public class TherapyTableConfigurationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void participantOverviewIndexesTherapyDoseFilters() {
+        ObjectTypeDefinition query = schema().getType("QueryType", ObjectTypeDefinition.class).orElseThrow();
+        FieldDefinition overview = field(query, "participantOverview");
+        Map<String, Object> participantIndex = index("tab_participants");
+        Map<String, Object> mapping = (Map<String, Object>) participantIndex.get("mapping");
+        String cypher = (String) participantIndex.get("cypher_query");
+        for (String name : List.of("therapy_dose_units", "therapy_frequency")) {
+            InputValueDefinition argument = overview.getInputValueDefinitions().stream()
+                    .filter(value -> name.equals(value.getName())).findFirst()
+                    .orElseThrow(() -> new AssertionError("participantOverview." + name + " is missing"));
+            assertEquals("String", ((TypeName) ((ListType) argument.getType()).getType()).getName(), name);
+            assertEquals("keyword", ((Map<String, Object>) mapping.get(name)).get("type"), name);
+            assertTrue(cypher.contains("COLLECT(tt." + name + ")"), name);
+            assertTrue(cypher.matches("(?s).*RETURN DISTINCT.*\\b" + name + "\\s*,.*"), name);
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void currentResponseFacetMatchesBestResponseAndExcludesItsOwnSelection() throws Exception {
         Map<String, Object> widgetIndex = index("widgets_facets_counts");
         Map<String, Object> mapping = (Map<String, Object>) widgetIndex.get("mapping");
@@ -346,14 +365,8 @@ public class TherapyTableConfigurationTest {
                     "TherapyOverview." + name);
         }
         for (String name : List.of("study_short_name", "program_name", "program_short_name", "ctep_disease_term")) {
-            if (Set.of("study_short_name", "program_short_name").contains(name)) {
-                assertEquals("String", assertInstanceOf(TypeName.class, field(dataFile, name).getType()).getName(),
-                        "TherapyDataFile." + name);
-            } else {
-                assertEquals("String", assertInstanceOf(TypeName.class,
-                        assertInstanceOf(ListType.class, field(dataFile, name).getType()).getType()).getName(),
-                        "TherapyDataFile." + name);
-            }
+            assertEquals("String", assertInstanceOf(TypeName.class, field(dataFile, name).getType()).getName(),
+                    "TherapyDataFile." + name);
         }
         assertEquals("String", ((TypeName) field(dataFile, "data_file_uuid").getType()).getName());
         assertEquals("Float", ((TypeName) field(dataFile, "data_file_size").getType()).getName());
