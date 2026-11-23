@@ -3108,7 +3108,9 @@ Indices:
         best_response_to_therapy                    AS best_response_to_therapy,
         current_response_to_therapy                 AS current_response_to_therapy,
 
-        toLower(spec.anatomical_collection_site)    AS anatomical_collection_site,
+        CASE WHEN spec.anatomical_collection_site IS NOT NULL
+          THEN apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
+        END AS anatomical_collection_site,
         spec.specimen_type                          AS specimen_type,
         spec.tissue_category                        AS tissue_category,
         spec.assessment_timepoint                   AS assessment_timepoint
@@ -3655,7 +3657,9 @@ Indices:
       COLLECT(DISTINCT target.current_response_to_therapy) as current_response_to_therapy,
       COLLECT(DISTINCT target.therapy_type) as therapy_type,
       COLLECT(DISTINCT target.therapy_category) as therapy_category,
-      COLLECT(DISTINCT spec.anatomical_collection_site) AS anatomical_collection_site,
+      COLLECT(DISTINCT CASE WHEN spec.anatomical_collection_site IS NOT NULL
+        THEN apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
+      END) AS anatomical_collection_site,
       COLLECT(DISTINCT spec.tissue_category) AS tissue_category,
       COLLECT(DISTINCT spec.assessment_timepoint) AS assessment_timepoint,
       COLLECT(DISTINCT spec.specimen_id) AS specimen_id,
@@ -3665,7 +3669,9 @@ Indices:
       COLLECT(DISTINCT file.data_file_format) AS data_file_format,
       COLLECT(DISTINCT{
         specimen_id: spec.specimen_id,
-        anatomical_collection_site: spec.anatomical_collection_site,
+        anatomical_collection_site: CASE WHEN spec.anatomical_collection_site IS NOT NULL
+          THEN apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))
+        END,
         tissue_category: spec.tissue_category,
         assessment_timepoint: spec.assessment_timepoint
       }) AS biospecimen_info,

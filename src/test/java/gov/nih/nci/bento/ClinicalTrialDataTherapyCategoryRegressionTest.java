@@ -1,18 +1,26 @@
 package gov.nih.nci.bento;
 
+import gov.nih.nci.bento.model.search.filter.FilterParam;
+import gov.nih.nci.bento.model.search.query.QueryFactory;
 import graphql.language.ObjectTypeDefinition;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import org.junit.jupiter.api.Test;
+import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.TermsQueryBuilder;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,6 +28,52 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ClinicalTrialDataTherapyCategoryRegressionTest {
 
     private static final String YAML_PATH = "src/main/resources/yaml/es_indices_ctdc.yml";
+
+    @Test
+    public void anatomicalSitesMatchFacetNormalization() throws IOException {
+        Map<?, ?> yaml = new Yaml().load(Files.readString(Paths.get(YAML_PATH), StandardCharsets.UTF_8));
+        List<?> indices = (List<?>) yaml.get("Indices");
+        Map<?, ?> therapyCount = indices.stream().map(Map.class::cast)
+                .filter(index -> "therapy_count".equals(index.get("index_name"))).findFirst().orElseThrow();
+        Map<?, ?> mapping = (Map<?, ?>) therapyCount.get("mapping");
+        assertEquals("keyword", ((Map<?, ?>) mapping.get("anatomical_collection_site")).get("type"));
+        String query = ((String) therapyCount.get("cypher_query")).replaceAll("\\s+", " ");
+        String guardedSite = "CASE WHEN spec.anatomical_collection_site IS NOT NULL "
+                + "THEN apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)) END";
+        assertTrue(query.contains(
+                "COLLECT(DISTINCT " + guardedSite + ") AS anatomical_collection_site"));
+        assertTrue(query.contains(
+                "anatomical_collection_site: " + guardedSite));
+
+        Map<?, ?> biospecimenFiles = indices.stream().map(Map.class::cast)
+                .filter(index -> "biospecimen_data_file".equals(index.get("index_name"))).findFirst().orElseThrow();
+        assertTrue(((String) biospecimenFiles.get("cypher_query")).replaceAll("\\s+", " ").contains(
+                guardedSite + " AS anatomical_collection_site"));
+
+        Map<?, ?> widgets = indices.stream().map(Map.class::cast)
+                .filter(index -> "widgets_facets_counts".equals(index.get("index_name"))).findFirst().orElseThrow();
+        assertTrue(((String) widgets.get("cypher_query")).contains("apoc.text.capitalizeAll(toLower(s))"));
+    }
+
+    @Test
+    public void therapyFacetFiltersKeepAnatomicalSiteSelection() {
+        for (String selectedField : List.of("therapy_name", "therapy_category")) {
+            for (boolean ignoreSelectedField : List.of(false, true)) {
+                FilterParam param = FilterParam.builder()
+                        .args(Map.of("anatomical_collection_site", List.of("Abdominal Wall"),
+                                selectedField, List.of("selected therapy")))
+                        .selectedField(selectedField)
+                        .isIgnoreSelectedField(ignoreSelectedField)
+                        .build();
+                BoolQueryBuilder query = (BoolQueryBuilder) new QueryFactory(param).getQuery();
+                TermsQueryBuilder site = query.filter().stream().map(TermsQueryBuilder.class::cast)
+                        .filter(filter -> "anatomical_collection_site".equals(filter.fieldName()))
+                        .findFirst().orElseThrow();
+                assertEquals(List.of("Abdominal Wall"), site.values());
+                assertEquals(ignoreSelectedField ? 1 : 2, query.filter().size());
+            }
+        }
+    }
 
     @Test
     public void clinicalTrialDataCypher_shouldRemoveDeadTargetedProjectionAndKeepNonTargetedScoped() throws IOException {
