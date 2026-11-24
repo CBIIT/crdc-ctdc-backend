@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,14 +41,17 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
         String guardedSite = "CASE WHEN spec.anatomical_collection_site IS NOT NULL "
                 + "THEN apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)) END";
         assertTrue(query.contains(
-                "COLLECT(DISTINCT " + guardedSite + ") AS anatomical_collection_site"));
+                "COLLECT(DISTINCT " + guardedSite + ") AS anatomical_collection_site"),
+                "therapy_count must normalize top-level sites without passing null to APOC");
         assertTrue(query.contains(
-                "anatomical_collection_site: " + guardedSite));
+                "anatomical_collection_site: " + guardedSite),
+                "therapy_count must normalize nested sites without passing null to APOC");
 
         Map<?, ?> biospecimenFiles = indices.stream().map(Map.class::cast)
                 .filter(index -> "biospecimen_data_file".equals(index.get("index_name"))).findFirst().orElseThrow();
         assertTrue(((String) biospecimenFiles.get("cypher_query")).replaceAll("\\s+", " ").contains(
-                guardedSite + " AS anatomical_collection_site"));
+                guardedSite + " AS anatomical_collection_site"),
+                "biospecimen_data_file must normalize sites without passing null to APOC");
 
         Map<?, ?> widgets = indices.stream().map(Map.class::cast)
                 .filter(index -> "widgets_facets_counts".equals(index.get("index_name"))).findFirst().orElseThrow();
