@@ -225,6 +225,41 @@ public class TherapyTableConfigurationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void programCountUsesOnlyEligibleProgramsWithoutChangingOtherFacets() throws Exception {
+        Map<String, Object> widgets = index("widgets_facets_counts");
+        Map<String, Object> mapping = (Map<String, Object>) widgets.get("mapping");
+        assertEquals("keyword", ((Map<String, Object>) mapping.get("countable_program_short_name")).get("type"));
+        String cypher = ((String) widgets.get("cypher_query")).replaceAll("\\s+", " ");
+        assertTrue(cypher.contains("COLLECT(DISTINCT CASE WHEN program.program_name IS NOT NULL "
+                + "AND program.program_name <> 'Not Applicable' THEN program.program_short_name END) "
+                + "as countable_program_short_name"));
+
+        ESService esService = mock(ESService.class);
+        AtomicReference<List<MultipleRequests>> requests = new AtomicReference<>();
+        when(esService.<Object>elasticMultiSend(anyList())).thenAnswer(invocation -> {
+            requests.set(invocation.getArgument(0));
+            return Map.of("numberOfPrograms", 1, "participantCountByProgramShortName",
+                    List.of(Map.of("group", "NA", "subjects", 1)));
+        });
+        GraphQL graphQL = GraphQL.newGraphQL(new SchemaGenerator().makeExecutableSchema(
+                schema(), new PrivateESDataFetcher(esService).buildRuntimeWiring())).build();
+        var result = graphQL.execute("""
+                {
+                  searchParticipants(sex: ["Female"], program_short_name: ["NA"]) {
+                    numberOfPrograms
+                    participantCountByProgramShortName { group subjects }
+                  }
+                }
+                """);
+        assertTrue(result.getErrors().isEmpty(), () -> result.getErrors().toString());
+        assertNotNull(requests.get());
+        Map<String, List<String>> filters = Map.of("sex", List.of("Female"), "program_short_name", List.of("NA"));
+        assertResponseFacetRequest(requests.get(), "numberOfPrograms", "countable_program_short_name", filters);
+        assertResponseFacetRequest(requests.get(), "participantCountByProgramShortName", "program_short_name", filters);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void currentResponseFacetMatchesBestResponseAndExcludesItsOwnSelection() throws Exception {
         Map<String, Object> widgetIndex = index("widgets_facets_counts");
         Map<String, Object> mapping = (Map<String, Object>) widgetIndex.get("mapping");

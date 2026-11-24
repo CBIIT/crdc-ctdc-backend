@@ -49,7 +49,7 @@ queries:
           - widgets_facets_counts
         filter:
           type: aggregation
-          selectedField: program_short_name
+          selectedField: countable_program_short_name
         result:
           type: int
           method: count_bucket_keys

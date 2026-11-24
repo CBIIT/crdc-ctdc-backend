@@ -944,6 +944,7 @@ type SearchResult {
   racesAndEthnicities: [ProgramArms]
   timepointsAndBiospecimensTypes: [ProgramArms]
   numberOfStudies: Int
+  """Distinct short names of matching programs, excluding missing or Not Applicable program names."""
   numberOfPrograms: Int
   numberOfParticipants: Int
   numberOfDiagnoses: Int

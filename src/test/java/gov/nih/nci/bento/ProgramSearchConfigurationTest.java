@@ -511,7 +511,7 @@ public class ProgramSearchConfigurationTest {
         assertEquals(List.of("widgets_facets_counts"), programCount.get("index"));
         Map<String, Object> programCountFilter = (Map<String, Object>) programCount.get("filter");
         assertEquals("aggregation", programCountFilter.get("type"));
-        assertEquals("program_short_name", programCountFilter.get("selectedField"));
+        assertEquals("countable_program_short_name", programCountFilter.get("selectedField"));
         Map<String, Object> programCountResult = (Map<String, Object>) programCount.get("result");
         assertEquals("int", programCountResult.get("type"));
         assertEquals("count_bucket_keys", programCountResult.get("method"));
