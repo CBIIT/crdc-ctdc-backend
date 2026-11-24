@@ -943,7 +943,7 @@ Indices:
         current_responses_set AS cleaned_current_responses,
         therapy_categories AS cleaned_categories,
         therapy_types AS cleaned_types
-        RETURN cleaned_tt AS therapy,
+        RETURN apoc.coll.sort(cleaned_tt) AS therapy,
           cleaned_responses AS best_response_to_therapy,
           cleaned_current_responses AS current_response_to_therapy,
           cleaned_categories AS therapy_category,

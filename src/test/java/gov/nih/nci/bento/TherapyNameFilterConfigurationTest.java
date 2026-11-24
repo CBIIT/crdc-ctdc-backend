@@ -64,6 +64,23 @@ public class TherapyNameFilterConfigurationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void participantTherapyNamesAreSortedAfterCleaning() throws Exception {
+        try (InputStream input = ClassLoader.getSystemResourceAsStream("yaml/es_indices_ctdc.yml")) {
+            assertNotNull(input);
+            Map<String, Object> config = new Yaml().load(input);
+            List<Map<String, Object>> indices = (List<Map<String, Object>>) config.get("Indices");
+            Map<String, Object> participantIndex = indices.stream()
+                    .filter(index -> "tab_participants".equals(index.get("index_name")))
+                    .findFirst().orElseThrow();
+            String query = (String) participantIndex.get("cypher_query");
+            assertTrue(query.contains("RETURN apoc.coll.sort(cleaned_tt) AS therapy"));
+            assertTrue(query.contains("therapy AS therapy_name"));
+            assertTrue(query.contains("apoc.text.join(apoc.coll.sort(cleaned_tt), '|')"));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void therapyFacetAggregationsUseTherapyName() {
         Map<String, Object> yamlConfig;
         Yaml yaml = new Yaml();
