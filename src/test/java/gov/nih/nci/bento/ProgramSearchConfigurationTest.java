@@ -190,6 +190,12 @@ public class ProgramSearchConfigurationTest {
                 .filter(variable -> "order_by".equals(variable.getName())).findFirst().orElseThrow();
         assertEquals("program_sort_order",
                 ((graphql.language.StringValue) orderBy.getDefaultValue()).getValue());
+        var affiliation = programPage.getVariableDefinitions().stream()
+                .filter(variable -> "is_program".equals(variable.getName())).findFirst().orElseThrow();
+        var affiliationDefault = assertInstanceOf(graphql.language.ArrayValue.class, affiliation.getDefaultValue());
+        assertEquals(1, affiliationDefault.getValues().size());
+        assertEquals("is program",
+                assertInstanceOf(graphql.language.StringValue.class, affiliationDefault.getValues().get(0)).getValue());
         Field call = (Field) programPage.getSelectionSet().getSelections().get(0);
         assertTrue(call.getArguments().stream().anyMatch(argument ->
                 "order_by".equals(argument.getName())
@@ -372,6 +378,7 @@ public class ProgramSearchConfigurationTest {
         Map<String, Object> studyMapping = (Map<String, Object>) studyIndex.get("mapping");
         assertTrue(!studyMapping.containsKey("is_program"),
                 "Affiliation filtering belongs only to the programs index");
+        assertTrue(!studyMapping.containsKey("is_program"));
         String studyCypher = (String) studyIndex.get("cypher_query");
         assertTrue(!studyCypher.contains("is_program"));
         assertTrue(studyCypher.contains("optional MATCH (participant)<-[*..2]-(f:file)"),
@@ -417,6 +424,8 @@ public class ProgramSearchConfigurationTest {
         assertEquals("String", ((TypeName) programType.getFieldDefinitions().stream()
                 .filter(field -> "is_program".equals(field.getName()))
                 .findFirst().orElseThrow().getType()).getName());
+        assertTrue(programType.getFieldDefinitions().stream()
+                .noneMatch(field -> "study_has_program".equals(field.getName())));
         FieldDefinition studies = programType.getFieldDefinitions().stream()
                 .filter(field -> "studies".equals(field.getName())).findFirst().orElseThrow();
         assertInstanceOf(ListType.class, studies.getType());

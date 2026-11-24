@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -70,7 +72,8 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
                         .filter(filter -> "anatomical_collection_site".equals(filter.fieldName()))
                         .findFirst().orElseThrow();
                 assertEquals(List.of("Abdominal Wall"), site.values());
-                assertEquals(ignoreSelectedField ? 1 : 2, query.filter().size());
+                assertEquals(ignoreSelectedField ? 1 : 2, query.filter().size(),
+                        "Self-excluding therapy facets must still apply the anatomical-site filter");
             }
         }
     }
@@ -164,7 +167,7 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
                 "therapy_count should populate therapy_string from the locally joined therapy combination");
         assertFalse(therapyCountBlock.contains("COLLECT(DISTINCT target.array) as therapy_string"),
                 "therapy_count should not read therapy_string from a non-existent target.array property");
-        assertFalse(therapyCountBlock.contains("COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy"),
+        assertFalse(therapyCountBlock.contains("COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy,"),
                 "therapy_count should not return therapy as a plain string list");
     }
 
