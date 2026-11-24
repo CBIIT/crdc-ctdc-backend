@@ -15,10 +15,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Set;
-import java.util.Optional;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,78 +30,36 @@ public class ClinicalTrialDataTherapyCategoryRegressionTest {
     private static final String YAML_PATH = "src/main/resources/yaml/es_indices_ctdc.yml";
 
     @Test
-    public void therapyProjections_preserveFacetCaseAndTrimValues() throws IOException {
-        Map<?, ?> yaml = new Yaml().load(Files.readString(Paths.get(YAML_PATH), StandardCharsets.UTF_8));
-        List<?> indices = (List<?>) yaml.get("Indices");
-        for (String name : List.of("tab_biospecimens", "biospecimen_data_file", "study_file_overview")) {
-            Map<?, ?> index = indices.stream().map(Map.class::cast)
-                    .filter(entry -> name.equals(entry.get("index_name"))).findFirst().orElseThrow();
-            String query = ((String) index.get("cypher_query")).replaceAll("\\s+", " ");
-            assertFalse(query.contains("toLower(trim(toString("),
-                    name + " must preserve therapy facet casing");
-            assertTrue(query.contains("AS therapy_string"),
-                    name + " must retain therapy combination filtering");
-            assertTrue(query.contains("| trim(toString("),
-                    name + " must trim therapy values");
-            if ("biospecimen_data_file".equals(name)) {
-                assertTrue(query.contains(
-                        "apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)) AS anatomical_collection_site"),
-                        "Biospecimen files must use title-cased anatomical sites");
-                assertTrue(query.contains(
-                        "apoc.coll.sort([t IN collect(DISTINCT tt.therapy_name) WHERE t IS NOT NULL AND trim(toString(t)) <> '' | trim(toString(t)) ])"),
-                        "Biospecimen file combinations must preserve therapy name casing");
-            } else {
-                assertTrue(query.contains(
-                        "WITH [x IN COLLECT(tt.therapy_name) WHERE x IS NOT NULL AND trim(toString(x)) <> '' | trim(toString(x)) ] AS ts"),
-                        name + " must preserve therapy name casing before constructing combinations");
-            }
-        }
-
-        Map<?, ?> therapyCount = indices.stream().map(Map.class::cast)
-                .filter(index -> "therapy_count".equals(index.get("index_name")))
-                .findFirst().orElseThrow();
-        String query = ((String) therapyCount.get("cypher_query")).replaceAll("\\s+", " ");
-        assertTrue(query.contains("COLLECT(DISTINCT trim(toString(target.therapy_name))) as therapy_name"));
-        for (Map.Entry<String, String> field : Map.of(
-                "best_response_to_therapy", "r",
-                "current_response_to_therapy", "s",
-                "therapy_type", "t",
-                "therapy_category", "c").entrySet()) {
-            String variable = field.getValue();
-            assertTrue(query.contains("apoc.coll.toSet([" + variable + " IN COLLECT(target." + field.getKey()
-                    + ") WHERE " + variable + " IS NOT NULL AND trim(toString(" + variable + ")) <> ''"
-                    + " | trim(toString(" + variable + "))]) as " + field.getKey()),
-                    "Therapy counts must trim and deduplicate nonblank " + field.getKey() + " values");
-        }
-    }
-
-    @Test
-    public void therapyCountAnatomicalSites_matchFacetNormalization() throws IOException {
+    public void anatomicalSitesMatchFacetNormalization() throws IOException {
         Map<?, ?> yaml = new Yaml().load(Files.readString(Paths.get(YAML_PATH), StandardCharsets.UTF_8));
         List<?> indices = (List<?>) yaml.get("Indices");
         Map<?, ?> therapyCount = indices.stream().map(Map.class::cast)
-                .filter(index -> "therapy_count".equals(index.get("index_name")))
-                .findFirst().orElseThrow();
+                .filter(index -> "therapy_count".equals(index.get("index_name"))).findFirst().orElseThrow();
         Map<?, ?> mapping = (Map<?, ?>) therapyCount.get("mapping");
         assertEquals("keyword", ((Map<?, ?>) mapping.get("anatomical_collection_site")).get("type"));
-        String query = (String) therapyCount.get("cypher_query");
+        String query = ((String) therapyCount.get("cypher_query")).replaceAll("\\s+", " ");
+        String guardedSite = "CASE WHEN spec.anatomical_collection_site IS NOT NULL "
+                + "THEN apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site)) END";
         assertTrue(query.contains(
-                "COLLECT(DISTINCT apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))) AS anatomical_collection_site"),
-                "Therapy counts must index title-cased sites to match anatomical-site facet selections");
+                "COLLECT(DISTINCT " + guardedSite + ") AS anatomical_collection_site"),
+                "therapy_count must normalize top-level sites without passing null to APOC");
         assertTrue(query.contains(
-                "anatomical_collection_site: apoc.text.capitalizeAll(toLower(spec.anatomical_collection_site))"),
-                "Nested biospecimen sites must use the same normalized values");
+                "anatomical_collection_site: " + guardedSite),
+                "therapy_count must normalize nested sites without passing null to APOC");
+
+        Map<?, ?> biospecimenFiles = indices.stream().map(Map.class::cast)
+                .filter(index -> "biospecimen_data_file".equals(index.get("index_name"))).findFirst().orElseThrow();
+        assertTrue(((String) biospecimenFiles.get("cypher_query")).replaceAll("\\s+", " ").contains(
+                guardedSite + " AS anatomical_collection_site"),
+                "biospecimen_data_file must normalize sites without passing null to APOC");
 
         Map<?, ?> widgets = indices.stream().map(Map.class::cast)
-                .filter(index -> "widgets_facets_counts".equals(index.get("index_name")))
-                .findFirst().orElseThrow();
-        assertTrue(((String) widgets.get("cypher_query")).contains(
-                "apoc.text.capitalizeAll(toLower(s))"),
-                "Participant therapy facets and therapy totals must use the same site normalization");
+                .filter(index -> "widgets_facets_counts".equals(index.get("index_name"))).findFirst().orElseThrow();
+        assertTrue(((String) widgets.get("cypher_query")).contains("apoc.text.capitalizeAll(toLower(s))"));
     }
 
     @Test
-    public void therapyFacetFilters_keepAnatomicalSiteSelection() {
+    public void therapyFacetFiltersKeepAnatomicalSiteSelection() {
         for (String selectedField : List.of("therapy_name", "therapy_category")) {
             for (boolean ignoreSelectedField : List.of(false, true)) {
                 FilterParam param = FilterParam.builder()

@@ -49,7 +49,7 @@ queries:
           - widgets_facets_counts
         filter:
           type: aggregation
-          selectedField: program_short_name
+          selectedField: countable_program_short_name
         result:
           type: int
           method: count_bucket_keys
@@ -73,10 +73,19 @@ queries:
           method: count_bucket_keys
       - name: numberOfTherapies
         index:
-          - therapy_count
+          - widgets_facets_counts
         filter:
           type: aggregation
           selectedField: therapy_name
+        result:
+          type: int
+          method: count_bucket_keys
+      - name: numberOfTherapyByDose
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_record_id
         result:
           type: int
           method: count_bucket_keys
@@ -362,29 +371,123 @@ queries:
           ignoreSelectedField: true
         result:
           type: group_count
-      - name: participantCountBySingleTherapyCombination
+      - name: therapyCountByTherapy
         index:
-          - widgets_facets_counts
+          - tab_therapies
         filter:
           type: aggregation
-          selectedField: therapy_string
+          selectedField: therapy_name
         result:
           type: group_count
-      - name: filterParticipantCountBySingleTherapyCombination
+      - name: filterTherapyCountByTherapy
         index:
-          - widgets_facets_counts
+          - tab_therapies
         filter:
           type: aggregation
-          selectedField: therapy_string
+          selectedField: therapy_name
           ignoreSelectedField: true
         result:
           type: group_count
-      - name: participantCountBySingleTherapyCombinationForFacet
+      - name: therapyCountByTherapyCategory
         index:
-          - widgets_facets_counts
+          - tab_therapies
         filter:
           type: aggregation
-          selectedField: therapy_string
+          selectedField: therapy_category
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyCategory
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_category
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyType
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_type
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyType
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_type
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByBestResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: best_response_to_therapy
+        result:
+          type: group_count
+      - name: filterTherapyCountByBestResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: best_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByCurrentResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: current_response_to_therapy
+        result:
+          type: group_count
+      - name: filterTherapyCountByCurrentResponseToTherapy
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: current_response_to_therapy
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyDoseUnits
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_dose_units
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyDoseUnits
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_dose_units
+          ignoreSelectedField: true
+        result:
+          type: group_count
+      - name: therapyCountByTherapyFrequency
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_frequency
+        result:
+          type: group_count
+      - name: filterTherapyCountByTherapyFrequency
+        index:
+          - tab_therapies
+        filter:
+          type: aggregation
+          selectedField: therapy_frequency
+          ignoreSelectedField: true
         result:
           type: group_count
       - name: participantCountByStudyShortName
@@ -435,15 +538,6 @@ queries:
         filter:
           type: aggregation
           selectedField: program_short_name
-          ignoreSelectedField: true
-        result:
-          type: group_count
-      - name: filterParticipantCountBySingleTherapyCombinationForFacet
-        index:
-          - widgets_facets_counts
-        filter:
-          type: aggregation
-          selectedField: therapy_string
           ignoreSelectedField: true
         result:
           type: group_count

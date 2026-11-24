@@ -26,6 +26,8 @@ import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private static final Logger logger = LogManager.getLogger(PrivateESDataFetcher.class);
     private static final String STUDY_END_POINT = "/study/_search";
+    private static final TherapyDisplayFieldFetcher THERAPY_DISPLAY_FIELD_FETCHER =
+            new TherapyDisplayFieldFetcher();
     private final YamlQueryFactory yamlQueryFactory;
     private final TypeMapperService typeMapper = new TypeMapperImpl();
 
@@ -62,6 +64,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         .dataFetcher("samplesForSubjectId", env ->
                                 samplesForSubjectId(createQueryParam(env)))
                         .dataFetcher("publicationInfo", env -> publicationInfo(env.getArguments()))
+                )
+                .type(newTypeWiring("TherapyOverview")
+                        .dataFetcher("ctep_disease_term", THERAPY_DISPLAY_FIELD_FETCHER)
+                )
+                .type(newTypeWiring("TherapyDataFile")
+                        .dataFetcher("study_short_name", THERAPY_DISPLAY_FIELD_FETCHER)
+                        .dataFetcher("program_name", THERAPY_DISPLAY_FIELD_FETCHER)
+                        .dataFetcher("program_short_name", THERAPY_DISPLAY_FIELD_FETCHER)
+                        .dataFetcher("ctep_disease_term", THERAPY_DISPLAY_FIELD_FETCHER)
                 )
                 .build();
     }

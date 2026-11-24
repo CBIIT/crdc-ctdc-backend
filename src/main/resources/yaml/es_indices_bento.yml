@@ -608,6 +608,12 @@ Indices:
         type: keyword
       program_name:
         type: keyword
+      program_short_name:
+        type: keyword
+      crdc_id:
+        type: keyword
+      program_short_description:
+        type: keyword
       program_code_kw:
         type: keyword
       program_id_kw:
@@ -655,6 +661,9 @@ Indices:
         p.program_id AS program_id_kw,
         p.program_name AS program_name,
         p.program_name AS program_name_kw,
+        p.program_short_name AS program_short_name,
+        p.crdc_id AS crdc_id,
+        p.program_short_description AS program_short_description,
         p.start_date AS start_date,
         p.end_date AS end_date,
         p.pubmed_id AS pubmed_id,

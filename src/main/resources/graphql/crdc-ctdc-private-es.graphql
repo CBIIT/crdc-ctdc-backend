@@ -753,6 +753,7 @@ type FileOverview {
 
 type FileParticipant {
   participant_id: String
+  therapy_record_id: [String]
   study_short_name: String
   study_id: String
   study_accession: String
@@ -775,15 +776,182 @@ type FileParticipant {
   data_file_uuid: String # For Adding Files into Cart
 }
 
+type TherapyBiospecimenInfo {
+  specimen_id: String
+  specimen_record_id: String
+  specimen_category: String
+  specimen_type: String
+  anatomical_collection_site: String
+  tissue_category: String
+  assessment_timepoint: String
+}
+
+"""
+One row per participant and distinct therapy dose (tab_therapies index).
+The study, program, and disease display fields return the first sorted value when multiple values exist.
+"""
+type TherapyOverview {
+  type: String
+  participant_id: String
+  course_number: String
+  therapy_name: String
+  therapy_name_key: String
+  therapy_string: String
+  therapy_type: [String]
+  therapy_category: String
+  therapy_dose: String
+  therapy_dose_units: String
+  therapy_frequency: String
+  current_response_to_therapy: String
+  best_response_to_therapy: String
+  number_of_doses: [String]
+  planned_dose: [String]
+  dose_records: Int
+  therapy_record_id: [String]
+  study_short_name: [String]
+  study_id: [String]
+  study_accession: [String]
+  study_name: [String]
+  study_type: [String]
+  study_description: [String]
+  dates_of_conduct: [String]
+  program_name: [String]
+  program_short_name: [String]
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
+  ctep_disease_term: String
+  primary_diagnosis_disease_group: [String]
+  stage_of_disease: [String]
+  tumor_grade: [String]
+  primary_disease_site: [String]
+  snomed_disease_code: [String]
+  diagnosis_id: [String]
+  meddra_disease_code: [String]
+  histology: [String]
+  survival_status: String
+  age_at_enrollment: [Int]
+  sex: [String]
+  race: [String]
+  ethnicity: [String]
+  carcinogen_exposure: [String]
+  specimen_id: [String]
+  specimen_record_id: [String]
+  specimen_category: [String]
+  specimen_type: [String]
+  anatomical_collection_site: [String]
+  tissue_category: [String]
+  assessment_timepoint: [String]
+  surgical_procedure: [String]
+  surgical_procedure_anatomical_location: [String]
+  surgical_procedure_date: [String]
+  surgical_procedure_findings: [String]
+  surgical_procedure_id: [String]
+  surgical_procedure_therapeutic: [String]
+  extent_of_residual_disease: [String]
+  data_file_uuid: [String] # For Adding Files into Cart
+  data_file_type: [String]
+  data_file_format: [String]
+  biospecimen_info: [TherapyBiospecimenInfo]
+  file_info: [StudyFileOverviewFileInfo]
+  data_files: [DataFile]
+}
+
+"""
+One row per therapy dose and associated file (therapy_data_file index).
+study_short_name, program_name, program_short_name and ctep_disease_term return the first sorted value when multiple values exist.
+"""
+type TherapyDataFile {
+  type: String
+  participant_id: String
+  course_number: String
+  therapy_name: String
+  therapy_name_key: String
+  therapy_string: String
+  therapy_type: [String]
+  therapy_category: String
+  therapy_dose: String
+  therapy_dose_units: String
+  therapy_frequency: String
+  current_response_to_therapy: String
+  best_response_to_therapy: String
+  number_of_doses: [String]
+  planned_dose: [String]
+  dose_records: Int
+  therapy_record_id: [String]
+  study_short_name: String
+  study_id: [String]
+  study_accession: [String]
+  study_name: [String]
+  study_type: [String]
+  study_description: [String]
+  dates_of_conduct: [String]
+  program_name: String
+  program_short_name: String
+  crdc_id: [String]
+  program_short_description: [String]
+  program_external_url: [String]
+  program_full_description: [String]
+  ctep_disease_term: String
+  primary_diagnosis_disease_group: [String]
+  stage_of_disease: [String]
+  tumor_grade: [String]
+  primary_disease_site: [String]
+  snomed_disease_code: [String]
+  diagnosis_id: [String]
+  meddra_disease_code: [String]
+  histology: [String]
+  survival_status: String
+  age_at_enrollment: [Int]
+  sex: [String]
+  race: [String]
+  ethnicity: [String]
+  carcinogen_exposure: [String]
+  specimen_id: [String]
+  specimen_record_id: [String]
+  specimen_category: [String]
+  specimen_type: [String]
+  anatomical_collection_site: [String]
+  tissue_category: [String]
+  assessment_timepoint: [String]
+  surgical_procedure: [String]
+  surgical_procedure_anatomical_location: [String]
+  surgical_procedure_date: [String]
+  surgical_procedure_findings: [String]
+  surgical_procedure_id: [String]
+  surgical_procedure_therapeutic: [String]
+  extent_of_residual_disease: [String]
+  data_file_uuid: String # For Adding Files into Cart
+  data_file_name: String
+  data_file_type: String
+  data_file_format: String
+  data_file_size: Float
+  data_file_description: String
+  data_file_checksum_value: String
+  data_file_checksum_type: String
+  data_file_location: String
+  data_file_compression_status: String
+  drs_uri: String
+  association: [String]
+  biospecimen_info: [TherapyBiospecimenInfo]
+  file_info: [StudyFileOverviewFileInfo]
+  data_files: [DataFile]
+}
+
 type SearchResult {
   diagnosesAndStageOfDiseases: [ProgramArms]
   racesAndEthnicities: [ProgramArms]
   timepointsAndBiospecimensTypes: [ProgramArms]
   numberOfStudies: Int
+  """Distinct short names of matching programs, excluding missing or Not Applicable program names."""
   numberOfPrograms: Int
   numberOfParticipants: Int
   numberOfDiagnoses: Int
+  """Number of distinct therapy names in therapy_count matching the filters."""
   numberOfTherapies: Int
+  """Therapy tab count: number of tab_therapies rows (therapy-dose entries) matching the filters."""
+  numberOfTherapyByDose: Int
   numberOfSpecimens: Int
   numberOfFiles: Int
   numberOfStudyFiles: Int
@@ -800,8 +968,20 @@ type SearchResult {
   participantCountByTherapyType: [GroupCount]
   participantCountByBestResponseToTherapy: [GroupCount]
   participantCountByCurrentResponseToTherapy: [GroupCount]
-  participantCountBySingleTherapyCombination: [GroupCount]
-  participantCountBySingleTherapyCombinationForFacet: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapy: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapyCategory: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapyType: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByBestResponseToTherapy: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByCurrentResponseToTherapy: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapyDoseUnits: [GroupCount]
+  """Counts therapy-dose rows (tab_therapies), not participants."""
+  therapyCountByTherapyFrequency: [GroupCount]
   participantCountByPrimaryDiagnosisDiseaseGroup: [GroupCount]
   specimenCountByAnatomicalCollectionSite: [GroupCount]
   specimenCountByTissueCategory: [GroupCount]
@@ -842,8 +1022,13 @@ type SearchResult {
   filterParticipantCountByTherapyType: [GroupCount]
   filterParticipantCountByBestResponseToTherapy: [GroupCount]
   filterParticipantCountByCurrentResponseToTherapy: [GroupCount]
-  filterParticipantCountBySingleTherapyCombination: [GroupCount]
-  filterParticipantCountBySingleTherapyCombinationForFacet: [GroupCount]
+  filterTherapyCountByTherapy: [GroupCount]
+  filterTherapyCountByTherapyCategory: [GroupCount]
+  filterTherapyCountByTherapyType: [GroupCount]
+  filterTherapyCountByBestResponseToTherapy: [GroupCount]
+  filterTherapyCountByCurrentResponseToTherapy: [GroupCount]
+  filterTherapyCountByTherapyDoseUnits: [GroupCount]
+  filterTherapyCountByTherapyFrequency: [GroupCount]
   filterParticipantCountByPrimaryDiagnosisDiseaseGroup: [GroupCount]
   filterSpecimenCountByAnatomicalCollectionSite: [GroupCount]
   filterSpecimenCountByTissueCategory: [GroupCount]
@@ -1069,6 +1254,8 @@ type QueryType {
     therapy_string: [String] = []
     therapy_category: [String] = []
     therapy_type: [String] = []
+    therapy_dose_units: [String] = []
+    therapy_frequency: [String] = []
     best_response_to_therapy: [String] = []
     current_response_to_therapy: [String] = []
 
@@ -1126,6 +1313,47 @@ type QueryType {
     first: Int = 10
     offset: Int = 0
   ): [BiospecimenOverview]
+
+  therapyOverview(
+    participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
+    study_accession: [String] = []
+    program_name: [String] = []
+    program_short_name: [String] = []
+    ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
+    stage_of_disease: [String] = []
+    survival_status: [String] = []
+    tumor_grade: [String] = []
+    sex: [String] = []
+    race: [String] = []
+    ethnicity: [String] = []
+    carcinogen_exposure: [String] = []
+    course_number: [String] = []
+    therapy_name: [String] = []
+    therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    therapy_dose_units: [String] = []
+    therapy_frequency: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
+
+    anatomical_collection_site: [String] = []
+    specimen_type: [String] = []
+    tissue_category: [String] = []
+    assessment_timepoint: [String] = []
+
+    data_file_type: [String] = []
+    data_file_format: [String] = []
+    data_file_uuid: [String] = []
+
+    order_by: String = "participant_id"
+    sort_direction: String = "ASC"
+    first: Int = 10
+    offset: Int = 0
+  ): [TherapyOverview]
 
   fileOverview(
     participant_id: [String] = []
@@ -1186,6 +1414,7 @@ type QueryType {
     ethnicity: [String] = []
     carcinogen_exposure: [String] = []
     therapy_name: [String] = []
+    therapy_record_id: [String] = []
     therapy_string: [String] = []
     therapy_category: [String] = []
     therapy_type: [String] = []
@@ -1249,6 +1478,48 @@ type QueryType {
     offset: Int = 0
   ): [FileOverview]
 
+  therapy_data_files(
+    association: [String] = []
+    participant_id: [String] = []
+    study_short_name: [String] = []
+    study_id: [String] = []
+    study_accession: [String] = []
+    program_name: [String] = []
+    program_short_name: [String] = []
+    ctep_disease_term: [String] = []
+    primary_diagnosis_disease_group: [String] = []
+    stage_of_disease: [String] = []
+    survival_status: [String] = []
+    tumor_grade: [String] = []
+    sex: [String] = []
+    race: [String] = []
+    ethnicity: [String] = []
+    carcinogen_exposure: [String] = []
+    course_number: [String] = []
+    therapy_name: [String] = []
+    therapy_string: [String] = []
+    therapy_category: [String] = []
+    therapy_type: [String] = []
+    therapy_dose_units: [String] = []
+    therapy_frequency: [String] = []
+    best_response_to_therapy: [String] = []
+    current_response_to_therapy: [String] = []
+
+    anatomical_collection_site: [String] = []
+    specimen_type: [String] = []
+    tissue_category: [String] = []
+    assessment_timepoint: [String] = []
+
+    data_file_type: [String] = []
+    data_file_format: [String] = []
+    data_file_uuid: [String] = []
+
+    order_by: String = "data_file_name"
+    sort_direction: String = "ASC"
+    first: Int = 10
+    offset: Int = 0
+  ): [TherapyDataFile]
+
   searchParticipants(
     ctep_disease_term: [String] = []
     stage_of_disease: [String] = []
@@ -1268,6 +1539,8 @@ type QueryType {
     therapy_string: [String] = []
     therapy_category: [String] = []
     therapy_type: [String] = []
+    therapy_dose_units: [String] = []
+    therapy_frequency: [String] = []
     best_response_to_therapy: [String] = []
     current_response_to_therapy: [String] = []
     anatomical_collection_site: [String] = []

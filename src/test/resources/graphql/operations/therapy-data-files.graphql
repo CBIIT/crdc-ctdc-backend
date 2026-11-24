@@ -1,0 +1,94 @@
+query therapy_data_files(
+  $association: [String] = ["participant", "biospecimen"]
+  $participant_id: [String]
+  $ctep_disease_term: [String]
+  $stage_of_disease: [String]
+  $tumor_grade: [String]
+  $sex: [String]
+  $race: [String]
+  $ethnicity: [String]
+  $carcinogen_exposure: [String]
+  $therapy_name: [String]
+  $therapy_string: [String]
+  $therapy_category: [String]
+  $therapy_type: [String]
+  $therapy_dose_units: [String]
+  $therapy_frequency: [String]
+  $course_number: [String]
+  $best_response_to_therapy: [String]
+  $current_response_to_therapy: [String]
+  $anatomical_collection_site: [String]
+  $specimen_type: [String]
+  $tissue_category: [String]
+  $assessment_timepoint: [String]
+  $survival_status: [String]
+  $data_file_type: [String]
+  $data_file_format: [String]
+  $data_file_uuid: [String]
+  $study_short_name: [String]
+  $study_id: [String]
+  $study_accession: [String]
+  $program_name: [String]
+  $program_short_name: [String]
+  $first: Int = 10
+  $offset: Int = 0
+  $order_by: String = "data_file_name"
+  $sort_direction: String = "ASC"
+) {
+  therapy_data_files(
+    association: $association
+    participant_id: $participant_id
+    ctep_disease_term: $ctep_disease_term
+    stage_of_disease: $stage_of_disease
+    tumor_grade: $tumor_grade
+    sex: $sex
+    race: $race
+    ethnicity: $ethnicity
+    carcinogen_exposure: $carcinogen_exposure
+    therapy_name: $therapy_name
+    therapy_string: $therapy_string
+    therapy_category: $therapy_category
+    therapy_type: $therapy_type
+    therapy_dose_units: $therapy_dose_units
+    therapy_frequency: $therapy_frequency
+    course_number: $course_number
+    best_response_to_therapy: $best_response_to_therapy
+    current_response_to_therapy: $current_response_to_therapy
+    anatomical_collection_site: $anatomical_collection_site
+    specimen_type: $specimen_type
+    tissue_category: $tissue_category
+    assessment_timepoint: $assessment_timepoint
+    survival_status: $survival_status
+    data_file_type: $data_file_type
+    data_file_format: $data_file_format
+    data_file_uuid: $data_file_uuid
+    study_short_name: $study_short_name
+    study_id: $study_id
+    study_accession: $study_accession
+    program_name: $program_name
+    program_short_name: $program_short_name
+    first: $first
+    offset: $offset
+    order_by: $order_by
+    sort_direction: $sort_direction
+  ) {
+    data_file_uuid
+    data_file_name
+    data_file_type
+    data_file_format
+    data_file_size
+    data_file_description
+    association
+    drs_uri
+    participant_id
+    course_number
+    therapy_name
+    therapy_dose
+    therapy_dose_units
+    study_short_name
+    program_name
+    program_short_name
+    ctep_disease_term
+    __typename
+  }
+}
